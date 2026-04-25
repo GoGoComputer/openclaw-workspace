@@ -172,3 +172,28 @@ This opens an interactive menu (Korean/English auto-detected) where you pick num
 1. `./openclaw doctor` — tells you exactly what's wrong
 2. [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md) — common error fixes
 3. Still stuck? Open a [GitHub Issue](https://github.com/GoGoComputer/openclaw-workspace/issues) with the `./openclaw doctor` output. (Secrets are auto-masked.)
+
+---
+
+<!-- RELATED-DOCS:BEGIN -->
+## 🔗 관련 문서 / Related docs
+
+| 문서 | 무엇이 있나 |
+|---|---|
+| [🌱 처음부터 / From zero](GUIDE-FROM-ZERO.md) | 터미널·클릭·파일 개념부터 차근차근 (KO+EN) |
+| [🚀 빠른 시작 (KO)](QUICKSTART-ko.md) | 터미널 열기 → 5개 명령 → 한 줄 설치 |
+| [🪜 완전 수동 설치](GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 직접 다운 (KO+EN, 프로덕션 부록) |
+| [🐳 Docker 기초](GUIDE-DOCKER.md) | 컨테이너·이미지·compose 3분 가이드 |
+| [🧠 Ollama 기초](GUIDE-OLLAMA.md) | 로컬 LLM 데몬 사용법 |
+| [🐾 OpenClaw 기초](GUIDE-OPENCLAW.md) | 에이전트 구조·웹에서 가져오기 단락 |
+| [🌐 웹 정보 가져오기 / surf](GUIDE-WEB-FETCH.md) | 코스피·뉴스·환율·논문 — `surf` 샌드박스 명령 포함 |
+| [🎨 크리에이티브 파이프라인](GUIDE-CREATIVE-PIPELINE.md) | Pinterest → 나노바나나(4창) → Figma 자동 배치 |
+| [🎬 쇼츠 자동화](GUIDE-SHORTS-PIPELINE.md) | Pinterest → 미리캔버스 → CapCut → 9:16 MP4 |
+| [🚑 트러블슈팅](TROUBLESHOOTING.md) | 흔한 오류와 해결 명령 |
+| [🧠 아키텍처](ARCHITECTURE.md) | 디스패처·멱등 설계·compose override |
+| [🤝 기여 가이드 (입문)](GUIDE-CONTRIBUTING.md) | 오타·번역·베타테스트도 환영 |
+| [🐙 기여 가이드 (코드)](CONTRIBUTING.md) | 코드 스타일·PR 절차 |
+| [📦 릴리스 노트 v0.1.0](RELEASE_NOTES_v0.1.0.md) | 변경 사항 |
+
+⬆️ [README (KO)](../README.md) · [README (EN)](../README.en.md)
+<!-- RELATED-DOCS:END -->
