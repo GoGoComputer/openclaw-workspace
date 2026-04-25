@@ -4,6 +4,16 @@
 > 🇺🇸 This document covers module structure, state machine, backup format, and security threat model.
 > Diagrams are language-agnostic; section headers below are in Korean for brevity. Open an issue if a full English translation is needed.
 
+## 📖 목차 / Contents
+
+- [모듈 구조 / Module structure](#모듈-구조--module-structure)
+- [install 상태 머신](#install-상태-머신)
+- [백업 포맷](#백업-포맷)
+- [보안 컨테이너 옵션 (compose.security.yml)](#보안-컨테이너-옵션-composesecurityyml)
+- [데이터 흐름](#데이터-흐름)
+
+---
+
 ## 모듈 구조 / Module structure
 
 ```mermaid

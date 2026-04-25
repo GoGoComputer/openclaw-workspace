@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# cmd/start.sh — OpenClaw 컨테이너 시작 (compose up -d)
+# =============================================================================
+# cmd/start.sh — OpenClaw 컨테이너 시작 / Start OpenClaw containers
+# -----------------------------------------------------------------------------
+# 목적   : 현재 네트워크 모드(→ ~/.openclaw-mgr/network-mode)에 따라
+#          compose.network.yml 을 동적 생성한 뒤 `docker compose up -d`.
+# 사용   : ./openclaw start
+# 전제   : install 이 한 번이라도 완료되어 ${OPENCLAW_DIR} 가 있어야 함.
+# 관련   : stop.sh, network.sh, doctor.sh
 # Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
 set -euo pipefail
 # shellcheck disable=SC1091
 . "${OPENCLAW_MGR_DIR}/lib/common.sh"

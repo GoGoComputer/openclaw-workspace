@@ -12,17 +12,22 @@
 
 > 🇰🇷 한국어 (메인): [README.md](README.md)
 
-## ⚡ 30-second install (paste into Terminal)
+## 📖 Contents
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
-```
-
-Update any time — the menu also shows a banner when a new version is out:
-
-```bash
-openclaw self-update            # alias: openclaw ai-update
-```
+- [🚀 5-minute start (non-developer friendly)](#-5-minute-start-non-developer-friendly)
+- [📚 Documentation map](#-documentation-map)
+- [🤔 What is this?](#-what-is-this)
+- [📋 Command catalog](#-command-catalog)
+- [🤖 Models — use your existing local Ollama models](#-models--use-your-existing-local-ollama-models)
+- [⚙️ Configuration (`.env`)](#️-configuration-env)
+- [💻 Shell compatibility (zsh / bash)](#-shell-compatibility-zsh--bash)
+- [🇰🇷 Use with Korean Sovereign AI](#-use-with-korean-sovereign-ai)
+- [🧹 Memory & disk cleanup (for non-developers)](#-memory--disk-cleanup-for-non-developers)
+- [🔒 Network isolation modes (explicit outbound kill switch)](#-network-isolation-modes-explicit-outbound-kill-switch)
+- [🔒 Security (please read)](#-security-please-read)
+- [❓ FAQ](#-faq)
+- [🛠 For developers](#-for-developers)
+- [📜 License](#-license)
 
 ---
 
@@ -30,21 +35,7 @@ openclaw self-update            # alias: openclaw ai-update
 
 > Never used a terminal? See [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) for a step-by-step walkthrough with example terminal output.
 
-### Option A — one-line web install (easiest)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
-openclaw                        # interactive menu (Korean/English auto-detected)
-```
-
-The script uses **`git clone`** (no Homebrew required) to download `openclaw-workspace` to `~/DEV/openclaw-workspace`. Safe to re-run.
-
-> Prefer the Homebrew tap? Use the `--brew` flag:
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash -s -- --brew
-> ```
-
-### Option B — Homebrew tap (for managed updates)
+### Option A — Homebrew tap (for managed updates)
 
 ```bash
 brew tap gogocomputer/openclaw
@@ -54,7 +45,7 @@ openclaw
 
 Update: `brew update && brew upgrade openclaw-workspace`.
 
-### Option C — git clone (run from source · for developers)
+### Option B — git clone (run from source · for developers)
 
 ```bash
 # 1) Get the code
@@ -87,7 +78,9 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 | Who you are | Start here | What's inside |
 |---|---|---|
-| � **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | Open Terminal → 5 essential commands → one-line install. KO+EN || 🪜 **Fully manual install (download from official sites)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | No brew, no install scripts — download Docker / Ollama / source by hand. For corp IT review, GitHub-502 fallback, or hands-on learners. KO+EN || �🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
+| 🌱 **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | Open Terminal → 5 essential commands → git clone install. KO+EN |
+| 🦜 **Fully manual install (download from official sites)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | No brew, no install scripts — download Docker / Ollama / source by hand. For corp IT review, GitHub-502 fallback, or hands-on learners. KO+EN |
+| 🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
 | 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |
 | 📖 **Unfamiliar with the terms (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | Three 3-minute primers (concepts, vocabulary, philosophy) — KO+EN |
 | 👤 **General user** | [README.en.md](README.en.md) (this file) | Command catalog · `.env` · network isolation · FAQ |

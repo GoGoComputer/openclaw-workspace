@@ -1,5 +1,18 @@
 # Changelog
 
+## 📖 목차 / Contents
+
+- [v0.2.4 — 2026-04-25](#v024--2026-04-25)
+- [v0.2.3 — 2026-04-25](#v023--2026-04-25)
+- [v0.2.2 — 2026-04-25](#v022--2026-04-25)
+- [v0.2.1 — 2026-04-25](#v021--2026-04-25)
+- [v0.2.0 — 2026-04-25](#v020--2026-04-25)
+- [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
+- [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
+- [v0.1.7](#v017)
+
+---
+
 ## v0.2.4 — 2026-04-25
 - `openclaw install`: removed bulk Ollama model auto-download (`step_ollama_models` deleted)
 - `openclaw install`: new `step_ollama_check` — detects and displays already-installed Ollama models before proceeding
@@ -7,7 +20,7 @@
 
 ## v0.2.3 — 2026-04-25
 - `openclaw install`: added directory banner at start (shows exact paths before installing) and at completion (confirms actual paths created)
-- `scripts/install.sh`: added directory summary in completion banner (tool path, future agent/config/backup locations)
+- Installation: added directory summary in completion banner (tool path, future agent/config/backup locations)
 
 ## v0.2.2 — 2026-04-25
 ### Security fixes (audit)
@@ -34,7 +47,7 @@
 - Updated all docs and `.env.example` to reflect new path
 
 ## v0.1.8 — 2025-07-xx
-- `scripts/install.sh`: git clone is now the default (no Homebrew required); `--brew` is opt-in
+- Installation: git clone is the default (no Homebrew required); `--brew` (Homebrew tap) is opt-in
 - `openclaw install`: removed auto-install of Homebrew and Docker via brew; now points to official sites (brew.sh, docker.com)
 - `README.md`, `README.en.md`: updated to reflect new install options
 

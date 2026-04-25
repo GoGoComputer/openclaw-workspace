@@ -5,6 +5,11 @@
 
 이 가이드는 [docs/CONTRIBUTING.md](CONTRIBUTING.md) (개발자용) 와 짝을 이룹니다. **둘 중 어느 쪽으로 시작해도 환영입니다.**
 
+## 📖 목차 / Contents
+
+- [🇰🇷 한국어](#-한국어)
+- [🇬🇧 English](#-english)
+
 ---
 
 ## 🇰🇷 한국어

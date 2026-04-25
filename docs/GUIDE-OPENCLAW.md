@@ -3,6 +3,11 @@
 > 🇰🇷 **3분 안에**: OpenClaw 가 뭔지, openclaw-workspace 와 뭐가 다른지, 처음 5분 동안 뭘 하면 되는지.
 > 🇬🇧 **In 3 minutes**: what OpenClaw is, how it differs from openclaw-workspace, what to do in your first 5 minutes.
 
+## 📖 목차 / Contents
+
+- [🇰🇷 한국어](#-한국어)
+- [🇬🇧 English](#-english)
+
 ---
 
 ## 🇰🇷 한국어
@@ -40,8 +45,10 @@
 ### 처음 5분 동안 할 일
 
 ```bash
-# 1) 설치 (한 줄)
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+# 1) 설치 (git clone)
+git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/DEV/openclaw-workspace
+mkdir -p ~/.local/bin
+ln -sf ~/DEV/openclaw-workspace/openclaw-mgr/openclaw ~/.local/bin/openclaw
 
 # 2) 시스템 점검
 openclaw doctor
@@ -165,8 +172,10 @@ Analogy:
 ### Your first 5 minutes
 
 ```bash
-# 1) install (one line)
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+# 1) install (git clone)
+git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/DEV/openclaw-workspace
+mkdir -p ~/.local/bin
+ln -sf ~/DEV/openclaw-workspace/openclaw-mgr/openclaw ~/.local/bin/openclaw
 
 # 2) check the system
 openclaw doctor

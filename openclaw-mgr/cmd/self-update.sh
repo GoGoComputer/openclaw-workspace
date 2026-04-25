@@ -69,6 +69,6 @@ if [ -d "$parent_dir/.git" ]; then
 fi
 
 warn "Could not detect install method (not Homebrew, not a git checkout)."
-warn "Re-run the one-line web installer to refresh:"
-printf '\n  curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash\n\n'
+warn "Re-clone the repository to refresh:"
+printf '\n  git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/DEV/openclaw-workspace\n\n'
 exit 1

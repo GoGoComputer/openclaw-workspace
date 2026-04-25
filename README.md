@@ -12,17 +12,35 @@
 
 > 🇬🇧 English version: [README.en.md](README.en.md)
 
-## ⚡ 30초 설치 (터미널에 그대로 붙여넣기)
+## � 목차 / Contents
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
-```
-
-설치 후 아무 때나 최신 버전으로 업데이트 — 메뉴에서도 새 버전 알림이 뜨면 넘어갑니다:
-
-```bash
-openclaw self-update            # 또는 / or:  openclaw ai-update
-```
+- [🚀 5분 시작 (비개발자 OK)](#-5분-시작-비개발자-ok)
+  - [옵션 A — Homebrew 탭](#옵션-a--homebrew-탭-관리형-업데이트-선호-시)
+  - [옵션 B — git clone](#옵션-b--git-clone-소스-직접-사용--개발자용)
+- [📚 문서 가이드](#-문서-가이드)
+- [🤔 이게 뭐예요?](#-이게-뭐예요)
+- [📋 명령 카탈로그](#-명령-카탈로그)
+- [🤖 모델 관리 — 내 로컬 Ollama 모델 그대로 쓰기](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기)
+  - [비개발자 모드 (한 줄 명령)](#비개발자-모드-한-줄-명령)
+  - [개발자 모드 (직접 편집 또는 호스트 명령)](#개발자-모드-직접-편집-또는-호스트-명령)
+  - [⚠️ isolated 모드 주의](#️-isolated-모드-주의)
+- [⚙️ 설정 (`.env`)](#️-설정-env)
+- [💻 셸 호환성 (zsh / bash)](#-셸-호환성-zsh--bash)
+- [🇰🇷 한국 소버린 AI 와 함께 쓰기](#-한국-소버린-ai-와-함께-쓰기)
+- [🧹 메모리·디스크 정리 (비개발자용)](#-메모리디스크-정리-비개발자용)
+- [🔒 네트워크 격리 모드](#-네트워크-격리-모드-명시적-외부-차단-토글)
+  - [🔒 isolated (기본) 에서 막히는 것](#-isolated-기본-에서-막히는-것)
+  - [어떤 상황에서 유용한가요?](#어떤-상황에서-유용한가요)
+  - [설치/업데이트용 표준 워크플로우](#설치업데이트용-표준-워크플로우)
+- [🔒 보안 주의 (꼭 읽으세요)](#-보안-주의-꼭-읽으세요)
+- [❓ FAQ](#-faq)
+- [🛠 개발자용](#-개발자용)
+  - [디렉터리 구조](#디렉터리-구조)
+  - [멱등 설계 (`state` 파일 포맷)](#멱등-설계-state-파일-포맷)
+  - [정적 검사](#정적-검사)
+  - [기여하기](#기여하기)
+  - [자체 게시](#자체-게시-자기-fork-를-github-에-올릴-때)
+- [📜 라이선스](#-라이선스)
 
 ---
 
@@ -30,21 +48,7 @@ openclaw self-update            # 또는 / or:  openclaw ai-update
 
 > "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
 
-### 옵션 A — 한 줄 웹 설치 (가장 쉬움)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
-openclaw                        # 대화형 메뉴 (한국어/영어 자동)
-```
-
-이 스크립트는 **Homebrew 없이** `git clone` 으로 `~/DEV/openclaw-workspace` 에 다운로드합니다. Homebrew 탭에 의존하지 않습니다. 재실행해도 안전.
-
-> Homebrew 탭 설치를 원하면 `--brew` 플래그 사용:
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash -s -- --brew
-> ```
-
-### 옵션 B — Homebrew 탭 (관리형 업데이트 선호 시)
+### 옵션 A — Homebrew 탭 (관리형 업데이트 선호 시)
 
 ```bash
 brew tap gogocomputer/openclaw
@@ -54,7 +58,7 @@ openclaw
 
 업데이트: `brew update && brew upgrade openclaw-workspace`.
 
-### 옵션 C — git clone (소스 직접 사용 · 개발자용)
+### 옵션 B — git clone (소스 직접 사용 · 개발자용)
 
 ```bash
 # 1) 코드 받기
@@ -87,7 +91,7 @@ cd openclaw-workspace/openclaw-mgr
 
 | 누구 | 어디부터 | 무엇이 있나 |
 |---|---|---|
-| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 텀미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
+| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 터미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
 | 🪜 **완전 수동 설치 (공식 사이트에서 직접 다운)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 Docker·Ollama·소스 직접 다운. 회사 IT 심사·GitHub 502 회피용. KO+EN 병기 |
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
@@ -170,7 +174,7 @@ openclaw models pull llava:7b    # .env 건들지 않고 pull 만
 
 ### 개발자 모드 (직접 편집 또는 호스트 명령)
 
-세 가지 매커니즘 중 아무거나:
+세 가지 메커니즘 중 아무거나:
 
 1. **`.env` 직접 편집** → `openclaw update` (컨테이너도 같이 갱신)
    ```bash

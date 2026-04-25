@@ -2,6 +2,12 @@
 
 > 🇰🇷 한국어 · 🇺🇸 English (both languages below)
 
+## 📖 목차 / Contents
+
+- [🇰🇷 한국어](#-한국어)
+- [🇺🇸 English](#-english)
+- [🙏 License](#-license)
+
 ---
 
 ## 🇰🇷 한국어

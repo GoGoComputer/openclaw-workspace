@@ -3,6 +3,11 @@
 > 🇰🇷 **3분 안에**: Ollama 가 뭔지, 왜 OpenClaw 가 이걸 쓰는지, 모델은 어디 저장되는지.
 > 🇬🇧 **In 3 minutes**: what Ollama is, why OpenClaw uses it, where models live.
 
+## 📖 목차 / Contents
+
+- [🇰🇷 한국어](#-한국어)
+- [🇬🇧 English](#-english)
+
 ---
 
 ## 🇰🇷 한국어

@@ -5,6 +5,15 @@
 >
 > Each problem name below is followed by exact commands. The commands are language-agnostic; copy/paste as-is.
 
+## 📖 목차 / Contents
+
+- [`./openclaw doctor` 출력별 대응 / Recovery by `doctor` output](#openclaw-doctor-출력별-대응--recovery-by-doctor-output)
+- [흔한 오류](#흔한-오류)
+- [보안 경고가 떴어요](#보안-경고가-떴어요)
+- [도움 요청 시 첨부할 정보](#도움-요청-시-첨부할-정보)
+
+---
+
 ## `./openclaw doctor` 출력별 대응 / Recovery by `doctor` output
 
 | 항목 | 상태 | 대응 |

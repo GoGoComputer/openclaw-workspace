@@ -2,6 +2,23 @@
 
 > This guide assumes you have **never used a terminal**. Just copy each command line by line and paste it.
 
+## 📖 Contents
+
+- [Prerequisites](#prerequisites)
+- [1. Open Terminal](#1-open-terminal)
+- [2. Get the code](#2-get-the-code)
+- [3. Move into the folder](#3-move-into-the-folder)
+- [4. Settings file (auto-created — nothing to do)](#4-settings-file-auto-created--nothing-to-do)
+- [5. Check current state](#5-check-current-state)
+- [6. Run the install](#6-run-the-install)
+- [7. Verify](#7-verify)
+- [8. Daily auto-update](#8-daily-auto-update)
+- [9. Safe backup](#9-safe-backup)
+- [Or just use the menu](#or-just-use-the-menu)
+- [When something goes wrong](#when-something-goes-wrong)
+
+---
+
 ## Prerequisites
 
 - A **MacBook** (Apple Silicon M1 or later — reference: MacBook Pro 16" M5 Pro / 24GB RAM)

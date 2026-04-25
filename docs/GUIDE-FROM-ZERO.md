@@ -5,6 +5,13 @@
 
 이 글이 끝나면 → [QUICKSTART-ko.md](QUICKSTART-ko.md) 또는 [QUICKSTART-en.md](QUICKSTART-en.md) 로 넘어가세요.
 
+## 📖 목차 / Contents
+
+- [🇰🇷 한국어 — 0단계부터](#-한국어--0단계부터)
+- [❓ 자주 막히는 부분 (FAQ)](#-자주-막히는-부분-faq)
+- [🇬🇧 English — From Step Zero](#-english--from-step-zero)
+- [❓ Where people commonly get stuck](#-where-people-commonly-get-stuck)
+
 ---
 
 ## 🇰🇷 한국어 — 0단계부터
@@ -94,15 +101,15 @@ cd ~/openclaw-workspace
 
 이 5개만 알면 시작하기에 충분합니다.
 
-### 7. 이제 OpenClaw 설치 — 한 줄
+### 7. 이제 OpenClaw 설치 — git clone
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/DEV/openclaw-workspace
+mkdir -p ~/.local/bin
+ln -sf ~/DEV/openclaw-workspace/openclaw-mgr/openclaw ~/.local/bin/openclaw
 ```
 
-`curl` = 인터넷에서 파일 가져오기. `| bash` = 가져온 스크립트를 즉시 실행. 화면에 진행 상황이 쭉 흐를 겁니다 (3~5분).
-
-> 💡 중간에 **암호 입력 창** 이 뜨면 맥 로그인 비밀번호입니다 (Homebrew 가 시스템 폴더 권한을 받기 위해서). 입력해도 화면에 안 보이는 게 정상.
+`git clone` = GitHub 에서 코드 받아오기. `ln -sf` = 어디서나 `openclaw` 명령어를 쓸 수 있도록 단축어 만들기. `~/.local/bin` 이 `$PATH` 에 없으면 줄을 추가하거나 `~/DEV/openclaw-workspace/openclaw-mgr/openclaw` 전체 경로를 쓰세요.
 
 ### 8. 설치 끝났는지 확인
 
@@ -254,13 +261,15 @@ cd ~/openclaw-workspace
 
 These five are enough to start.
 
-### 7. Install OpenClaw — one line
+### 7. Install OpenClaw — git clone
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/DEV/openclaw-workspace
+mkdir -p ~/.local/bin
+ln -sf ~/DEV/openclaw-workspace/openclaw-mgr/openclaw ~/.local/bin/openclaw
 ```
 
-`curl` downloads from the internet. `| bash` runs the downloaded script immediately. You'll see progress for 3–5 minutes.
+`git clone` downloads the code from GitHub. `ln -sf` creates a shortcut so you can run `openclaw` from anywhere. If `~/.local/bin` is not in your `$PATH`, either add it or use the full path `~/DEV/openclaw-workspace/openclaw-mgr/openclaw`.
 
 > 💡 If a **password prompt** shows up, that's your Mac login password (Homebrew needs permission for system paths). It's normal that **nothing appears as you type** — keep typing and press Enter.
 
