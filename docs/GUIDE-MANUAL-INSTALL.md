@@ -256,21 +256,70 @@ sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/b
 
 ### 7단계 — 업데이트는 어떻게?
 
-수동 설치 모드에서는 **Git 으로 직접 갱신**:
+> ❓ **OpenClaw 본체가 업데이트되면 내 도구도 자동으로 업데이트되나요?**
+>
+> **아니요.** 두 저장소는 서로 독립적인 git 저장소이며 따로 갱신해야 합니다.
+>
+> | 무엇 | 어떻게 갱신 | 무엇이 갱신되나 |
+> |---|---|---|
+> | 🟢 내 도구 (`openclaw-workspace`) | `git pull` (수동 모드) 또는 `openclaw self-update` (brew 모드) | `openclaw` CLI, `lib/`, `cmd/`, 보안 override, 가이드 문서 |
+> | 🔵 OpenClaw 본체 (`~/openclaw`) | `openclaw update` ← 내 도구가 알아서 본체 git pull + 이미지 pull + 모델 pull 까지 | 본체 코드, Docker 이미지, Ollama 모델 |
+>
+> 즉 **내 도구만 최신 ≠ 본체도 최신**. 둘 다 최신으로 두고 싶으면 두 명령을 차례로 돌리세요.
+
+#### 매번 하는 표준 절차 (수동 설치 모드)
+
 ```bash
+# 1) 내 도구(workspace) 갱신
 cd ~/DEV/openclaw-workspace
 git pull --ff-only
-./openclaw-mgr/openclaw update    # 컨테이너/모델 갱신
+
+# 2) 본체(OpenClaw) + 컨테이너 이미지 + 모델 갱신 (한 명령)
+./openclaw-mgr/openclaw update
+
+# 3) 둘 다 ✓ 인지 확인
+./openclaw-mgr/openclaw doctor
 ```
 
-특정 안정 버전으로 고정하고 싶으면:
+#### `openclaw update` 가 내부적으로 하는 일
+
+```
+openclaw update
+  ├── network online (잠깐 외부 허용)
+  ├── cd ~/openclaw && git pull --ff-only          ← 본체 코드 갱신
+  ├── docker compose pull                            ← 본체 이미지 갱신
+  ├── docker compose up -d                           ← 새 이미지로 재기동
+  ├── ollama pull <OLLAMA_MODELS 의 각 모델>        ← 모델 갱신
+  └── network isolated (다시 잠금)
+```
+
+#### 자동화 — 매일 새벽에 본체까지 자동 업데이트
+
+```bash
+./openclaw-mgr/openclaw schedule enable    # 매일 03:00 (기본) 에 launchd 가 `openclaw update` 자동 실행
+./openclaw-mgr/openclaw schedule status     # 다음 실행 시각 확인
+./openclaw-mgr/openclaw schedule disable    # 끄기
+```
+
+> ⚠ `schedule` 은 **본체 update** 만 자동 실행합니다. 내 도구(workspace) 의 `git pull` 은 자동화하지 않습니다 — 도구가 깨져 있으면 자동복구가 위험하므로. 내 도구는 가끔 직접 `git pull` 권장.
+
+#### 특정 버전에 고정 (Pin to a stable tag)
+
+내 도구를 특정 안정 버전으로:
 ```bash
 cd ~/DEV/openclaw-workspace
 git fetch --tags
 git checkout v0.1.6
 ```
 
-> ⚠️ 수동 설치 환경에서는 `openclaw self-update` 가 의도적으로 비활성됩니다 (Homebrew formula 가 아니므로). 항상 `git pull` 을 쓰세요.
+본체를 특정 커밋으로 고정 (공급망 공격 방어용):
+```bash
+$EDITOR ~/.openclaw-mgr/.env
+# OPENCLAW_PIN_COMMIT="abc1234..."
+./openclaw-mgr/openclaw update
+```
+
+> ⚠️ 수동 설치 환경에서는 `openclaw self-update` 가 의도적으로 비활성됩니다 (Homebrew formula 가 아니므로). 내 도구는 항상 `git pull` 을 쓰세요.
 
 ### ❓ 자주 막히는 부분
 
@@ -539,20 +588,70 @@ sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/b
 
 ### Step 7 — Updating
 
-In manual mode you update via Git:
+> ❓ **If OpenClaw upstream updates, does my tool update automatically?**
+>
+> **No.** They are independent git repos and must be updated separately.
+>
+> | What | How to update | What it refreshes |
+> |---|---|---|
+> | 🟢 This tool (`openclaw-workspace`) | `git pull` (manual mode) or `openclaw self-update` (brew mode) | `openclaw` CLI, `lib/`, `cmd/`, security overrides, guide docs |
+> | 🔵 OpenClaw upstream (`~/openclaw`) | `openclaw update` ← this tool runs upstream `git pull` + image pull + model pull for you | Upstream code, Docker images, Ollama models |
+>
+> So **tool up-to-date ≠ upstream up-to-date**. Run both to keep everything fresh.
+
+#### Standard refresh (manual mode)
+
 ```bash
+# 1) Update this tool (workspace)
 cd ~/DEV/openclaw-workspace
 git pull --ff-only
+
+# 2) Update upstream + container images + models (one command)
 ./openclaw-mgr/openclaw update
+
+# 3) Verify
+./openclaw-mgr/openclaw doctor
 ```
 
-Pin to a specific stable tag:
+#### What `openclaw update` does internally
+
+```
+openclaw update
+  ├── network online (briefly allow outbound)
+  ├── cd ~/openclaw && git pull --ff-only          ← upstream code
+  ├── docker compose pull                            ← upstream images
+  ├── docker compose up -d                           ← restart with new images
+  ├── ollama pull <each model in OLLAMA_MODELS>     ← refresh models
+  └── network isolated (lock back down)
+```
+
+#### Automate it — daily upstream update via launchd
+
 ```bash
+./openclaw-mgr/openclaw schedule enable    # default 03:00 daily, runs `openclaw update`
+./openclaw-mgr/openclaw schedule status
+./openclaw-mgr/openclaw schedule disable
+```
+
+> ⚠ `schedule` only auto-runs **upstream update**. It does NOT auto-pull this tool — auto-recovering a broken tool is risky. Pull this tool by hand occasionally.
+
+#### Pin to a specific version
+
+This tool to a stable tag:
+```bash
+cd ~/DEV/openclaw-workspace
 git fetch --tags
 git checkout v0.1.6
 ```
 
-> ⚠️ `openclaw self-update` is intentionally disabled in manual mode (it's only for the Homebrew formula). Always use `git pull`.
+Upstream to a specific commit (supply-chain hardening):
+```bash
+$EDITOR ~/.openclaw-mgr/.env
+# OPENCLAW_PIN_COMMIT="abc1234..."
+./openclaw-mgr/openclaw update
+```
+
+> ⚠️ `openclaw self-update` is intentionally disabled in manual mode (it's only for the Homebrew formula). Always use `git pull` for this tool in manual mode.
 
 ### ❓ Common pitfalls
 
