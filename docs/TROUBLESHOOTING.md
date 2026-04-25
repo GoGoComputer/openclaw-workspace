@@ -72,6 +72,7 @@ arch -x86_64 echo ok    # Rosetta 정상 작동 시: ok
 | 2 | "**Docker Desktop needs privileged access**" + macOS 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → **[OK]**. 이건 Docker 가 가상화 헬퍼·네트워크 드라이버를 설치하기 위한 1회성 권한입니다. |
 | 4 | "**Complete the installation of Docker Desktop**" — *Use recommended settings (requires password)* ↔ *Use advanced settings* | **● Use recommended settings** 선택 → **[Finish]**. 추천 설정이 `docker` CLI symlink·가상화 헬퍼·네트워크 권한을 자동으로 잡아주며, OpenClaw 가 `docker` 명령을 PATH 에서 찾으려면 필수입니다. **Advanced** 는 설치 경로를 직접 지정하고 싶은 경우에만 — 일반 사용자에게는 불필요, 잘못 건드리면 OpenClaw 가 docker 명령을 못 찾을 수 있습니다. 모든 항목은 추후 Settings 에서 변경 가능. |
 | 5 | "**Welcome to Docker**" / 설문 (사용 목적 등) | 원하면 작성, **[Skip]** 도 가능. OpenClaw 와 무관. |
+| 5b | "**Sign in to Docker Desktop**" / Docker Hub 계정 가입 화면 | **로그인 불필요**. 화면 어딘가의 작은 **[Skip]** / **[Continue without signing in]** 클릭. Docker Hub 계정은 OpenClaw 사용과 무관 — 공개 이미지 pull 은 무인증으로 IP당 6시간에 100회까지 가능하고 (대부분 안 걸림), 우리는 비공개 레지스트리도 push 도 사용하지 않습니다. 한 줄 요약: **계정 만들 필요 없으니 Skip**. |
 | 6 | 우측 상단 알림 — "**'Docker' can run in the background. You can manage background activity in Login Items & Extensions.**" | macOS 의 정보성 알림. **그냥 무시** 하면 됩니다. 의미: Docker 데몬이 메뉴바에 살아 있는다는 뜻 (정상). 자동시작이 싫으면 **시스템 설정 → 일반 → 로그인 항목 → 백그라운드 항목** 에서 `Docker` 토글 OFF. |
 
 ### ⚠️ 비밀번호 다이얼로그가 의심스러우면
@@ -83,6 +84,26 @@ arch -x86_64 echo ok    # Rosetta 정상 작동 시: ok
 - macOS 의 다른 모든 작업이 어두워짐 (모달)
 
 위 4가지가 모두 맞으면 진짜입니다. 1회만 묻고 그 뒤로는 안 묻습니다.
+
+### Docker Hub 계정은 만들어야 하나요? (Sign in 화면)
+
+**아니요. OpenClaw 사용에는 전혀 필요 없습니다.** Docker Desktop 이 자꾸 가입을 권하지만 항상 Skip 가능합니다.
+
+| 무엇 | OpenClaw 에 필요? |
+|---|---|
+| Docker Desktop 자체 | ✅ 필요 |
+| Docker Hub 회원가입 / `docker login` | ❌ 불필요 |
+| Docker Pro / Team 유료 구독 | ❌ 불필요 |
+
+**왜 권유?** Docker 사 입장에서 등록 사용자를 늘리려는 마케팅. **Skip / Continue without signing in** 링크가 항상 화면 어딘가 (보통 작게) 있습니다.
+
+**계정이 실제로 쓰이는 경우 (참고)**:
+- 본인 이미지를 Docker Hub 에 push (개인 프로젝트 공개·비공개 저장)
+- 회사 사내 레지스트리 `docker login mycompany.registry.com` 접속
+- 무인증 pull 한도(IP당 6시간 100회) 초과 — 거의 안 걸림
+- 250인 이상 기업의 Docker Desktop 유료 라이선스
+
+OpenClaw 는 위 4가지 모두 해당 없음 → **Skip**.
 
 ### 첫 실행 끝났는지 확인
 

@@ -95,6 +95,7 @@ clang --version
    | 3 | **Docker needs privileged access** + 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → [OK]. 1회성 권한. |
    | 4 | **Complete the installation of Docker Desktop** — *Use recommended settings* ↔ *Use advanced settings* | **● Use recommended settings (requires password)** 선택 → **[Finish]**. 추천 설정은 `docker` CLI symlink·가상화 헬퍼·네트워크 권한을 자동 활성. OpenClaw 가 `docker` 명령을 찾으려면 필수. *Advanced* 는 설치 경로를 직접 지정하려는 사용자용. |
    | 5 | **Welcome to Docker** + 사용 목적 설문 | 원하면 작성, **[Skip]** 가능 |
+   | 5b | **Sign in to Docker Desktop** / 계정 가입 화면 | **로그인 불필요** — 화면 아래·염의 작은 글씨 **[Skip]** / **[Continue without signing in]** 클릭. Docker Hub 계정은 OpenClaw 사용과 무관한다 (공개 이미지 pull 은 무인증으로 됨). 계정이 필요한 경우는 이미지를 직접 push 하거나 비공개 저장소를 쓸 때뿐. |
    | 6 | 우측 상단 알림 "**'Docker' can run in the background**" | 무시. Docker 가 메뉴바에 살아 있다는 뜻 (정상) |
 
 6. 고래 아이콘이 멈춘 상태(움직이지 않음) = 준비 완료.
@@ -350,6 +351,7 @@ clang --version
    | 3 | **Docker needs privileged access** + macOS password prompt | Enter your macOS login password (Touch ID works) → [OK]. One-time permission. |
    | 4 | **Complete the installation of Docker Desktop** — *Use recommended settings* vs *Use advanced settings* | Choose **● Use recommended settings (requires password)** → **[Finish]**. Recommended sets up the `docker` CLI symlink, virtualization helper, and network permissions automatically — OpenClaw needs the symlink to find `docker`. *Advanced* is only for users who want to pick install paths manually. |
    | 5 | **Welcome to Docker** + usage survey | Fill if you want, or **[Skip]** |
+   | 5b | **Sign in to Docker Desktop** / account creation screen | **No login needed** — click the small **[Skip]** / **[Continue without signing in]** link (usually bottom or side). A Docker Hub account is unrelated to using OpenClaw (public images pull anonymously). You only need an account if you push images or use a private registry. |
    | 6 | Top-right notification: "**'Docker' can run in the background**" | Ignore. Just means Docker lives in the menu bar (normal). |
 
 6. Whale stops animating = ready.
