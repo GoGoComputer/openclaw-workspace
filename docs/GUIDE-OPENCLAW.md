@@ -114,6 +114,8 @@ openclaw network online --restart    # 1) 잠깐 열기
 openclaw network isolated --restart   # 2) 끝나면 바로 잠그기 (습관화 권장)
 ```
 
+> 📖 실전 예시(프롬프트 템플릿), 공식 API 연동, 자동화, 트러블슈팅은 [GUIDE-WEB-FETCH.md](GUIDE-WEB-FETCH.md) 에 자세히 있습니다.
+
 #### `online` 모드여도 **여전히 보호되는** 것
 
 | 위험 | online 에서도 차단됨? |
@@ -241,6 +243,8 @@ openclaw network online --restart    # 1) open the gate
 # In the OpenClaw UI:  "summarize today's NYT front page", "what's KOSPI today?"
 openclaw network isolated --restart   # 2) lock back down (build the habit)
 ```
+
+> 📖 Real-world prompts, official APIs, automation, and troubleshooting live in [GUIDE-WEB-FETCH.md](GUIDE-WEB-FETCH.md).
 
 #### What's still protected even in `online` mode
 

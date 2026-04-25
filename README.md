@@ -96,6 +96,7 @@ cd openclaw-workspace/openclaw-mgr
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
 | 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
+| 🌐 **웹에서 코스피·뉴스·환율 가져오기** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | 네트워크 토글 사이클·실전 프롬프트·공식 API 키·자동화·트러블슈팅. KO+EN 병기 |
 | 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
 | 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
 | 🛡 **보안이 궁금한 사람** | [SECURITY.md](SECURITY.md) · 본문 [🔒 보안 주의](#-보안-주의-꼭-읽으세요) · [🔒 네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) | 위협 모델·취약점 신고 절차 |
