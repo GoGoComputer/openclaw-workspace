@@ -19,6 +19,16 @@ CREATIVE_HOME="${CREATIVE_HOME:-$HOME/openclaw-creative}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPTS="$REPO_DIR/scripts/creative-lib"
 
+usage() {
+  sed -n '4,15p' "$0" | sed 's/^# //; s/^#//'
+  exit "${1:-0}"
+}
+
+# help 는 setup 전에도 보여줘야 함
+case "${1:-}" in
+  -h|--help|help|"") usage 0 ;;
+esac
+
 [ -d "$CREATIVE_HOME" ] || { echo "✗ $CREATIVE_HOME 없음 — scripts/creative-pipeline-setup.sh 먼저 실행" >&2; exit 1; }
 
 # .env 로드
@@ -32,11 +42,6 @@ SCRIPTS="$REPO_DIR/scripts/creative-lib"
 slugify() {
   echo "$1" | tr '[:upper:]' '[:lower:]' \
     | sed -E 's/[^a-z0-9가-힣]+/-/g; s/^-+|-+$//g'
-}
-
-usage() {
-  sed -n '4,15p' "$0" | sed 's/^# //; s/^#//'
-  exit "${1:-0}"
 }
 
 cmd="${1:-}"; shift || usage 1

@@ -1,5 +1,8 @@
 # 🎨 크리에이티브 파이프라인 가이드 / Creative Pipeline Guide
 
+[← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
+
+
 > Pinterest(레퍼런스) → Claude(프롬프트) → 나노바나나(이미지) → Figma 워크플로우를 **한 명령**으로 묶고, 나노바나나 웹 UI 를 **여러 창 병렬**로 띄워 속도를 올립니다.
 
 이 가이드는 OpenClaw 의 일부가 아닌 **개인 작업 자동화** 입니다. 별도 디렉터리(`~/openclaw-creative/`) 에서 동작하며, OpenClaw 컨테이너의 isolated 정책과 무관합니다.

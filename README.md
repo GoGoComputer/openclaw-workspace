@@ -85,6 +85,16 @@ cd openclaw-workspace/openclaw-mgr
 
 ---
 
+## 🤖 자동화 3종 — 한눈 카탈로그
+
+| 명령 | 무엇을 하나 | 1회 세팅 | 가이드 |
+|---|---|---|---|
+| 🌐 `surf "..."` | 웹에서 코스피·뉴스·논문 등 검색 → 마크다운 브리프 (1회용 Docker 샌드박스 안에서) | [scripts/surf-setup.sh](scripts/surf-setup.sh) | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
+| 🎨 `creative run "..."` | Pinterest → 나노바나나(4창 병렬) → Figma 디자인 자동 배치 | [scripts/creative-pipeline-setup.sh](scripts/creative-pipeline-setup.sh) | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
+| 🎬 `shorts run "..."` | Pinterest → 미리캔버스(1080×1920) → CapCut(9:16 MP4 export) | [scripts/shorts-setup.sh](scripts/shorts-setup.sh) | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+
+> 모든 자동화는 **호스트 영구 프로필** 방식 — OpenClaw 본 컨테이너는 `isolated` 그대로, 호스트 `~/.ssh`·OpenClaw `.env` 접근 0. 각 가이드의 "샌드박스 경계" 섹션 참조.
+
 ## 📚 문서 가이드
 
 > 어떤 문서부터 봐야 할지 모르겠다면 아래 표를 참고하세요. 한국어/영어 모두 완비.

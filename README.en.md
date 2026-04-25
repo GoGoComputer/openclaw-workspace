@@ -72,6 +72,16 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 ---
 
+## 🤖 Automation trio — at a glance
+
+| Command | What it does | One-time setup | Guide |
+|---|---|---|---|
+| 🌐 `surf "..."` | Web search → Markdown brief inside a throwaway Docker sandbox | [scripts/surf-setup.sh](scripts/surf-setup.sh) | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
+| 🎨 `creative run "..."` | Pinterest → nano-banana (4 parallel windows) → Figma | [scripts/creative-pipeline-setup.sh](scripts/creative-pipeline-setup.sh) | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
+| 🎬 `shorts run "..."` | Pinterest → Miricanvas (1080×1920) → CapCut (9:16 MP4 export) | [scripts/shorts-setup.sh](scripts/shorts-setup.sh) | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+
+> All automations run on the host with persistent Chromium profiles — the OpenClaw container stays in `isolated` and never touches `~/.ssh` or the OpenClaw `.env`. See each guide's "Sandbox boundary" section.
+
 ## 📚 Documentation map
 
 > Not sure where to start? Pick your row. Korean and English are both available.

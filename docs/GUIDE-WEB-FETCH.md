@@ -1,5 +1,8 @@
 # 🌐 웹에서 정보 가져오기 가이드 — 코스피·뉴스·환율 등 / Web Fetch Guide
 
+[← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
+
+
 > 🇰🇷 OpenClaw 가 인터넷에서 코스피 종가·뉴스 기사·환율 같은 정보를 가져오는 방법.
 > 🇬🇧 How to let OpenClaw fetch live information (KOSPI, news headlines, FX rates...) from the internet.
 

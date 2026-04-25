@@ -1,5 +1,8 @@
 # 🎬 쇼츠 자동화 — Pinterest → 미리캔버스 → CapCut → Shorts
 
+[← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
+
+
 > 한 명령(`shorts run "키워드"`)으로 **레퍼런스 수집 → 디자인 편집 → 영상 export** 까지. OpenClaw 보안 모델은 그대로 유지하고, 호스트(맥북)에서 실제 프로그램(미리캔버스 웹, CapCut Web/Desktop)을 사람과 동일하게 GUI 로 조종합니다.
 
 ---
