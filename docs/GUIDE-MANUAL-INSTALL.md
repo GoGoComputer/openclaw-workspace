@@ -135,6 +135,15 @@ ollama list                     # qwen2.5-coder:7b 보이면 OK
 
 ### 4단계 — openclaw-workspace 소스 직접 받기
 
+> 🤔 **잠깐, 두 개의 저장소가 헷갈려요!**
+>
+> | 저장소 | 누구 | 무엇 | 언제 받나? |
+> |---|---|---|---|
+> | 🟢 **`GoGoComputer/openclaw-workspace`** (지금 이 저장소) | 박성모 (이 도구 메인테이너) | macOS 자동화 도구 (`./openclaw` 명령·docker-compose 보안 override·이 가이드 등) | **항상 받아야 함** — 4단계가 이걸 받는 단계 |
+> | 🔵 **`openclaw/openclaw`** (OpenClaw 본체) | OpenClaw 공식팀 | AI 에이전트 본체 (Python/JS 코드, 컨테이너 이미지 소스) | **수동으로 받을 필요 없음** — `./openclaw install` 이 자동으로 `~/openclaw` 에 clone 함 |
+>
+> 즉 4단계에서는 **이 저장소 (`GoGoComputer/openclaw-workspace`)** 만 받으면 됩니다. OpenClaw 본체는 5단계의 `./openclaw install` 이 알아서 가져옵니다. 본체 사이트도 보고 싶다면 [💡 OpenClaw 본체 사이트 직접 방문하기](#-openclaw-본체-사이트-직접-방문하기-선택) 섹션 참조.
+
 #### 방법 A — Git clone (권장, 가장 깔끔)
 
 ```bash
@@ -169,6 +178,32 @@ ls    # README.md, openclaw-mgr/, docs/ 등이 보이면 OK
    mv openclaw-workspace-0.1.6 openclaw-workspace
    cd openclaw-workspace
    ```
+
+#### 💡 OpenClaw 본체 사이트 직접 방문하기 (선택)
+
+본체가 어떻게 생겼는지 미리 보고 싶거나, **회사 IT 심사**용으로 본체 코드까지 직접 검토해야 할 때:
+
+| 무엇 | URL |
+|---|---|
+| 🌐 OpenClaw 공식 웹사이트 (제품 소개·문서) | **https://clawbro.ai** |
+| 🐙 OpenClaw 본체 GitHub | **https://github.com/openclaw/openclaw** |
+| 📦 본체 릴리스 페이지 | https://github.com/openclaw/openclaw/releases |
+| 📖 본체 공식 문서 | https://github.com/openclaw/openclaw#readme |
+
+본체를 **수동으로 미리 받아두기** (선택, `./openclaw install` 의 clone 단계를 건너뛰고 싶을 때):
+
+```bash
+# Git
+git clone https://github.com/openclaw/openclaw.git ~/openclaw
+
+# 또는 ZIP: 위 GitHub 페이지 → 초록 [<> Code] → Download ZIP →
+unzip ~/Downloads/openclaw-main.zip -d ~/
+mv ~/openclaw-main ~/openclaw
+```
+
+이렇게 미리 받아두면 `~/openclaw` 에 본체가 있으니 `./openclaw install` 이 그걸 그대로 사용합니다 (clone 단계 [skip]). 다른 위치에 받았으면 `.env` 의 `OPENCLAW_DIR` 만 수정하세요.
+
+> ⚠ **주의**: 본체 저장소 URL 이나 클론 위치를 바꾸려면 `.env` 의 `OPENCLAW_REPO`, `OPENCLAW_DIR` 두 변수를 함께 맞춰주세요. 첫 실행 시 `.env` 가 자동 생성되니 그때 편집하면 됩니다.
 
 ### 5단계 — `openclaw` 첫 실행
 
@@ -391,6 +426,15 @@ ollama list
 
 ### Step 4 — Get openclaw-workspace source
 
+> 🤔 **Wait, two repos? Which one am I downloading?**
+>
+> | Repository | Owner | What it is | Do I need to download it? |
+> |---|---|---|---|
+> | 🟢 **`GoGoComputer/openclaw-workspace`** (this repo) | Park Sungmo (maintainer of this tool) | macOS automation tool — the `./openclaw` CLI, security compose overrides, this guide | **Yes — that's what Step 4 fetches** |
+> | 🔵 **`openclaw/openclaw`** (OpenClaw upstream) | Official OpenClaw team | The AI agent itself (Python/JS code, container image source) | **No need to fetch manually** — `./openclaw install` clones it into `~/openclaw` automatically |
+>
+> So in Step 4 you only download **this repo (`GoGoComputer/openclaw-workspace`)**. The upstream agent is fetched for you in Step 5. Want to peek at the upstream too? See [💡 Visiting the OpenClaw upstream site](#-visiting-the-openclaw-upstream-site-optional) below.
+
 #### Option A — Git clone (recommended)
 
 ```bash
@@ -422,6 +466,32 @@ cd openclaw-workspace
    tar -xzf ~/Downloads/openclaw-workspace-0.1.6.tar.gz
    mv openclaw-workspace-0.1.6 openclaw-workspace
    ```
+
+#### 💡 Visiting the OpenClaw upstream site (optional)
+
+If you want to preview what OpenClaw is, or if **corporate IT review** requires looking at the upstream code itself:
+
+| What | URL |
+|---|---|
+| 🌐 OpenClaw official website (product, docs) | **https://clawbro.ai** |
+| 🐙 OpenClaw upstream GitHub | **https://github.com/openclaw/openclaw** |
+| 📦 Upstream releases | https://github.com/openclaw/openclaw/releases |
+| 📖 Upstream README | https://github.com/openclaw/openclaw#readme |
+
+Pre-fetching the upstream manually (optional — skips the clone step in `./openclaw install`):
+
+```bash
+# Git
+git clone https://github.com/openclaw/openclaw.git ~/openclaw
+
+# Or ZIP: GitHub page → green [<> Code] → Download ZIP →
+unzip ~/Downloads/openclaw-main.zip -d ~/
+mv ~/openclaw-main ~/openclaw
+```
+
+If `~/openclaw` already exists, `./openclaw install` will skip the clone step. Using a different location? Edit `OPENCLAW_DIR` in `.env`.
+
+> ⚠ If you change the upstream URL or location, keep `OPENCLAW_REPO` and `OPENCLAW_DIR` in `.env` consistent. The `.env` file is auto-created on first run, so you can edit it then.
 
 ### Step 5 — First run of `openclaw`
 
