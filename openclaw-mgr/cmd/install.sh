@@ -137,37 +137,22 @@ if [ "$ENABLE_OLLAMA" = "1" ]; then
   }
   run_step ollama_start "Ollama 데몬 시작" -- step_ollama_start
 
-  step_ollama_models() {
-    local models="${OLLAMA_MODELS:-}"
-    if [ -z "$models" ]; then
-      info "OLLAMA_MODELS 가 비어 있어 다운로드 단계를 스킵합니다."
-      return 0
+  step_ollama_check() {
+    # 이미 설치된 모델 목록 표시 (자동 다운로드 하지 않음)
+    local list
+    list="$(ollama list 2>/dev/null | tail -n +2 | awk 'NF{print $1}' || true)"
+    if [ -n "$list" ]; then
+      ok "이미 설치된 Ollama 모델:"
+      printf '%s\n' "$list" | while IFS= read -r m; do
+        printf '    ✔ %s\n' "$m"
+      done
+    else
+      info "설치된 Ollama 모델이 없습니다."
+      info "원하는 모델은 수동으로 추가하세요:  ollama pull <모델명>"
+      info "M5 Pro 24GB 추천: ollama pull qwen2.5-coder:14b"
     fi
-    if ! sec_validate_models "$models"; then
-      err "OLLAMA_MODELS 형식이 올바르지 않습니다: $models"
-      return 1
-    fi
-    # RAM 경고
-    eval "$(detect_hw)"
-    local m
-    IFS=','
-    for m in $models; do
-      m="$(printf '%s' "$m" | tr -d '[:space:]')"
-      [ -z "$m" ] && continue
-      case "$m" in
-        *:1[3-9]b*|*:[2-9][0-9]b*|*:70b*)
-          if [ "${ram_gb:-0}" -lt 32 ]; then
-            warn "$m 은 24GB RAM 에서 부담스럽습니다. 계속하려면 확인하세요."
-            confirm "$m 을 계속 다운로드?" n || continue
-          fi
-          ;;
-      esac
-      info "ollama pull $m"
-      ollama pull "$m" || warn "$m pull 실패 — 다음 모델 진행"
-    done
-    unset IFS
   }
-  run_step ollama_models "Ollama 모델 다운로드" -- step_ollama_models
+  run_step ollama_check "설치된 Ollama 모델 확인" -- step_ollama_check
 else
   info "ENABLE_OLLAMA=0 — Ollama 단계 스킵"
 fi
@@ -260,6 +245,31 @@ run_step env_merge ".env 머지" -- step_env_merge
 # ── 7. compose up ────────────────────────────────────────────────────────────
 step_compose_up() {
   cd "$OPENCLAW_DIR"
+
+  # ── 기존 이미지·컨테이너 사전 감지 ────────────────────────────────────────
+  local existing_images
+  existing_images="$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null \
+    | grep -iE 'openclaw|anthropic|claude' || true)"
+  if [ -n "$existing_images" ]; then
+    info "기존 Docker 이미지 발견 — 재사용합니다:"
+    printf '%s\n' "$existing_images" | while IFS= read -r img; do
+      printf '    ✔ %s\n' "$img"
+    done
+  else
+    info "OpenClaw Docker 이미지 없음 — 처음 실행 시 pull 됩니다."
+  fi
+
+  local existing_containers
+  existing_containers="$(docker ps -a --format '{{.Names}}\t{{.Status}}' 2>/dev/null \
+    | grep -iE 'openclaw' || true)"
+  if [ -n "$existing_containers" ]; then
+    info "기존 컨테이너 발견:"
+    printf '%s\n' "$existing_containers" | while IFS= read -r ctr; do
+      printf '    ✔ %s\n' "$ctr"
+    done
+  fi
+  # ───────────────────────────────────────────────────────────────────────────
+
   local files="-f docker-compose.yml"
   [ -f compose.yml ] && files="-f compose.yml"
   # 보안 override (서비스명 openclaw-gateway/openclaw-cli 에 맞게 수정됨)
@@ -276,7 +286,8 @@ step_compose_up() {
   local net="$OPENCLAW_MGR_DIR/compose.network.yml"
   [ -f "$net" ] && files="$files -f $net"
   # shellcheck disable=SC2086
-  docker compose $files up -d
+  # --pull missing: 이미 받은 이미지는 재다운로드 안 함
+  docker compose $files up -d --pull missing
 }
 run_step compose_up "OpenClaw 컨테이너 시작" -- step_compose_up
 
@@ -319,7 +330,7 @@ step_lockdown() {
   [ -f "$sec" ] && files="$files -f $sec"
   [ -f "$net" ] && files="$files -f $net"
   # shellcheck disable=SC2086
-  docker compose $files up -d
+  docker compose $files up -d --pull missing
 }
 run_step lockdown "네트워크 격리(isolated) 적용" -- step_lockdown
 

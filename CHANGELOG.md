@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.4 — 2026-04-25
+- `openclaw install`: removed bulk Ollama model auto-download (`step_ollama_models` deleted)
+- `openclaw install`: new `step_ollama_check` — detects and displays already-installed Ollama models before proceeding
+- `step_compose_up` / `step_lockdown`: pre-detect existing OpenClaw Docker images and containers, display them; use `--pull missing` to avoid re-downloading
+
 ## v0.2.3 — 2026-04-25
 - `openclaw install`: added directory banner at start (shows exact paths before installing) and at completion (confirms actual paths created)
 - `scripts/install.sh`: added directory summary in completion banner (tool path, future agent/config/backup locations)
