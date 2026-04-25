@@ -93,8 +93,9 @@ clang --version
    | 1 | **Rosetta installation failed** (Apple Silicon만, 가끔) | **[Disable Rosetta]** 클릭. OpenClaw 이미지는 ARM64 네이티브라 불필요. ([상세](TROUBLESHOOTING.md#docker-desktop---rosetta-installation-failed--vzerrordomain-code1-apple-silicon)) |
    | 2 | **A new version of Docker Desktop is available** | **[Update and Restart]** — 1~2분 후 자동 재시작 |
    | 3 | **Docker needs privileged access** + 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → [OK]. 1회성 권한. |
-   | 4 | **Welcome to Docker** + 사용 목적 설문 | 원하면 작성, **[Skip]** 가능 |
-   | 5 | 우측 상단 알림 "**'Docker' can run in the background**" | 무시. Docker 가 메뉴바에 살아 있다는 뜻 (정상) |
+   | 4 | **Complete the installation of Docker Desktop** — *Use recommended settings* ↔ *Use advanced settings* | **● Use recommended settings (requires password)** 선택 → **[Finish]**. 추천 설정은 `docker` CLI symlink·가상화 헬퍼·네트워크 권한을 자동 활성. OpenClaw 가 `docker` 명령을 찾으려면 필수. *Advanced* 는 설치 경로를 직접 지정하려는 사용자용. |
+   | 5 | **Welcome to Docker** + 사용 목적 설문 | 원하면 작성, **[Skip]** 가능 |
+   | 6 | 우측 상단 알림 "**'Docker' can run in the background**" | 무시. Docker 가 메뉴바에 살아 있다는 뜻 (정상) |
 
 6. 고래 아이콘이 멈춘 상태(움직이지 않음) = 준비 완료.
 
@@ -347,8 +348,9 @@ clang --version
    | 1 | **Rosetta installation failed** (Apple Silicon only, sometimes) | Click **[Disable Rosetta]**. OpenClaw images are ARM64-native — Rosetta isn't needed. ([details](TROUBLESHOOTING.md#docker-desktop---rosetta-installation-failed--vzerrordomain-code1-apple-silicon)) |
    | 2 | **A new version of Docker Desktop is available** | Click **[Update and Restart]** — auto-restarts in ~1–2 min |
    | 3 | **Docker needs privileged access** + macOS password prompt | Enter your macOS login password (Touch ID works) → [OK]. One-time permission. |
-   | 4 | **Welcome to Docker** + usage survey | Fill if you want, or **[Skip]** |
-   | 5 | Top-right notification: "**'Docker' can run in the background**" | Ignore. Just means Docker lives in the menu bar (normal). |
+   | 4 | **Complete the installation of Docker Desktop** — *Use recommended settings* vs *Use advanced settings* | Choose **● Use recommended settings (requires password)** → **[Finish]**. Recommended sets up the `docker` CLI symlink, virtualization helper, and network permissions automatically — OpenClaw needs the symlink to find `docker`. *Advanced* is only for users who want to pick install paths manually. |
+   | 5 | **Welcome to Docker** + usage survey | Fill if you want, or **[Skip]** |
+   | 6 | Top-right notification: "**'Docker' can run in the background**" | Ignore. Just means Docker lives in the menu bar (normal). |
 
 6. Whale stops animating = ready.
 

@@ -70,8 +70,9 @@ arch -x86_64 echo ok    # Rosetta 정상 작동 시: ok
 |---|---|---|
 | 1 | "**A new version of Docker Desktop is available**" 업데이트 안내 | **[Update and Restart]** 또는 **[Install Update]** 클릭. 길어야 1~2분, 자동 재시작. (지금은 [Skip] 가능하지만 빨리 깔수록 좋음.) |
 | 2 | "**Docker Desktop needs privileged access**" + macOS 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → **[OK]**. 이건 Docker 가 가상화 헬퍼·네트워크 드라이버를 설치하기 위한 1회성 권한입니다. |
-| 3 | "**Welcome to Docker**" / 설문 (사용 목적 등) | 원하면 작성, **[Skip]** 도 가능. OpenClaw 와 무관. |
-| 4 | 우측 상단 알림 — "**'Docker' can run in the background. You can manage background activity in Login Items & Extensions.**" | macOS 의 정보성 알림. **그냥 무시** 하면 됩니다. 의미: Docker 데몬이 메뉴바에 살아 있는다는 뜻 (정상). 자동시작이 싫으면 **시스템 설정 → 일반 → 로그인 항목 → 백그라운드 항목** 에서 `Docker` 토글 OFF. |
+| 4 | "**Complete the installation of Docker Desktop**" — *Use recommended settings (requires password)* ↔ *Use advanced settings* | **● Use recommended settings** 선택 → **[Finish]**. 추천 설정이 `docker` CLI symlink·가상화 헬퍼·네트워크 권한을 자동으로 잡아주며, OpenClaw 가 `docker` 명령을 PATH 에서 찾으려면 필수입니다. **Advanced** 는 설치 경로를 직접 지정하고 싶은 경우에만 — 일반 사용자에게는 불필요, 잘못 건드리면 OpenClaw 가 docker 명령을 못 찾을 수 있습니다. 모든 항목은 추후 Settings 에서 변경 가능. |
+| 5 | "**Welcome to Docker**" / 설문 (사용 목적 등) | 원하면 작성, **[Skip]** 도 가능. OpenClaw 와 무관. |
+| 6 | 우측 상단 알림 — "**'Docker' can run in the background. You can manage background activity in Login Items & Extensions.**" | macOS 의 정보성 알림. **그냥 무시** 하면 됩니다. 의미: Docker 데몬이 메뉴바에 살아 있는다는 뜻 (정상). 자동시작이 싫으면 **시스템 설정 → 일반 → 로그인 항목 → 백그라운드 항목** 에서 `Docker` 토글 OFF. |
 
 ### ⚠️ 비밀번호 다이얼로그가 의심스러우면
 
