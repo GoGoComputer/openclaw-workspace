@@ -1,0 +1,188 @@
+# 🦙 Ollama 입문 가이드 / Beginner Guide
+
+> 🇰🇷 **3분 안에**: Ollama 가 뭔지, 왜 OpenClaw 가 이걸 쓰는지, 모델은 어디 저장되는지.
+> 🇬🇧 **In 3 minutes**: what Ollama is, why OpenClaw uses it, where models live.
+
+---
+
+## 🇰🇷 한국어
+
+### Ollama 가 뭐예요?
+
+**Ollama 는 "내 맥북에서 돌아가는 ChatGPT 같은 LLM 실행기"** 입니다.
+
+- ChatGPT / Claude 같은 클라우드 LLM 은 OpenAI / Anthropic 서버에서 돕니다 → 인터넷 필요, 데이터 외부 전송, 사용료.
+- **Ollama** 는 같은 종류의 모델 (Llama, Qwen, Mistral, EXAONE…) 을 **여러분 컴퓨터 안에서** 돌립니다 → 인터넷 불필요, 데이터 외부 안 나감, 무료.
+
+```
+[사용자 질문] ──▶ Ollama (내 맥북 RAM/GPU) ──▶ [답변]
+                  ↑
+                  모델 파일 (~/. ollama/models 에 저장)
+```
+
+### 왜 OpenClaw 가 Ollama 를 쓰나요?
+
+OpenClaw 는 코딩·웹 탐색을 직접 해주는 AI 에이전트인데, 매번 OpenAI API 부르면:
+1. 돈이 듭니다 (토큰당 과금)
+2. 코드·파일이 외부로 나갑니다 (보안 문제)
+3. 인터넷 끊기면 못 씁니다
+
+**Ollama 를 쓰면 셋 다 해결** — 무료 + 100% 로컬 + 오프라인 가능.
+
+### 어떻게 설치되나요?
+
+`openclaw install` 한 번이면 끝. 이게 알아서 합니다:
+
+```bash
+brew install ollama          # 1) Ollama 자체 설치
+brew services start ollama   # 2) 백그라운드로 항상 켜둠
+ollama pull qwen2.5-coder:7b # 3) 추천 모델 다운 (~4.7GB)
+```
+
+직접 깔아도 똑같이 동작합니다 (`brew install ollama && ollama pull <모델>`).
+
+### 모델 (Model) 이란?
+
+모델 = AI의 "두뇌 파일". 크기가 클수록 똑똑하지만 RAM/디스크를 더 먹습니다.
+
+| 이름 표기 | 뜻 | 예시 |
+|---|---|---|
+| `qwen2.5-coder:7b` | "Qwen 2.5 Coder 모델, 7B 파라미터 버전" | 코딩 추천 |
+| `llama3.1:8b` | "Llama 3.1, 8B 파라미터" | 범용 |
+| `solar-pro:22b` | "Upstage Solar Pro, 22B" | 강력하지만 13GB 차지 |
+| `exaone3.5:7.8b` | "LG EXAONE 3.5, 7.8B" | 한국어 강함 |
+
+**24GB RAM 맥북 권장**: 7B~8B 모델. 13B 이상은 느려지거나 swap 발생.
+
+### 자주 쓰는 명령
+
+```bash
+ollama list                      # 내가 받아둔 모델 전부 보기
+ollama pull llama3.1:8b          # 새 모델 다운
+ollama rm llama3.1:8b            # 모델 삭제 (디스크 회수)
+ollama run llama3.1:8b           # 터미널에서 직접 대화 (나가기: /bye)
+ollama ps                        # 지금 메모리에 로드된 모델
+```
+
+OpenClaw 에서 위 작업을 한 줄로:
+
+```bash
+openclaw models                  # ollama list + .env 통합 보기
+openclaw models add llama3.1:8b  # .env 등록 + 자동 pull
+openclaw models suggest          # 24GB 추천 모델 목록
+```
+
+### 모델은 어디 저장되나요?
+
+```
+~/.ollama/models/    # 보통 수 GB ~ 수십 GB. 디스크 부족하면 여기부터 점검.
+```
+
+청소: `openclaw clean --all` 또는 직접 `ollama rm <이름>`.
+
+### "Ollama 서버" 라는 건?
+
+`brew services start ollama` 가 항상 백그라운드에서 띄우는 작은 HTTP 서버 (포트 `11434`).
+- 호스트(맥북) 에서: `http://localhost:11434`
+- Docker 컨테이너 안에서: `http://host.docker.internal:11434`
+
+OpenClaw 컨테이너는 **두 번째 주소** 로 호스트 Ollama 에 접속해 모델을 빌려 씁니다 (컨테이너 안에 따로 모델 설치 안 함 = 디스크 절약).
+
+> ⚠️ `isolated` 네트워크 모드에서는 이 연결도 차단됩니다. 로컬 LLM 쓸 때는 `openclaw network online --restart`.
+
+### 더 알아보기
+- 공식: https://ollama.com
+- 모델 검색: https://ollama.com/library
+- 트러블슈팅: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+---
+
+## 🇬🇧 English
+
+### What is Ollama?
+
+**Ollama is "ChatGPT-style LLMs running on your own Mac."**
+
+- Cloud LLMs (ChatGPT, Claude) run on OpenAI / Anthropic servers → needs internet, data leaves your machine, costs money.
+- **Ollama** runs the same family of models (Llama, Qwen, Mistral, EXAONE…) **inside your computer** → no internet, no data egress, free.
+
+```
+[your prompt] ──▶ Ollama (your Mac's RAM/GPU) ──▶ [answer]
+                   ↑
+                   model files (stored in ~/.ollama/models)
+```
+
+### Why does OpenClaw use Ollama?
+
+OpenClaw is an AI agent that runs code and browses the web. Calling OpenAI's API every time means:
+1. Token costs add up
+2. Your code & files go to a third-party server
+3. You can't use it offline
+
+**Ollama solves all three** — free, 100% local, works offline.
+
+### How is it installed?
+
+One `openclaw install` does it for you:
+
+```bash
+brew install ollama          # 1) install Ollama itself
+brew services start ollama   # 2) keep it running in the background
+ollama pull qwen2.5-coder:7b # 3) pull the default coding model (~4.7GB)
+```
+
+You can install it manually too — same result.
+
+### What is a "model"?
+
+A model is the AI's "brain file". Bigger = smarter but uses more RAM and disk.
+
+| Name | Meaning | Use |
+|---|---|---|
+| `qwen2.5-coder:7b` | Qwen 2.5 Coder, 7B parameters | recommended for coding |
+| `llama3.1:8b` | Llama 3.1, 8B parameters | general purpose |
+| `solar-pro:22b` | Upstage Solar Pro, 22B | powerful but ~13GB |
+| `exaone3.5:7.8b` | LG EXAONE 3.5, 7.8B | strong on Korean |
+
+**24GB RAM Mac recommendation**: 7B–8B. Above 13B will swap or run slowly.
+
+### Common commands
+
+```bash
+ollama list                      # show all models you've pulled
+ollama pull llama3.1:8b          # download a new one
+ollama rm llama3.1:8b            # delete (reclaim disk)
+ollama run llama3.1:8b           # chat directly (exit with /bye)
+ollama ps                        # currently-loaded models in RAM
+```
+
+Same things via OpenClaw, in one line:
+
+```bash
+openclaw models                  # ollama list + your .env entries
+openclaw models add llama3.1:8b  # update .env and pull
+openclaw models suggest          # 24GB-Mac picks
+```
+
+### Where do models live?
+
+```
+~/.ollama/models/    # usually several GB to tens of GB
+```
+
+Clean up: `openclaw clean --all` or `ollama rm <name>`.
+
+### What's the "Ollama server"?
+
+`brew services start ollama` runs a tiny HTTP server on port `11434`:
+- From your Mac: `http://localhost:11434`
+- From inside a Docker container: `http://host.docker.internal:11434`
+
+The OpenClaw container connects via the **second address**, reusing your host Ollama (no duplicated model files inside the container).
+
+> ⚠️ The default `isolated` network mode blocks this too. To use local LLMs run `openclaw network online --restart`.
+
+### Learn more
+- Official: https://ollama.com
+- Model library: https://ollama.com/library
+- Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
