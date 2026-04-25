@@ -102,8 +102,8 @@ clang --version
 
 확인:
 ```bash
-docker --version       # Docker version 27.x ...
-docker compose version # Docker Compose version v2.x ...
+docker --version       # Docker version XX.Y.Z, build ...
+docker compose version # Docker Compose version vX.Y.Z (Compose v2 이상이면 OK)
 docker info            # Server: ... 가 보이면 데몬 정상
 ```
 
@@ -293,12 +293,12 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 다음과 비슷한 표가 나와야 정상:
 ```
 [doctor]
-OS                    ✓ macOS 15.x
+OS                    ✓ macOS (버전)
 Xcode CLT             ✓
 Homebrew              ⚠ (없어도 무방 — 수동 설치 모드)
-Docker                ✓ 27.x
+Docker                ✓ (버전 표시)
 Docker daemon         ✓ running
-Ollama                ✓ 0.x  (선택)
+Ollama                ✓ (버전 표시)  (선택)
 Ollama daemon         ✓
 RAM                   ✓ 24GB
 Disk free             ✓ 60GB
@@ -708,12 +708,12 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 Expect something like:
 ```
 [doctor]
-OS                    ✓ macOS 15.x
+OS                    ✓ macOS (version)
 Xcode CLT             ✓
 Homebrew              ⚠ (absent but not required in manual mode)
-Docker                ✓ 27.x
+Docker                ✓ (version)
 Docker daemon         ✓ running
-Ollama                ✓ 0.x  (optional)
+Ollama                ✓ (version)  (optional)
 RAM                   ✓ 24GB
 Disk free             ✓ 60GB
 ```
