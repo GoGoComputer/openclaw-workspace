@@ -55,6 +55,29 @@ sed -i '' '/^docker_start=done$/d' ~/.openclaw-mgr/state
 ./openclaw install
 ```
 
+### `brew install` 중 `curl: (56) ... error: 502` / GitHub 502 Bad Gateway
+
+GitHub (codeload) 일시 장애입니다. 우리 Formula·SHA256 문제가 아니므로 잠시 후 재시도하면 됩니다.
+
+```bash
+# 1) 같은 명령 다시
+brew install gogocomputer/openclaw/openclaw-workspace
+
+# 2) 그래도 안 되면 캐시 비우고 강제 재시도
+brew cleanup -s
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install --force gogocomputer/openclaw/openclaw-workspace
+
+# 3) tarball 자체가 살아있는지 직접 확인 (200 이면 OK)
+curl -sIL -o /dev/null -w "%{http_code}\n" \
+  https://github.com/GoGoComputer/openclaw-workspace/archive/refs/tags/v0.1.6.tar.gz
+```
+
+> 💡 502 / 503 / 504 는 모두 동일한 처방. GitHub 상태는 https://www.githubstatus.com 에서 확인.
+
+### `zsh: unknown file attribute: ^-` 가 다음 줄에 떴다
+
+이전 출력 줄의 글리프(`✘`, `✓`)를 zsh 가 다음 명령의 일부로 잘못 해석한 결과입니다. **무해**하므로 무시하고 다음 명령을 입력하세요.
+
 ### 백업 복원 시 `tar: invalid option`
 
 macOS 의 BSD tar 와 GNU tar 차이. 이 도구는 BSD tar 호환 옵션만 사용하지만, 외부 백업이라면 `brew install gnu-tar` 후 `gtar` 로 직접 풀어보세요.
