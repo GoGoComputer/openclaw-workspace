@@ -252,6 +252,7 @@ Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and
 ./openclaw clean --status   # see what's using space
 ./openclaw clean            # safe step-by-step cleanup
 ```
+Docker and Ollama accumulate caches and unused images over time. These commands never touch your data (volumes, `.env`, backups) — they only clear caches and unused images.
 </details>
 
 <details>
