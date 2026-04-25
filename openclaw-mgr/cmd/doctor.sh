@@ -30,6 +30,7 @@ _row() {
     "$label" \
     "$C_DIM" "${value:-—}" "$C_RESET"
   [ -n "$hint" ] && printf '       %s↳ %s%s\n' "$C_DIM" "$hint" "$C_RESET"
+  return 0
 }
 
 title "OpenClaw 시스템 진단"
