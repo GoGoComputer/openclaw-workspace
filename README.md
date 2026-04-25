@@ -55,6 +55,25 @@ cd openclaw-workspace/openclaw-mgr
 
 ---
 
+## 📚 문서 가이드
+
+> 어떤 문서부터 봐야 할지 모르겠다면 아래 표를 참고하세요. 한국어/영어 모두 완비.
+
+| 누구 | 어디부터 | 무엇이 있나 |
+|---|---|---|
+| 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
+| 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
+| 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
+| 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
+| 🛡 **보안이 궁금한 사람** | [SECURITY.md](SECURITY.md) · 본문 [🔒 보안 주의](#-보안-주의-꼭-읽으세요) · [🔒 네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) | 위협 모델·취약점 신고 절차 |
+| 🧠 **내부 동작 알고 싶음** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 디스패처·멱등 설계·compose override (KO+EN 병기) |
+| 🚑 **문제가 생겼을 때** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 흔한 오류·해결 명령 (KO+EN 병기) |
+| 🤝 **기여하고 싶음** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | 코드 스타일·PR 절차 (KO+EN 병기) |
+| 📦 **릴리스 내역** | [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | 변경 사항 (KO+EN 병기) |
+| 🍺 **Homebrew tap** | [github.com/GoGoComputer/homebrew-openclaw](https://github.com/GoGoComputer/homebrew-openclaw) | brew formula 저장소 |
+
+---
+
 ## 🤔 이게 뭐예요?
 
 [**OpenClaw**](https://clawbro.ai)는 사용자 PC에서 셸 명령어 실행·파일 시스템 접근·웹 탐색을 직접 수행할 수 있는 강력한 오픈소스 AI 에이전트입니다. 강력한 만큼 보안이 중요해서, **반드시 Docker 같은 격리된 환경(샌드박스)** 에서 실행해야 합니다.

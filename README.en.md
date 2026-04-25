@@ -55,6 +55,25 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 ---
 
+## 📚 Documentation map
+
+> Not sure where to start? Pick your row. Korean and English are both available.
+
+| Who you are | Start here | What's inside |
+|---|---|---|
+| 🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
+| 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |
+| 👤 **General user** | [README.en.md](README.en.md) (this file) | Command catalog · `.env` · network isolation · FAQ |
+| 🇰🇷 **일반 사용자 (KO)** | [README.md](README.md) | Korean main README |
+| 🛡 **Security-minded** | [SECURITY.md](SECURITY.md) · [🔒 Security section](#-security-please-read) · [🔒 Network isolation](#-network-isolation-modes-explicit-outbound-kill-switch) | Threat model, vulnerability reporting |
+| 🧠 **Want to know how it works** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Dispatcher, idempotent design, compose overrides (bilingual) |
+| 🚑 **When things break** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common errors and fixes (bilingual) |
+| 🤝 **Want to contribute** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Code style, PR process (bilingual) |
+| 📦 **Release notes** | [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | What changed (bilingual) |
+| 🍺 **Homebrew tap** | [github.com/GoGoComputer/homebrew-openclaw](https://github.com/GoGoComputer/homebrew-openclaw) | brew formula repo |
+
+---
+
 ## 🤔 What is this?
 
 [**OpenClaw**](https://clawbro.ai) is a powerful open-source AI agent that can run shell commands, touch files, and browse the web on your behalf. Because of that power, you must run it inside a Docker sandbox. This project automates the setup on a brand-new macOS machine.
