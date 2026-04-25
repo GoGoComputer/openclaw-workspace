@@ -44,7 +44,6 @@ OpenClaw 셀프호스트 자동화 도구의 첫 공개 릴리스입니다.
 
 ### ⚠️ 알려진 제한
 
-- **OpenClaw 공식 코어 저장소 URL 미확정** — `.env` 의 `OPENCLAW_REPO` 를 사용자가 채워야 컨테이너 단계가 진행됩니다.
 - macOS 전용 (Linux/Windows 미지원)
 - 레퍼런스 머신: MacBook Pro 16" M5 Pro / 24GB RAM (Apple Silicon arm64)
 
@@ -97,7 +96,6 @@ First public release of the OpenClaw self-host automation tool.
 
 ### ⚠️ Known limitations
 
-- **Official OpenClaw core repo URL is not yet confirmed** — you must set `OPENCLAW_REPO` in `.env` for the container step to proceed.
 - macOS only (no Linux/Windows)
 - Reference machine: MacBook Pro 16" M5 Pro / 24GB RAM (Apple Silicon arm64)
 

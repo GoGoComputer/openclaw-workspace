@@ -42,7 +42,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 ./openclaw schedule enable # daily auto-update at 3 AM (optional)
 ```
 
-> ⚠️ **The official OpenClaw core repository URL is not yet confirmed.** You must set `OPENCLAW_REPO` in `.env` for the container step to proceed. If you know the canonical URL, please open an [issue](https://github.com/GoGoComputer/openclaw-workspace/issues/new) or PR.
+> ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — already set as the default in `.env.example`. Just `cp .env.example .env` and you're ready.
 
 ---
 
@@ -85,7 +85,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 Every variable in `.env.example` is commented. Highlights:
 
 ```bash
-OPENCLAW_REPO="https://github.com/<owner>/openclaw.git"  # required
+OPENCLAW_REPO="https://github.com/openclaw/openclaw.git"  # official URL
 OPENCLAW_DIR="$HOME/openclaw"                             # clone target
 OPENCLAW_PORT="8000"                                      # always bound to 127.0.0.1
 ENABLE_OLLAMA="1"                                         # 0 = external API only

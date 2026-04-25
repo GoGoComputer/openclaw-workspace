@@ -42,7 +42,7 @@ open -e .env       # 또는 nano .env
 ./openclaw schedule enable # 매일 새벽 자동 업데이트 (선택)
 ```
 
-> ⚠️ **OpenClaw 공식 코어 저장소 URL이 아직 미확정입니다.** `.env` 의 `OPENCLAW_REPO` 를 채워야 컨테이너 단계가 진행됩니다. 정확한 URL을 아시는 분은 [Issue](https://github.com/GoGoComputer/openclaw-workspace/issues/new) 또는 PR 로 알려주세요.
+> ℹ️ **OpenClaw 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env.example` 에 기본값으로 설정되어 있습니다. `.env` 를 만들면 바로 사용 가능합니다.
 
 ---
 
@@ -87,7 +87,7 @@ open -e .env       # 또는 nano .env
 `.env.example` 의 모든 변수에 주석이 달려 있습니다. 핵심:
 
 ```bash
-OPENCLAW_REPO="https://github.com/<owner>/openclaw.git"  # 필수
+OPENCLAW_REPO="https://github.com/openclaw/openclaw.git"  # 공식 URL
 OPENCLAW_DIR="$HOME/openclaw"                             # 클론 위치
 OPENCLAW_PORT="8000"                                      # 항상 127.0.0.1 만
 ENABLE_OLLAMA="1"                                         # 0=외부 API만 사용
