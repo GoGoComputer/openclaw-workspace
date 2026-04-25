@@ -18,6 +18,18 @@
 
 > "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
 
+### 옵션 A — Homebrew (권장 · 가장 쉬움)
+
+```bash
+brew tap gogocomputer/openclaw
+brew install openclaw-workspace
+openclaw                        # 대화형 메뉴 (한국어/영어 자동)
+```
+
+업데이트는 `brew update && brew upgrade openclaw-workspace`. 끝.
+
+### 옵션 B — git clone (소스 직접 사용 · 개발자용)
+
 ```bash
 # 1) 코드 받기
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
@@ -35,11 +47,11 @@ cd openclaw-workspace/openclaw-mgr
 설치 중 Docker Desktop 실행 동의/Xcode CLT 다이얼로그가 뜰 수 있습니다. 따라가면 됩니다. 끝나면:
 
 ```bash
-./openclaw doctor          # 모두 ✓ 인지 확인
+./openclaw doctor          # 모두 ✓ 인지 확인 (brew 설치 시: openclaw doctor)
 ./openclaw schedule enable # 매일 새벽 자동 업데이트 (선택)
 ```
 
-> ℹ️ **OpenClaw 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동으로 생성**됩니다. 별도 설정 없이 `./openclaw install` 바로 실행 가능합니다.
+> ℹ️ **OpenClaw 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동으로 생성**됩니다. 별도 설정 없이 `openclaw install` (또는 `./openclaw install`) 바로 실행 가능합니다.
 
 ---
 
@@ -436,8 +448,14 @@ shfmt -d -i 2 openclaw-mgr
 ```bash
 brew install gh
 gh auth login
-./scripts/publish.sh   # 저장소 생성·푸시·토픽·v0.1.0 릴리스까지 자동
+./scripts/publish.sh        # 메인 저장소 생성·푸시·토픽·v0.1.0 릴리스까지 자동
+./scripts/publish-tap.sh    # Homebrew tap (homebrew-openclaw) 자동 게시
 ```
+
+`publish-tap.sh` 는 `v0.1.0` tarball 의 SHA256 을 자동 계산하고
+`<owner>/homebrew-openclaw` 저장소를 생성/갱신합니다. 다른 owner 로 게시하려면
+`GH_OWNER=myorg ./scripts/publish-tap.sh`. 새 릴리스(예: v0.1.1) 후에는
+`TAG=v0.1.1 ./scripts/publish-tap.sh` 를 다시 실행하세요.
 
 ---
 

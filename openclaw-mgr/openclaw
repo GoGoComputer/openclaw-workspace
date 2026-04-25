@@ -16,10 +16,22 @@ VERSION="0.1.0"
 
 # .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
 # Auto-init: create .env from .env.example on first run — zero-config for beginners
-if [ ! -f "$OPENCLAW_MGR_DIR/.env" ] && [ -f "$OPENCLAW_MGR_DIR/.env.example" ]; then
-  cp -- "$OPENCLAW_MGR_DIR/.env.example" "$OPENCLAW_MGR_DIR/.env"
-  printf '\033[0;32m✔ .env 자동 생성됨 (.env.example 기본값 적용)\033[0m\n' >&2
+# Homebrew 설치 시 OPENCLAW_MGR_DIR 가 read-only 이므로, 쓰기 불가하면 ~/.openclaw-mgr/.env 로 폴백
+_user_state_dir="${OPENCLAW_MGR_HOME:-$HOME/.openclaw-mgr}"
+if [ ! -f "$OPENCLAW_MGR_DIR/.env" ] && [ ! -f "$_user_state_dir/.env" ] \
+   && [ -f "$OPENCLAW_MGR_DIR/.env.example" ]; then
+  if [ -w "$OPENCLAW_MGR_DIR" ]; then
+    cp -- "$OPENCLAW_MGR_DIR/.env.example" "$OPENCLAW_MGR_DIR/.env"
+    printf '\033[0;32m✔ .env 자동 생성됨 (%s)\033[0m\n' "$OPENCLAW_MGR_DIR/.env" >&2
+  else
+    mkdir -p -- "$_user_state_dir"
+    chmod 700 "$_user_state_dir"
+    cp -- "$OPENCLAW_MGR_DIR/.env.example" "$_user_state_dir/.env"
+    chmod 600 "$_user_state_dir/.env"
+    printf '\033[0;32m✔ .env 자동 생성됨 (%s)\033[0m\n' "$_user_state_dir/.env" >&2
+  fi
 fi
+unset _user_state_dir
 
 # .env 자동 로드 (있으면). 위치: 스크립트 디렉터리/.env  또는  $OPENCLAW_MGR_HOME/.env
 _load_env_file() {

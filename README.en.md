@@ -18,6 +18,18 @@
 
 > Never used a terminal? See [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) for a step-by-step walkthrough with example terminal output.
 
+### Option A — Homebrew (recommended · easiest)
+
+```bash
+brew tap gogocomputer/openclaw
+brew install openclaw-workspace
+openclaw                        # interactive menu (Korean/English auto-detected)
+```
+
+Update with `brew update && brew upgrade openclaw-workspace`. That's it.
+
+### Option B — git clone (run from source · for developers)
+
 ```bash
 # 1) Get the code
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
@@ -35,11 +47,11 @@ cd openclaw-workspace/openclaw-mgr
 You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. When done:
 
 ```bash
-./openclaw doctor          # everything ✓
+./openclaw doctor          # everything ✓ (brew install: just `openclaw doctor`)
 ./openclaw schedule enable # daily auto-update at 3 AM (optional)
 ```
 
-> ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — `.env` is **created automatically on first run**. Just run `./openclaw install` — no manual setup needed.
+> ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — `.env` is **created automatically on first run**. Just run `openclaw install` (or `./openclaw install`) — no manual setup needed.
 
 ---
 
@@ -394,8 +406,13 @@ See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md).
 ```bash
 brew install gh
 gh auth login
-./scripts/publish.sh   # creates repo, pushes, sets topics, makes v0.1.0 release
+./scripts/publish.sh        # creates main repo, pushes, sets topics, makes v0.1.0 release
+./scripts/publish-tap.sh    # creates Homebrew tap repo (homebrew-openclaw) automatically
 ```
+
+`publish-tap.sh` auto-computes the `v0.1.0` tarball SHA256 and creates/updates
+`<owner>/homebrew-openclaw`. Override owner with `GH_OWNER=myorg ./scripts/publish-tap.sh`.
+After a new release (e.g. v0.1.1), rerun with `TAG=v0.1.1 ./scripts/publish-tap.sh`.
 
 ---
 
