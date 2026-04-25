@@ -82,10 +82,11 @@ cd openclaw-workspace/openclaw-mgr
 
 | 누구 | 어디부터 | 무엇이 있나 |
 |---|---|---|
+| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 텀미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
-| � **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
-| �👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
+| 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
+| 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
 | 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
 | 🛡 **보안이 궁금한 사람** | [SECURITY.md](SECURITY.md) · 본문 [🔒 보안 주의](#-보안-주의-꼭-읽으세요) · [🔒 네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) | 위협 모델·취약점 신고 절차 |
 | 🧠 **내부 동작 알고 싶음** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 디스패처·멱등 설계·compose override (KO+EN 병기) |
