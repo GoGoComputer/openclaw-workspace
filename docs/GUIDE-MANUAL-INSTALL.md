@@ -929,6 +929,132 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 ./openclaw schedule enable     # 매일 자동 update 등록 (수동 동치는 launchd plist 작성 — 7단계 참조)
 ```
 
+### 5c단계 — 샌드박스 (Sandbox) + 보안 강화 설치
+
+> 🔒 **샌드박스란?** OpenClaw 에이전트가 코드를 실행할 때 **격리된 컨테이너** 안에서만 돌아가도록 제한합니다. 에이전트가 호스트 파일시스템 · 네트워크 · 프로세스에 직접 접근하지 못합니다. 보안이 중요하다면 반드시 활성화하세요.
+
+#### 샌드박스 동작 원리
+
+```
+[에이전트 요청]
+       ↓
+  openclaw-gateway (컨테이너)
+       ↓  docker.sock 을 통해
+  openclaw-sandbox (임시 컨테이너 — 코드 실행 후 즉시 폐기)
+       ↓
+  결과만 gateway 로 반환
+```
+
+- **`agents.defaults.sandbox.mode = non-main`** — 메인 에이전트 이외 모든 서브에이전트에 샌드박스 강제
+- **`agents.defaults.sandbox.scope = agent`** — 에이전트 단위 격리
+- **`agents.defaults.sandbox.workspaceAccess = none`** — 샌드박스 컨테이너에서 워크스페이스 직접 접근 차단
+
+#### 방법 A — 자동 (권장)
+
+```bash
+cd ~/DEV/openclaw
+
+# 샌드박스 활성화 + 보안 강화 빌드 + 기동 (한 번에)
+OPENCLAW_SANDBOX=1 ./docker-setup.sh
+```
+
+이 명령이 순서대로:
+1. Docker 이미지를 **Docker CLI 포함**으로 다시 빌드 (`--build-arg OPENCLAW_INSTALL_DOCKER_CLI=1`)
+2. `docker.sock` GID 자동 감지 → `docker-compose.sandbox.yml` 오버레이 생성 (소켓 마운트 + group_add)
+3. `agents.defaults.sandbox.mode/scope/workspaceAccess` 설정 적용
+4. gateway 재기동 (샌드박스 오버레이 포함)
+
+완료 메시지:
+```
+Sandbox enabled: mode=non-main, scope=agent, workspaceAccess=none
+Docs: https://docs.openclaw.ai/gateway/sandboxing
+```
+
+#### 방법 B — 수동 (각 단계 직접)
+
+```bash
+cd ~/DEV/openclaw
+
+# 1) Docker CLI 포함으로 이미지 재빌드
+DOCKER_BUILDKIT=1 docker build \
+  --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1 \
+  -t openclaw:local .
+
+# 2) 샌드박스 전용 이미지 빌드
+DOCKER_BUILDKIT=1 docker build \
+  -t openclaw-sandbox:bookworm-slim \
+  -f Dockerfile.sandbox .
+
+# 3) Docker socket GID 확인 (macOS)
+DOCKER_GID=$(stat -f '%g' /var/run/docker.sock)
+echo "DOCKER_GID=$DOCKER_GID"
+
+# 4) 샌드박스 compose 오버레이 생성
+cat > docker-compose.sandbox.yml <<EOF
+services:
+  openclaw-gateway:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID}"
+EOF
+
+# 5) 샌드박스 포함으로 기동
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.sandbox.yml \
+  up -d openclaw-gateway
+
+# 6) 샌드박스 설정 적용
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.mode non-main
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.scope agent
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.workspaceAccess none
+
+# 7) gateway 재기동 (설정 반영)
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.sandbox.yml \
+  up -d openclaw-gateway
+```
+
+#### 샌드박스 확인
+
+```bash
+# 컨테이너 상태
+docker compose ps
+# openclaw-gateway   running
+
+# 샌드박스 이미지 존재 확인
+docker images | grep sandbox
+# openclaw-sandbox   bookworm-slim   ...
+
+# 설정 확인
+docker compose exec openclaw-gateway \
+  node dist/index.js config get agents.defaults.sandbox
+# 예상 출력:
+# { mode: 'non-main', scope: 'agent', workspaceAccess: 'none' }
+```
+
+#### ⚠️ 보안 참고사항
+
+| 항목 | 내용 |
+|---|---|
+| `docker.sock` 마운트 | 샌드박스 컨테이너를 새로 띄우기 위해 필수. 단, gateway 컨테이너가 타협되면 호스트 docker 접근 가능 — 신뢰된 이미지만 사용 |
+| 샌드박스 이미지 | `Dockerfile.sandbox` 기반 `debian:bookworm-slim` — 최소 패키지만 포함 |
+| 네트워크 격리 | 샌드박스 자체는 `openclaw-cli` 와 동일한 `network_mode: service:openclaw-gateway` 사용. 추가 외부 차단은 `./openclaw network isolated --restart` 로 적용 |
+| 워크스페이스 접근 | `workspaceAccess=none` — 샌드박스가 호스트 파일 읽기 불가 |
+
+#### 샌드박스 비활성화 (원래대로)
+
+```bash
+cd ~/DEV/openclaw
+# sandbox 없이 재실행
+./docker-setup.sh     # OPENCLAW_SANDBOX 없으면 자동으로 sandbox.mode=off 으로 리셋
+```
+
 ### 6단계 — PATH 등록 (선택, 어디서나 `openclaw` 한 단어로 실행)
 
 ```bash
@@ -1736,6 +1862,132 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 You should now see **"All good 🎉"**. If `Auto-update ⚠ unconfigured` remains, that's just an optional launchd schedule:
 ```bash
 ./openclaw schedule enable
+```
+
+### Step 5c — Sandbox + Security Hardening
+
+> 🔒 **What is the sandbox?** When OpenClaw agents execute code, they run inside an **isolated container** — no direct access to your host filesystem, network, or processes. Enable this if security matters.
+
+#### How sandbox isolation works
+
+```
+[agent request]
+       ↓
+  openclaw-gateway (container)
+       ↓  via docker.sock
+  openclaw-sandbox (ephemeral container — destroyed after each exec)
+       ↓
+  result returned to gateway only
+```
+
+- **`agents.defaults.sandbox.mode = non-main`** — forces sandbox for all sub-agents (not the main agent shell)
+- **`agents.defaults.sandbox.scope = agent`** — isolation per agent
+- **`agents.defaults.sandbox.workspaceAccess = none`** — sandbox cannot read workspace files directly
+
+#### Method A — Automatic (recommended)
+
+```bash
+cd ~/DEV/openclaw
+
+# Enable sandbox + rebuild with Docker CLI + start (all at once)
+OPENCLAW_SANDBOX=1 ./docker-setup.sh
+```
+
+This command:
+1. Rebuilds the Docker image with Docker CLI included (`--build-arg OPENCLAW_INSTALL_DOCKER_CLI=1`)
+2. Auto-detects `docker.sock` GID → generates `docker-compose.sandbox.yml` overlay (socket mount + group_add)
+3. Applies `agents.defaults.sandbox.mode/scope/workspaceAccess` config
+4. Restarts the gateway (with sandbox overlay)
+
+Expected completion message:
+```
+Sandbox enabled: mode=non-main, scope=agent, workspaceAccess=none
+Docs: https://docs.openclaw.ai/gateway/sandboxing
+```
+
+#### Method B — Manual (step by step)
+
+```bash
+cd ~/DEV/openclaw
+
+# 1) Rebuild image with Docker CLI included
+DOCKER_BUILDKIT=1 docker build \
+  --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1 \
+  -t openclaw:local .
+
+# 2) Build the sandbox image
+DOCKER_BUILDKIT=1 docker build \
+  -t openclaw-sandbox:bookworm-slim \
+  -f Dockerfile.sandbox .
+
+# 3) Get Docker socket GID (macOS)
+DOCKER_GID=$(stat -f '%g' /var/run/docker.sock)
+echo "DOCKER_GID=$DOCKER_GID"
+
+# 4) Create sandbox compose overlay
+cat > docker-compose.sandbox.yml <<EOF
+services:
+  openclaw-gateway:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID}"
+EOF
+
+# 5) Start with sandbox overlay
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.sandbox.yml \
+  up -d openclaw-gateway
+
+# 6) Apply sandbox config
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.mode non-main
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.scope agent
+docker compose exec openclaw-gateway \
+  node dist/index.js config set agents.defaults.sandbox.workspaceAccess none
+
+# 7) Restart to apply config
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.sandbox.yml \
+  up -d openclaw-gateway
+```
+
+#### Verify sandbox
+
+```bash
+# Container status
+docker compose ps
+# openclaw-gateway   running
+
+# Sandbox image exists
+docker images | grep sandbox
+# openclaw-sandbox   bookworm-slim   ...
+
+# Check config
+docker compose exec openclaw-gateway \
+  node dist/index.js config get agents.defaults.sandbox
+# Expected:
+# { mode: 'non-main', scope: 'agent', workspaceAccess: 'none' }
+```
+
+#### ⚠️ Security notes
+
+| Item | Detail |
+|---|---|
+| `docker.sock` mount | Required to spawn sandbox containers. If the gateway container is compromised, host Docker is accessible — use only trusted images |
+| Sandbox image | `debian:bookworm-slim` via `Dockerfile.sandbox` — minimal packages only |
+| Network isolation | Sandbox uses the same `network_mode: service:openclaw-gateway`. For extra external blocking: `./openclaw network isolated --restart` |
+| Workspace access | `workspaceAccess=none` — sandbox cannot read host files |
+
+#### Disable sandbox (revert)
+
+```bash
+cd ~/DEV/openclaw
+# Re-run without OPENCLAW_SANDBOX — automatically resets sandbox.mode to off
+./docker-setup.sh
 ```
 
 ### Step 6 — Add to PATH (optional)

@@ -299,7 +299,75 @@ step_lockdown() {
 }
 run_step lockdown "네트워크 격리(isolated) 적용" -- step_lockdown
 
-hr
+# ── 10. 샌드박스 설정 (OPENCLAW_SANDBOX=1 일 때만) ───────────────────────────
+step_sandbox() {
+  if [ "${OPENCLAW_SANDBOX:-0}" != "1" ]; then
+    info "샌드박스 비활성 (OPENCLAW_SANDBOX=1 로 활성화)"
+    return 0
+  fi
+
+  cd "$OPENCLAW_DIR"
+
+  # 10-A. Docker CLI 포함 이미지 재빌드
+  info "샌드박스: Docker CLI 포함 이미지 재빌드 중..."
+  DOCKER_BUILDKIT=1 docker build \
+    --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1 \
+    -t openclaw:local .
+
+  # 10-B. 샌드박스 전용 이미지 빌드
+  if [ -f "Dockerfile.sandbox" ]; then
+    info "샌드박스 이미지 빌드 중: openclaw-sandbox:bookworm-slim"
+    DOCKER_BUILDKIT=1 docker build \
+      -t openclaw-sandbox:bookworm-slim \
+      -f Dockerfile.sandbox .
+  else
+    warn "Dockerfile.sandbox 를 찾을 수 없습니다 — 샌드박스 기능이 제한될 수 있습니다."
+  fi
+
+  # 10-C. docker.sock GID 감지 + compose overlay 생성
+  local sock="/var/run/docker.sock"
+  if [ ! -S "$sock" ]; then
+    err "docker.sock 이 없습니다 ($sock). Docker Desktop 이 실행 중인지 확인하세요."
+    return 1
+  fi
+  local gid
+  gid=$(stat -f '%g' "$sock" 2>/dev/null || stat -c '%g' "$sock" 2>/dev/null || echo "")
+  local sandbox_compose="$OPENCLAW_DIR/docker-compose.sandbox.yml"
+  printf 'services:\n  openclaw-gateway:\n    volumes:\n      - %s:/var/run/docker.sock\n' "$sock" > "$sandbox_compose"
+  if [ -n "$gid" ]; then
+    printf '    group_add:\n      - "%s"\n' "$gid" >> "$sandbox_compose"
+  fi
+
+  # 10-D. 샌드박스 포함 gateway 재기동
+  local files="-f docker-compose.yml -f $sandbox_compose"
+  [ -f "$OPENCLAW_MGR_DIR/compose.security.yml" ] && files="$files -f $OPENCLAW_MGR_DIR/compose.security.yml"
+  [ -f "$OPENCLAW_MGR_DIR/compose.network.yml"  ] && files="$files -f $OPENCLAW_MGR_DIR/compose.network.yml"
+  # shellcheck disable=SC2086
+  docker compose $files up -d openclaw-gateway
+
+  # 10-E. 샌드박스 config 설정
+  local cfg_ok=1
+  docker compose $files exec -T openclaw-gateway \
+    node dist/index.js config set agents.defaults.sandbox.mode non-main \
+    >/dev/null 2>&1 || cfg_ok=0
+  docker compose $files exec -T openclaw-gateway \
+    node dist/index.js config set agents.defaults.sandbox.scope agent \
+    >/dev/null 2>&1 || cfg_ok=0
+  docker compose $files exec -T openclaw-gateway \
+    node dist/index.js config set agents.defaults.sandbox.workspaceAccess none \
+    >/dev/null 2>&1 || cfg_ok=0
+
+  if [ "$cfg_ok" = "1" ]; then
+    ok "샌드박스 활성화: mode=non-main, scope=agent, workspaceAccess=none"
+    info "자세한 내용: https://docs.openclaw.ai/gateway/sandboxing"
+  else
+    warn "샌드박스 설정 일부 실패 — 'openclaw doctor' 로 상태 확인 후 수동으로 재설정하세요."
+    warn "수동 명령: OPENCLAW_SANDBOX=1 ./docker-setup.sh  (~/DEV/openclaw 에서)"
+  fi
+}
+run_step sandbox "샌드박스 설정 (선택)" -- step_sandbox
+
+
 ok "설치 완료! 다음 단계:"
 printf '  %s./openclaw doctor%s          현재 상태 확인\n' "$C_BOLD" "$C_RESET"
 printf '  %s./openclaw logs%s            컨테이너 로그 보기\n' "$C_BOLD" "$C_RESET"
@@ -309,3 +377,7 @@ printf '  업데이트가 필요할 때만 잠깐 켜세요:\n'
 printf '    %s./openclaw network online --restart%s\n' "$C_BOLD" "$C_RESET"
 printf '    %s./openclaw update%s\n' "$C_BOLD" "$C_RESET"
 printf '    %s./openclaw network isolated --restart%s\n' "$C_BOLD" "$C_RESET"
+printf '\n%s🛡 샌드박스 (보안 강화) 를 활성화하려면:%s\n' "$C_BOLD" "$C_RESET"
+printf '    %sOPENCLAW_SANDBOX=1 ./openclaw install%s\n' "$C_BOLD" "$C_RESET"
+printf '  또는 ~/DEV/openclaw 에서:\n'
+printf '    %sOPENCLAW_SANDBOX=1 ./docker-setup.sh%s\n' "$C_BOLD" "$C_RESET"
