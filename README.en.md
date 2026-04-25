@@ -82,8 +82,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 | Who you are | Start here | What's inside |
 |---|---|---|
-| � **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | Open Terminal → 5 essential commands → one-line install. KO+EN |
-| �🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
+| � **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | Open Terminal → 5 essential commands → one-line install. KO+EN || 🪜 **Fully manual install (download from official sites)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | No brew, no install scripts — download Docker / Ollama / source by hand. For corp IT review, GitHub-502 fallback, or hands-on learners. KO+EN || �🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
 | 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |
 | 📖 **Unfamiliar with the terms (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | Three 3-minute primers (concepts, vocabulary, philosophy) — KO+EN |
 | 👤 **General user** | [README.en.md](README.en.md) (this file) | Command catalog · `.env` · network isolation · FAQ |

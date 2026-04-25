@@ -82,8 +82,7 @@ cd openclaw-workspace/openclaw-mgr
 
 | 누구 | 어디부터 | 무엇이 있나 |
 |---|---|---|
-| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 텀미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
-| 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
+| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 텀미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 || 🪜 **완전 수동 설치 (공식 사이트에서 직접 다운)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 Docker·Ollama·소스 직접 다운. 회사 IT 심사·GitHub 502 회피·소스 계도 없이 설치 KO+EN || 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
 | 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
 | 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
