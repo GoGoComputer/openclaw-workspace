@@ -17,7 +17,7 @@ ARCHIVE="${1:-}"
 [ -n "$ARCHIVE" ] || die "사용법: ./openclaw restore <archive.tar.gz>"
 [ -f "$ARCHIVE" ] || die "파일 없음: $ARCHIVE"
 
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 [ -d "$OPENCLAW_DIR" ] || die "OpenClaw 가 설치돼 있지 않습니다."
 
 title "OpenClaw 복원: $ARCHIVE"

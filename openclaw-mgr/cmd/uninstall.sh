@@ -17,7 +17,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 
 title "OpenClaw 제거"
 warn "이 작업은 되돌릴 수 없습니다. 먼저 './openclaw backup' 을 권장합니다."

@@ -10,7 +10,7 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "${OPENCLAW_MGR_DIR}/lib/sec.sh"
 
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 [ -d "$OPENCLAW_DIR/.git" ] || die "저장소가 없습니다. ./openclaw install 먼저."
 
 title "OpenClaw 업데이트"

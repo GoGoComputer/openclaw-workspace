@@ -65,11 +65,16 @@ sec_validate_workdir() {
 }
 
 # ── compose 파일에서 위험 마운트 검출 ────────────────────────────────────────
-# /var/run/docker.sock 마운트는 컨테이너 탈출의 지름길. 발견 시 비-0 반환.
+# /var/run/docker.sock 마운트는 컨테이너 탈출의 지름길.
+# 단, 샌드박스 overlay (docker-compose.sandbox.yml) 는 의도적 마운트이므로 제외.
+# 발견 시 비-0 반환, 파일명 출력.
 sec_scan_compose() {
   local dir="${1:-.}"
   local files
-  files="$(find "$dir" -maxdepth 3 -type f \( -name 'docker-compose*.y*ml' -o -name 'compose*.y*ml' \) 2>/dev/null)"
+  files="$(find "$dir" -maxdepth 3 -type f \
+    \( -name 'docker-compose*.y*ml' -o -name 'compose*.y*ml' \) \
+    ! -name 'docker-compose.sandbox.yml' \
+    2>/dev/null)"
   [ -z "$files" ] && return 0
   if printf '%s\n' "$files" | xargs grep -l -E '/var/run/docker\.sock|docker\.sock:/var/run/docker\.sock' 2>/dev/null; then
     return 1

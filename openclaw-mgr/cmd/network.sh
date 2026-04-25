@@ -34,20 +34,24 @@ networks:
     driver: bridge
     internal: true            # ← 외부 라우팅 차단 (NAT 없음)
 services:
-  app:
+  openclaw-gateway:
     networks:
       - openclaw_isolated
     # DNS 조차 차단해 도메인 해석을 막습니다.
     dns: ["127.0.0.1"]
+  openclaw-cli:
+    networks:
+      - openclaw_isolated
+    dns: ["127.0.0.1"]
 YAML
       ;;
     online)
-      # 빈 override (=기본 bridge 사용). 파일이 있어야 docker compose -f 에 안전히 넘길 수 있음.
       cat >"$OVERRIDE" <<'YAML'
 # 자동 생성 — ./openclaw network online 로 토글됨.
 # online: 기본 Docker 브리지 네트워크 (인터넷 허용). 설치/업데이트용.
 services:
-  app: {}
+  openclaw-gateway: {}
+  openclaw-cli: {}
 YAML
       ;;
     *)

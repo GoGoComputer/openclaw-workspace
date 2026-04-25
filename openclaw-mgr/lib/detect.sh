@@ -84,7 +84,7 @@ detect_ollama() {
 }
 
 detect_repo() {
-  local dir="${OPENCLAW_DIR:-$HOME/openclaw}"
+  local dir="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
   _kv repo_dir "$dir"
   if [ -d "$dir/.git" ]; then
     _kv repo_cloned yes
@@ -102,7 +102,7 @@ detect_repo() {
 }
 
 detect_compose() {
-  local dir="${OPENCLAW_DIR:-$HOME/openclaw}"
+  local dir="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
   local up=no count=0
   if [ -d "$dir" ] && command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     count="$(cd "$dir" && docker compose ps -q 2>/dev/null | wc -l | tr -d ' ')"

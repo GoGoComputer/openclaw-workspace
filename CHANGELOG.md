@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2 — 2026-04-25
+### Security fixes (audit)
+- **BUGFIX**: `network.sh` `isolated`/`online` compose overlays used `app:` → fixed to `openclaw-gateway` + `openclaw-cli` (network isolation was NOT working before this fix)
+- `OPENCLAW_DIR` default fixed from `~/openclaw` → `~/DEV/openclaw` in 8 scripts: `start.sh`, `stop.sh`, `logs.sh`, `update.sh`, `backup.sh`, `restore.sh`, `uninstall.sh`, `detect.sh`
+- `sec_scan_compose()`: sandbox overlay (`docker-compose.sandbox.yml`) now excluded from docker.sock false-positive check
+
 ## v0.2.1 — 2026-04-25
 - **BUGFIX**: `compose.security.yml` + `compose.network.yml` service name fixed from `app` → `openclaw-gateway`/`openclaw-cli` (security overlays were NOT being applied before this fix)
 - `OPENCLAW_WORKSPACE_DIR` default changed to `~/DEV/openclawAgent` (agent files visible in Finder)

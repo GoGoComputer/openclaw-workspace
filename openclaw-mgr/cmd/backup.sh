@@ -13,7 +13,7 @@ set -euo pipefail
 
 trap cleanup_tmp EXIT
 
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 BACKUP_DIR="${BACKUP_DIR:-$HOME/openclaw-backups}"
 BACKUP_KEEP="${BACKUP_KEEP:-7}"
 BACKUP_ENCRYPT="${BACKUP_ENCRYPT:-1}"

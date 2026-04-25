@@ -8,7 +8,7 @@ set -euo pipefail
 # shellcheck disable=SC1091
 . "${OPENCLAW_MGR_DIR}/lib/sec.sh"
 
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 [ -d "$OPENCLAW_DIR" ] || die "OpenClaw 가 설치돼 있지 않습니다."
 cd "$OPENCLAW_DIR"
 
