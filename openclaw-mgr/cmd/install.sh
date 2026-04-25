@@ -44,22 +44,11 @@ step_brew() {
     info "이미 설치됨: $(brew --prefix)"
     return 0
   fi
-  warn "Homebrew 를 공식 설치 스크립트로 설치합니다."
-  info "출처: https://brew.sh (apple.com 에서 노션을 받음)"
-  if ! confirm "Homebrew 를 설치하시겠습니까?" y; then
-    err "Homebrew 없이는 진행할 수 없습니다."
-    return 1
-  fi
-  /bin/bash -c "$(curl -fsSL --proto '=https' --tlsv1.2 \
-    https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  # PATH 보정 (Apple Silicon)
-  if [ -x /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [ -x /usr/local/bin/brew ]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
+  info "Homebrew 는 선택 사항입니다. Docker/Ollama 는 공식 사이트에서 직접 설치합니다."
+  info "원하면 https://brew.sh 에서 직접 설치할 수 있습니다."
+  return 0   # Homebrew 없어도 진행
 }
-run_step brew "Homebrew 설치" -- step_brew
+run_step brew "Homebrew 확인 (선택)" -- step_brew
 
 # ── 3. Docker Desktop ────────────────────────────────────────────────────────
 step_docker_install() {
@@ -67,10 +56,15 @@ step_docker_install() {
     info "이미 설치됨"
     return 0
   fi
-  info "Homebrew Cask 로 Docker Desktop 설치"
-  brew install --cask docker
+  warn "Docker Desktop 이 없습니다. 공식 사이트에서 직접 다운로드 후 설치하세요:"
+  info "  홈페이지: https://www.docker.com/products/docker-desktop/"
+  info "  Apple Silicon: 'Download for Mac – Apple Silicon'"
+  info "  Intel:         'Download for Mac – Intel Chip'"
+  info "  .dmg 더블클릭 → Docker 아이콘을 Applications 폴더로 드래그 → Docker.app 실행"
+  info "설치 후 이 명령을 다시 실행하세요: ./openclaw install"
+  return 1
 }
-run_step docker_install "Docker Desktop 설치" -- step_docker_install
+run_step docker_install "Docker Desktop 설치 확인" -- step_docker_install
 
 step_docker_start() {
   if docker info >/dev/null 2>&1; then
@@ -99,25 +93,34 @@ ENABLE_OLLAMA="${ENABLE_OLLAMA:-1}"
 if [ "$ENABLE_OLLAMA" = "1" ]; then
   step_ollama_install() {
     command -v ollama >/dev/null 2>&1 && { info "이미 설치됨"; return 0; }
-    brew install ollama
+    warn "Ollama 가 없습니다."
+    info "공식 사이트에서 직접 다운로드 후 설치하세요:"
+    info "  https://ollama.com/download"
+    info "  'Download for macOS' → .dmg/.zip → Applications 로 드래그 → 실행"
+    info "설치 후 이 명령을 다시 실행하세요: ./openclaw install"
+    return 1
   }
-  run_step ollama_install "Ollama 설치" -- step_ollama_install
+  run_step ollama_install "Ollama 설치 확인" -- step_ollama_install
 
   step_ollama_start() {
     if curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
       info "Ollama 이미 실행 중"
       return 0
     fi
-    brew services start ollama
-    local i
-    for i in $(seq 1 30); do
-      if curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-        ok "Ollama 데몬 준비 완료 (${i}s)"
-        return 0
-      fi
-      sleep 1
-    done
-    err "Ollama 데몬이 응답하지 않습니다."
+    # Ollama.app 실행 (뮨뉴바 데몬 시작)
+    if open -a Ollama 2>/dev/null; then
+      info "Ollama 앱 실행 중 — 데몬 시동대기 (30초)..."
+      local i
+      for i in $(seq 1 30); do
+        if curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+          ok "Ollama 데몬 준비 완료 (${i}s)"
+          return 0
+        fi
+        sleep 1
+      done
+    fi
+    warn "Ollama 데몬이 응답하지 않습니다 — Applications → Ollama 를 직접 실행하세요."
+    warn "https://ollama.com/download 에서 설치 확인"
     return 1
   }
   run_step ollama_start "Ollama 데몬 시작" -- step_ollama_start

@@ -7,39 +7,38 @@
 #
 # What this does:
 #   1) Verifies macOS + arm64/x86_64.
-#   2) If Homebrew is present  -> taps gogocomputer/openclaw and installs the
-#      openclaw-workspace formula (cleanest path).
-#   3) If Homebrew is missing  -> offers to install Homebrew, then proceeds
-#      with the brew install path.
-#   4) Falls back to a git clone into ~/.openclaw-workspace and a symlink
-#      to ~/.local/bin/openclaw (PATH hint printed) only when --no-brew is set
-#      or Homebrew install was declined.
+#   2) git clone into ~/DEV/openclaw-workspace (or OPENCLAW_PREFIX) and symlinks
+#      openclaw → ~/.local/bin/openclaw.   ← DEFAULT — no Homebrew required.
+#   3) If Homebrew is already present AND --brew flag is passed, installs via
+#      the GoGoComputer tap instead (managed updates via brew upgrade).
 #
-# Re-running is safe: brew install is idempotent; the git fallback uses
-# `git pull --ff-only` if the directory already exists.
+# Re-running is safe: git path uses `git pull --ff-only` on existing clones.
+#
+# Flags:
+#   --brew      Use Homebrew tap (gogocomputer/openclaw) if brew is installed.
+#   -h|--help   Print this help.
 #
 # Environment overrides:
-#   OPENCLAW_TAP        default: gogocomputer/openclaw
 #   OPENCLAW_REPO_URL   default: https://github.com/GoGoComputer/openclaw-workspace.git
-#   OPENCLAW_PREFIX     default: $HOME/.openclaw-workspace  (git fallback)
-#   OPENCLAW_BIN_DIR    default: $HOME/.local/bin           (git fallback symlink)
+#   OPENCLAW_PREFIX     default: $HOME/DEV/openclaw-workspace
+#   OPENCLAW_BIN_DIR    default: $HOME/.local/bin
+#   OPENCLAW_TAP        default: gogocomputer/openclaw  (--brew mode only)
 #
 # Copyright 2026 박성모 Park Sungmo — MIT License
 # =============================================================================
 set -euo pipefail
 
+OPENCLAW_REPO_URL="${OPENCLAW_REPO_URL:-https://github.com/GoGoComputer/openclaw-workspace.git}"
+OPENCLAW_PREFIX="${OPENCLAW_PREFIX:-$HOME/DEV/openclaw-workspace}"
+OPENCLAW_BIN_DIR="${OPENCLAW_BIN_DIR:-$HOME/.local/bin}"
 OPENCLAW_TAP="${OPENCLAW_TAP:-gogocomputer/openclaw}"
 OPENCLAW_FORMULA="openclaw-workspace"
-OPENCLAW_REPO_URL="${OPENCLAW_REPO_URL:-https://github.com/GoGoComputer/openclaw-workspace.git}"
-OPENCLAW_PREFIX="${OPENCLAW_PREFIX:-$HOME/.openclaw-workspace}"
-OPENCLAW_BIN_DIR="${OPENCLAW_BIN_DIR:-$HOME/.local/bin}"
 
-NO_BREW=0
+USE_BREW=0
 for arg in "$@"; do
   case "$arg" in
-    --no-brew) NO_BREW=1 ;;
-    -h|--help)
-      sed -n '2,30p' "$0"; exit 0 ;;
+    --brew)    USE_BREW=1 ;;
+    -h|--help) sed -n '2,35p' "$0"; exit 0 ;;
   esac
 done
 
@@ -75,50 +74,47 @@ case "$(uname -m)" in
   *) warn "Untested arch: $(uname -m) — proceeding anyway" ;;
 esac
 
-# ----- choose path: brew (preferred) or git fallback -------------------------
-need_brew_install=0
-if command -v brew >/dev/null 2>&1; then
-  ok "Homebrew found: $(brew --version | head -n1)"
-elif [ "$NO_BREW" -eq 1 ]; then
-  warn "Skipping Homebrew (--no-brew). Will use git fallback."
-else
-  warn "Homebrew is not installed."
-  if [ -t 0 ]; then
-    printf '%s ' "${C_BOLD}Install Homebrew now? [Y/n]:${C_OFF}"
-    read -r ans || ans=""
-    case "${ans:-Y}" in
-      n|N|no|NO) need_brew_install=0; NO_BREW=1 ;;
-      *)         need_brew_install=1 ;;
-    esac
-  else
-    # Non-interactive (curl|bash) — auto-install brew, since user clearly wants
-    # the one-line path. They can opt out with --no-brew via env piping.
-    say "Non-interactive run — auto-installing Homebrew."
-    need_brew_install=1
-  fi
-fi
+# ----- install: git clone (default) or brew (opt-in) -------------------------
+install_via_git() {
+  command -v git >/dev/null 2>&1 || \
+    die "git is required. Install Xcode CLT first: xcode-select --install"
 
-if [ "$need_brew_install" -eq 1 ]; then
-  say "Installing Homebrew (official script)…"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  # Make brew available in this shell.
-  if [ -x /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [ -x /usr/local/bin/brew ]; then
-    eval "$(/usr/local/bin/brew shellenv)"
+  if [ -d "${OPENCLAW_PREFIX}/.git" ]; then
+    say "Updating existing clone at ${OPENCLAW_PREFIX}"
+    git -C "${OPENCLAW_PREFIX}" pull --ff-only
+  else
+    say "git clone → ${OPENCLAW_PREFIX}"
+    mkdir -p "$(dirname "${OPENCLAW_PREFIX}")"
+    git clone --depth 1 "${OPENCLAW_REPO_URL}" "${OPENCLAW_PREFIX}"
   fi
-  command -v brew >/dev/null 2>&1 || die "Homebrew install seems to have failed."
-  ok "Homebrew installed."
-fi
+
+  mkdir -p "${OPENCLAW_BIN_DIR}"
+  ln -sf "${OPENCLAW_PREFIX}/openclaw-mgr/openclaw" "${OPENCLAW_BIN_DIR}/openclaw"
+  chmod +x "${OPENCLAW_PREFIX}/openclaw-mgr/openclaw"
+  ok "Linked: ${OPENCLAW_BIN_DIR}/openclaw → ${OPENCLAW_PREFIX}/openclaw-mgr/openclaw"
+
+  # PATH hint (only if not already in PATH)
+  case ":${PATH}:" in
+    *":${OPENCLAW_BIN_DIR}:"*) : ;;
+    *)
+      say "Adding ${OPENCLAW_BIN_DIR} to PATH in ~/.zshrc"
+      printf '\nexport PATH="%s:$PATH"\n' "${OPENCLAW_BIN_DIR}" >> "${HOME}/.zshrc"
+      export PATH="${OPENCLAW_BIN_DIR}:${PATH}"
+      warn "Run: source ~/.zshrc   (or open a new terminal)"
+      ;;
+  esac
+}
 
 install_via_brew() {
+  command -v brew >/dev/null 2>&1 || \
+    die "Homebrew not found. Install it from https://brew.sh or run without --brew."
+
   say "brew tap ${OPENCLAW_TAP}"
   brew tap "${OPENCLAW_TAP}" >/dev/null
 
-  if brew list --formula | grep -qx "${OPENCLAW_FORMULA}"; then
-    say "Already installed — running brew upgrade…"
-    brew update
-    brew upgrade "${OPENCLAW_FORMULA}" || ok "Already at the latest version."
+  if brew list --formula 2>/dev/null | grep -qx "${OPENCLAW_FORMULA}"; then
+    say "Already installed — upgrading…"
+    brew update && brew upgrade "${OPENCLAW_FORMULA}" || ok "Already at the latest version."
   else
     say "brew install ${OPENCLAW_FORMULA}"
     brew install "${OPENCLAW_FORMULA}"
@@ -126,56 +122,37 @@ install_via_brew() {
   ok "Installed via Homebrew."
 }
 
-install_via_git() {
-  command -v git >/dev/null 2>&1 || die "git is required for the fallback install."
-  if [ -d "${OPENCLAW_PREFIX}/.git" ]; then
-    say "Updating existing clone at ${OPENCLAW_PREFIX}"
-    git -C "${OPENCLAW_PREFIX}" pull --ff-only
-  else
-    say "Cloning into ${OPENCLAW_PREFIX}"
-    git clone --depth 1 "${OPENCLAW_REPO_URL}" "${OPENCLAW_PREFIX}"
-  fi
-  mkdir -p "${OPENCLAW_BIN_DIR}"
-  ln -sf "${OPENCLAW_PREFIX}/openclaw-mgr/openclaw" "${OPENCLAW_BIN_DIR}/openclaw"
-  chmod +x "${OPENCLAW_PREFIX}/openclaw-mgr/openclaw"
-  ok "Linked: ${OPENCLAW_BIN_DIR}/openclaw  →  ${OPENCLAW_PREFIX}/openclaw-mgr/openclaw"
-
-  case ":$PATH:" in
-    *":${OPENCLAW_BIN_DIR}:"*) : ;;
-    *)
-      warn "Add this to your shell profile (~/.zshrc or ~/.bash_profile):"
-      printf '       %sexport PATH="%s:$PATH"%s\n' "${C_BOLD}" "${OPENCLAW_BIN_DIR}" "${C_OFF}"
-      ;;
-  esac
-}
-
-if [ "$NO_BREW" -eq 1 ]; then
-  install_via_git
-else
+if [ "$USE_BREW" -eq 1 ]; then
+  say "Mode: Homebrew tap (--brew)"
   install_via_brew
+else
+  say "Mode: git clone (default — no Homebrew required)"
+  install_via_git
 fi
 
 # ----- verify ----------------------------------------------------------------
 if command -v openclaw >/dev/null 2>&1; then
-  ok "openclaw is on PATH: $(command -v openclaw)"
-  openclaw version || true
+  ok "openclaw on PATH: $(command -v openclaw)"
+  openclaw version 2>/dev/null || true
 else
-  warn "openclaw not on PATH yet — open a new terminal or update your PATH."
+  warn "openclaw not on PATH yet — run: source ~/.zshrc  or open a new terminal."
 fi
 
 cat <<EOF
 
 ${C_G}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C_OFF}
-${C_BOLD}🎉  Installed!${C_OFF}
+${C_BOLD}🎉  openclaw-workspace installed!${C_OFF}
 
-  ${C_BOLD}Next steps:${C_OFF}
-    openclaw                # interactive menu (Korean/English auto)
-    openclaw doctor         # check current state
-    openclaw install        # install Docker / Ollama / OpenClaw
-    openclaw self-update    # update openclaw-workspace itself
+  ${C_BOLD}Next — install dependencies from official sites:${C_OFF}
+    Docker Desktop  https://www.docker.com/products/docker-desktop/
+    Ollama          https://ollama.com/download    (optional — local LLMs)
+
+  ${C_BOLD}Then run:${C_OFF}
+    openclaw doctor         # verify everything is ready
+    openclaw install        # guided setup (clone OpenClaw + start containers)
 
   ${C_BOLD}Docs:${C_OFF}
-    https://github.com/GoGoComputer/openclaw-workspace
+    https://github.com/GoGoComputer/openclaw-workspace/blob/main/docs/GUIDE-MANUAL-INSTALL.md
 ${C_G}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C_OFF}
 
 EOF

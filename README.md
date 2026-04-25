@@ -37,9 +37,14 @@ curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/mai
 openclaw                        # 대화형 메뉴 (한국어/영어 자동)
 ```
 
-이 스크립트는 Homebrew 가 없으면 먼저 설치하고, `openclaw-workspace` formula 를 탭에서 설치합니다. 재실행해도 안전.
+이 스크립트는 **Homebrew 없이** `git clone` 으로 `~/DEV/openclaw-workspace` 에 다운로드합니다. Homebrew 탭에 의존하지 않습니다. 재실행해도 안전.
 
-### 옵션 B — Homebrew 직접
+> Homebrew 탭 설치를 원하면 `--brew` 플래그 사용:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash -s -- --brew
+> ```
+
+### 옵션 B — Homebrew 탭 (관리형 업데이트 선호 시)
 
 ```bash
 brew tap gogocomputer/openclaw
@@ -47,7 +52,7 @@ brew install openclaw-workspace
 openclaw
 ```
 
-업데이트: `openclaw self-update` (또는 `brew update && brew upgrade openclaw-workspace`).
+업데이트: `brew update && brew upgrade openclaw-workspace`.
 
 ### 옵션 C — git clone (소스 직접 사용 · 개발자용)
 

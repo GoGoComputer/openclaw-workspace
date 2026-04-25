@@ -37,9 +37,14 @@ curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/mai
 openclaw                        # interactive menu (Korean/English auto-detected)
 ```
 
-The script installs Homebrew if missing, then taps and installs the formula. Safe to re-run.
+The script uses **`git clone`** (no Homebrew required) to download `openclaw-workspace` to `~/DEV/openclaw-workspace`. Safe to re-run.
 
-### Option B — Homebrew directly
+> Prefer the Homebrew tap? Use the `--brew` flag:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash -s -- --brew
+> ```
+
+### Option B — Homebrew tap (for managed updates)
 
 ```bash
 brew tap gogocomputer/openclaw
@@ -47,7 +52,7 @@ brew install openclaw-workspace
 openclaw
 ```
 
-Update: `openclaw self-update` (or `brew update && brew upgrade openclaw-workspace`).
+Update: `brew update && brew upgrade openclaw-workspace`.
 
 ### Option C — git clone (run from source · for developers)
 
