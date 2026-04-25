@@ -15,6 +15,7 @@
 ## 📖 Contents
 
 - [🚀 5-minute start (non-developer friendly)](#-5-minute-start-non-developer-friendly)
+- [🤖 Automation trio — at a glance](#-automation-trio--at-a-glance)
 - [📚 Documentation map](#-documentation-map)
 - [🤔 What is this?](#-what-is-this)
 - [📋 Command catalog](#-command-catalog)
