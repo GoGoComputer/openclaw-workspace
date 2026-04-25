@@ -147,15 +147,106 @@ docker ps                                    # 표 헤더 (CONTAINER ID  IMAGE .
 
 `Cannot connect to the Docker daemon` 가 나오면 → 아직 시동 중. 잠시 기다리거나 메뉴바 고래 아이콘을 클릭해 상태 확인.
 
-#### 데몬(서버) 끄기 / 재시작
+#### Docker 켜기 / 끄기 / 항상 켜기 / 완전 죽이기 — 한눈에
 
-| 동작 | 어떻게 |
-|---|---|
-| 🛑 **그냥 끄기** | 메뉴바 🐳 고래 클릭 → **Quit Docker Desktop** |
-| 🔁 **재시작** | 메뉴바 🐳 고래 클릭 → **Restart** (충돌·메모리 누수 시 유용) |
-| ⌨ **터미널에서 끄기** | `osascript -e 'quit app "Docker"'` |
+> 🐳 **상황별 메뉴얼**. "잠깐 끔" 과 "완전 종료" 는 다릅니다. OpenClaw 가 잘 동작하지 않을 때, 디스크/메모리 회수할 때, 컴퓨터 켤 때마다 자동으로 뜨게 하거나 끄고 싶을 때 참고.
 
-> 💡 데몬을 끄면 **실행 중이던 OpenClaw 컨테이너도 자동으로 정지** 됩니다 (데이터는 보존, 다시 켜면 그대로 복귀).
+| 상황 | GUI | CLI | 결과 |
+|---|---|---|---|
+| ▶️ **켜기 (한 번)** | Applications → Docker.app 더블클릭 | `open -a Docker` | 데몬 기동 (메뉴바 🐳 등장, 30~60초) |
+| 🛑 **끄기 (보통 — 잠깐만)** | 메뉴바 🐳 → **Quit Docker Desktop** | `osascript -e 'quit app "Docker"'` | 데몬 종료. **OpenClaw 컨테이너 자동 정지** (데이터 보존). 다시 켜면 컨테이너 자동 복귀 |
+| 🔁 **재시작** | 메뉴바 🐳 → **Restart** | `osascript -e 'quit app "Docker"'; sleep 5; open -a Docker` | 충돌·메모리 누수·hang 풀 때. 컨테이너도 같이 재기동 |
+| 🔄 **항상 켜기 (로그인 시 자동)** | Settings → General → "Start Docker Desktop when you sign in" ✓ → Apply & restart | (자동시작 절 참조) | 부팅·로그인하면 자동으로 데몬 켜짐 |
+| ❌ **항상 꺼두기 (자동시작 OFF)** | Settings → General → 위 체크 해제 → Apply | (자동시작 절 참조) | 매번 수동으로 켜야 함 |
+| 💀 **완전 죽이기 (강제 종료)** | (불응 시) `kill -9` 사용 | 아래 5줄 명령 | Quit 이 안 먹힐 때 (hang 상태). 데이터는 보존 |
+| 🗑 **완전 제거 (앱 + 모든 데이터)** | Docker.app 휴지통 + 데이터 폴더 삭제 | 아래 "완전 제거" 절 | OpenClaw 데이터 포함 **모든 컨테이너·이미지·볼륨 삭제**. 처음 상태로 |
+
+#### ▶️ 켜기 (자세히)
+
+```bash
+open -a Docker                                  # 앱 실행
+# 메뉴바 🐳 가 움직임 멈출 때까지 30~60초 대기
+
+# 켜졌는지 확인
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
+```
+
+#### 🛑 끄기 (잠깐 — 권장 방법)
+
+```bash
+osascript -e 'quit app "Docker"'                # 정상 종료 (Quit)
+# 또는: 메뉴바 🐳 → Quit Docker Desktop
+
+# 끝났는지 확인
+pgrep -lf "Docker Desktop|com.docker" || echo "✓ Docker 모두 종료됨"
+```
+
+> 💡 OpenClaw 컨테이너는 **자동 정지** 됩니다. 다음에 Docker 를 다시 켜면 자동으로 복귀 (`restart: unless-stopped` 정책). 데이터·세션·다운받은 모델 **모두 그대로**.
+
+#### 🔁 재시작 (충돌 / 응답 없을 때)
+
+```bash
+osascript -e 'quit app "Docker"'
+sleep 5
+open -a Docker
+```
+
+또는 GUI: 메뉴바 🐳 → **Restart**.
+
+#### 💀 완전 죽이기 (Quit 도 안 먹는 hang 상태)
+
+> ⚠️ **마지막 수단**. 정상 Quit 가 30초 이상 응답 없을 때만. 컨테이너는 갑자기 멈추지만 영구 데이터는 보존됩니다.
+
+```bash
+# 1) 정상 Quit 시도
+osascript -e 'quit app "Docker"' 2>/dev/null
+sleep 3
+
+# 2) 그래도 살아있으면 SIGKILL
+pkill -9 -f "Docker Desktop"            # GUI 앱
+pkill -9 -f "com.docker.backend"        # 백엔드 프로세스
+pkill -9 -f "com.docker.helper"         # 헬퍼 프로세스
+pkill -9 -f "vpnkit\|qemu\|docker-vmnetd"  # 가상화 프로세스
+
+# 3) 확인
+sleep 2
+pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ 모두 종료됨"
+```
+
+> 💡 죽인 후 다시 시작하면 일관성 검사로 시간이 걸릴 수 있습니다. **다음 부팅 전에는 docker 명령이 동작하지 않습니다** (`open -a Docker` 로 다시 켜세요).
+
+#### 🗑 완전 제거 (Docker Desktop + 모든 데이터)
+
+> ⚠️ **OpenClaw 컨테이너·볼륨·이미지가 전부 사라집니다.** 다시 깔면 처음부터. 진짜로 정리해야 할 때만.
+
+```bash
+# 1) Docker Desktop 자체 클린업 (가장 안전 — 앱 내장)
+osascript -e 'quit app "Docker"'; sleep 3
+open -a Docker
+# 메뉴바 🐳 → Troubleshoot (벌레 아이콘) → "Clean / Purge data" → 확인
+
+# 2) 그 다음 앱 제거
+osascript -e 'quit app "Docker"'; sleep 3
+sudo rm -rf "/Applications/Docker.app"
+
+# 3) 사용자 데이터 폴더 모두 삭제
+rm -rf ~/Library/Group\ Containers/group.com.docker
+rm -rf ~/Library/Containers/com.docker.docker
+rm -rf ~/Library/Application\ Support/Docker\ Desktop
+rm -rf ~/Library/Preferences/com.docker.docker.plist
+rm -rf ~/Library/Saved\ Application\ State/com.electron.docker-frontend.savedState
+rm -rf ~/Library/Logs/Docker\ Desktop
+rm -rf ~/.docker
+
+# 4) (선택) 자동시작 등록도 제거
+osascript -e 'tell application "System Events" to delete login item "Docker"' 2>/dev/null
+
+# 5) 확인
+ls /Applications | grep -i docker || echo "✓ 앱 제거됨"
+ls ~/Library/Group\ Containers/ 2>/dev/null | grep -i docker || echo "✓ 데이터 제거됨"
+```
+
+> 💡 다시 설치하려면 이 가이드의 [2단계](#2단계--docker-desktop-직접-다운로드) 로.
 
 #### 자동시작(로그인 시 켜기) — CLI 로 토글 / 확인
 
@@ -768,15 +859,104 @@ docker ps                                    # Header (CONTAINER ID  IMAGE ...) 
 
 If you see `Cannot connect to the Docker daemon` it's still booting — wait a bit, or click the menu-bar whale to see status.
 
-#### Stop / restart the daemon
+#### Start / Stop / Always-on / Force-kill — at a glance
 
-| Action | How |
-|---|---|
-| 🛑 **Quit** | Menu-bar 🐳 → **Quit Docker Desktop** |
-| 🔁 **Restart** | Menu-bar 🐳 → **Restart** (helps with crashes / memory leaks) |
-| ⌨ **Quit from terminal** | `osascript -e 'quit app "Docker"'` |
+> 🐳 Cheat-sheet by intent. "Stop for a moment" and "completely uninstall" are very different. Use this when OpenClaw misbehaves, when reclaiming RAM/disk, or when you want Docker to (not) auto-launch on login.
 
-> 💡 Stopping the daemon **also stops any running OpenClaw containers** (data is preserved; restart and they come back).
+| Intent | GUI | CLI | Result |
+|---|---|---|---|
+| ▶️ **Start (one-off)** | Applications → Docker.app | `open -a Docker` | Daemon boots (whale 🐳 in menu bar, 30–60 s) |
+| 🛑 **Stop (the normal way)** | Menu-bar 🐳 → **Quit Docker Desktop** | `osascript -e 'quit app "Docker"'` | Daemon quits. **OpenClaw containers stop automatically** (data preserved). They come back when Docker restarts. |
+| 🔁 **Restart** | Menu-bar 🐳 → **Restart** | `osascript -e 'quit app "Docker"'; sleep 5; open -a Docker` | For crashes / memory leaks / hangs. Containers restart too. |
+| 🔄 **Always on (auto-start at login)** | Settings → General → "Start Docker Desktop when you sign in" ✓ → Apply & restart | (see Auto-start section) | Daemon launches at login automatically. |
+| ❌ **Always off (no auto-start)** | Settings → General → uncheck above → Apply | (see Auto-start section) | Manual start every time. |
+| 💀 **Force-kill (Quit doesn't respond)** | (none) | 5-line command below | When Quit hangs > 30 s. Data preserved. |
+| 🗑 **Completely uninstall (app + all data)** | Trash Docker.app + delete data folders | "Completely uninstall" section below | **Deletes all containers, images, volumes including OpenClaw data.** Back to square one. |
+
+#### ▶️ Start (detail)
+
+```bash
+open -a Docker
+# Wait until menu-bar 🐳 stops animating (30–60 s)
+
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
+```
+
+#### 🛑 Stop (the normal way — recommended)
+
+```bash
+osascript -e 'quit app "Docker"'
+# or: Menu-bar 🐳 → Quit Docker Desktop
+
+pgrep -lf "Docker Desktop|com.docker" || echo "✓ Docker fully stopped"
+```
+
+> 💡 OpenClaw containers **stop automatically**; with `restart: unless-stopped` they come back when Docker is started again. Data, sessions, downloaded models are preserved.
+
+#### 🔁 Restart (crash / unresponsive)
+
+```bash
+osascript -e 'quit app "Docker"'
+sleep 5
+open -a Docker
+```
+
+Or GUI: Menu-bar 🐳 → **Restart**.
+
+#### 💀 Force-kill (Quit hung > 30 s)
+
+> ⚠️ **Last resort.** Use only if a normal Quit doesn't respond. Containers stop abruptly; persistent data is preserved.
+
+```bash
+# 1) Try a polite Quit first
+osascript -e 'quit app "Docker"' 2>/dev/null
+sleep 3
+
+# 2) If still alive, SIGKILL
+pkill -9 -f "Docker Desktop"
+pkill -9 -f "com.docker.backend"
+pkill -9 -f "com.docker.helper"
+pkill -9 -f "vpnkit\|qemu\|docker-vmnetd"
+
+# 3) Verify
+sleep 2
+pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ all stopped"
+```
+
+> 💡 After force-kill, the next start may take longer (consistency check). The `docker` CLI won't work until you `open -a Docker` again.
+
+#### 🗑 Completely uninstall (Docker Desktop + all data)
+
+> ⚠️ **All OpenClaw containers, volumes, and images will be wiped.** Reinstalling = fresh start. Only do this when you really want to clean up.
+
+```bash
+# 1) Use Docker Desktop's built-in cleanup (safest)
+osascript -e 'quit app "Docker"'; sleep 3
+open -a Docker
+# Menu-bar 🐳 → Troubleshoot (bug icon) → "Clean / Purge data" → confirm
+
+# 2) Then remove the app
+osascript -e 'quit app "Docker"'; sleep 3
+sudo rm -rf "/Applications/Docker.app"
+
+# 3) Remove all user-data folders
+rm -rf ~/Library/Group\ Containers/group.com.docker
+rm -rf ~/Library/Containers/com.docker.docker
+rm -rf ~/Library/Application\ Support/Docker\ Desktop
+rm -rf ~/Library/Preferences/com.docker.docker.plist
+rm -rf ~/Library/Saved\ Application\ State/com.electron.docker-frontend.savedState
+rm -rf ~/Library/Logs/Docker\ Desktop
+rm -rf ~/.docker
+
+# 4) (optional) remove auto-start entry
+osascript -e 'tell application "System Events" to delete login item "Docker"' 2>/dev/null
+
+# 5) Verify
+ls /Applications | grep -i docker || echo "✓ app removed"
+ls ~/Library/Group\ Containers/ 2>/dev/null | grep -i docker || echo "✓ data removed"
+```
+
+> 💡 To reinstall, see [Step 2](#step-2--download-docker-desktop-directly).
 
 #### Auto-start on login — toggle / check via CLI
 
