@@ -109,6 +109,84 @@ docker info            # Server: ... 가 보이면 데몬 정상
 
 > 💡 회사용/큰 조직 (250인 이상) 은 Docker Desktop 유료 라이선스가 필요할 수 있습니다. 무료 대안: **Colima** (`brew install colima`, Homebrew 가능할 때만).
 
+### 2.5단계 — Docker 사용법 기초 (데몬 = 서버 켜고 끄기)
+
+> 🤔 **"Docker 데몬이 뭐예요? 서버를 매번 켜야 하나요?"**
+>
+> 비유: Docker 는 **두 부분** 으로 됩니다.
+> - 🐳 **Docker 데몬 (서버)** = 백그라운드에서 컨테이너를 실제로 돌리는 엔진. **메뉴바의 고래 아이콘 = 데몬이 켜진 상태**.
+> - 💻 **`docker` 명령어 (클라이언트)** = 터미널에서 데몬에게 명령을 보내는 도구.
+>
+> **데몬이 꺼져 있으면 `docker` 명령은 모두 실패** ("Cannot connect to the Docker daemon"). OpenClaw 도 데몬이 켜져 있어야 동작합니다.
+
+#### 데몬(서버) 켜기
+
+| 방법 | 명령 / 동작 |
+|---|---|
+| 🖱 **앱으로 켜기** (가장 쉬움) | Applications → **Docker.app** 더블클릭, 또는 Spotlight (`⌘ Space` → "docker") |
+| ⌨ **터미널에서 켜기** | `open -a Docker` |
+| 🔄 **부팅 시 자동 켜기** (기본 ON) | Docker Desktop 설정 → General → "Start Docker Desktop when you sign in" |
+
+켜진 후 **메뉴바의 🐳 고래 아이콘이 움직임을 멈출 때까지** 30~60초 대기 → 그제서야 `docker` 명령이 동작합니다.
+
+#### 데몬(서버) 켜졌는지 확인
+
+```bash
+docker info | head -5     # "Server: Docker Engine - Community ..." 보이면 OK
+docker ps                  # 표 헤더가 나오면 OK (CONTAINER ID  IMAGE  ...)
+```
+
+`Cannot connect to the Docker daemon` 가 나오면 → 아직 시동 중. 잠시 기다리거나 메뉴바 고래 아이콘을 클릭해 상태 확인.
+
+#### 데몬(서버) 끄기 / 재시작
+
+| 동작 | 어떻게 |
+|---|---|
+| 🛑 **그냥 끄기** | 메뉴바 🐳 고래 클릭 → **Quit Docker Desktop** |
+| 🔁 **재시작** | 메뉴바 🐳 고래 클릭 → **Restart** (충돌·메모리 누수 시 유용) |
+| ⌨ **터미널에서 끄기** | `osascript -e 'quit app "Docker"'` |
+
+> 💡 데몬을 끄면 **실행 중이던 OpenClaw 컨테이너도 자동으로 정지** 됩니다 (데이터는 보존, 다시 켜면 그대로 복귀).
+
+#### Docker Desktop 창 — 무엇을 볼 수 있나?
+
+메뉴바 🐳 → **Dashboard** (또는 앱 아이콘 클릭) 으로 GUI 가 열립니다. 좌측 사이드바:
+
+| 탭 | 무엇 |
+|---|---|
+| **Containers** | 현재 실행 중·정지된 컨테이너 목록. ▶️ 시작·⏹ 정지·🗑 삭제·로그 보기 모두 GUI 로 가능. OpenClaw 컨테이너도 여기 보임. |
+| **Images** | 다운받은 컨테이너 이미지 목록 (디스크 차지) |
+| **Volumes** | 영구 데이터 저장소 (OpenClaw 백업·세션이 여기) |
+| **Builds** | 본인이 빌드한 이미지 (OpenClaw 사용자에겐 거의 비어있음) |
+| **Settings (⚙)** | 메모리·CPU 할당, 자동시작 토글, Rosetta 토글 등 |
+
+> 💡 **터미널에 명령 칠 줄 몰라도** 모든 컨테이너 작업을 Dashboard 에서 클릭으로 할 수 있습니다. 하지만 OpenClaw 는 `./openclaw` 명령으로 통합 관리하는 걸 권장 (백업·네트워크 격리 토글 등 보안 기능 자동 적용).
+
+#### OpenClaw 가 데몬을 어떻게 사용하나?
+
+```
+┌─────────────────┐         ┌────────────────────┐         ┌──────────────────┐
+│ ./openclaw start│ ──────> │ Docker 데몬(서버)  │ ──────> │ OpenClaw 컨테이너 │
+│ ./openclaw stop │   명령   │ (메뉴바 🐳)        │  관리   │ (실제 AI 에이전트) │
+│ ./openclaw logs │         └────────────────────┘         └──────────────────┘
+└─────────────────┘
+```
+
+즉 `./openclaw` 가 `docker compose` 명령을 알아서 호출합니다. 사용자가 직접 `docker` 명령을 칠 일은 거의 없습니다 (디버깅이나 호기심 때만).
+
+#### 자주 쓰는 docker 명령 (참고)
+
+| 명령 | 무엇 |
+|---|---|
+| `docker ps` | 실행 중 컨테이너 목록 |
+| `docker ps -a` | 정지된 것까지 모두 |
+| `docker images` | 다운받은 이미지 목록 |
+| `docker logs <이름>` | 특정 컨테이너 로그 (OpenClaw 는 `./openclaw logs` 로) |
+| `docker stats` | CPU·메모리 실시간 사용량 |
+| `docker system df` | Docker 가 차지한 디스크 (`./openclaw clean --status` 로 한 번에) |
+
+OpenClaw 사용자에게 **꼭 외울 명령 = 0개**. `./openclaw` 가 다 해줍니다.
+
 ### 3단계 — Ollama 직접 다운로드 (선택 — 로컬 LLM 쓸 때)
 
 > Ollama = 내 컴퓨터에서 LLM(Llama, Qwen, Solar 등) 을 돌리는 런타임. 외부 API(OpenAI 등) 만 쓸 거면 이 단계는 건너뛰어도 됩니다.
@@ -448,6 +526,84 @@ docker info
 ```
 
 > 💡 Companies with 250+ employees may need a paid Docker Desktop licence. Free alternative: **Colima** (`brew install colima`, only when Homebrew is allowed).
+
+### Step 2.5 — Docker basics (turning the daemon = server on/off)
+
+> 🤔 **"What's the daemon? Do I have to start the server every time?"**
+>
+> Mental model: Docker has **two parts**.
+> - 🐳 **Docker daemon (server)** = the background engine that actually runs containers. **The whale icon in the menu bar = daemon running.**
+> - 💻 **`docker` CLI (client)** = the command in your terminal that sends instructions to the daemon.
+>
+> **If the daemon isn't running, every `docker` command fails** with "Cannot connect to the Docker daemon" — and OpenClaw won't work either.
+
+#### Start the daemon (server)
+
+| Method | Command / Action |
+|---|---|
+| 🖱 **Open the app** (easiest) | Applications → **Docker.app**, or Spotlight (`⌘ Space` → "docker") |
+| ⌨ **Terminal** | `open -a Docker` |
+| 🔄 **Auto-start on login** (default ON) | Docker Desktop Settings → General → "Start Docker Desktop when you sign in" |
+
+After starting, **wait 30–60 s for the menu-bar 🐳 whale to stop animating** — only then are `docker` commands ready.
+
+#### Check the daemon is up
+
+```bash
+docker info | head -5     # "Server: Docker Engine ..." line means OK
+docker ps                  # Header (CONTAINER ID  IMAGE  ...) means OK
+```
+
+If you see `Cannot connect to the Docker daemon` it's still booting — wait a bit, or click the menu-bar whale to see status.
+
+#### Stop / restart the daemon
+
+| Action | How |
+|---|---|
+| 🛑 **Quit** | Menu-bar 🐳 → **Quit Docker Desktop** |
+| 🔁 **Restart** | Menu-bar 🐳 → **Restart** (helps with crashes / memory leaks) |
+| ⌨ **Quit from terminal** | `osascript -e 'quit app "Docker"'` |
+
+> 💡 Stopping the daemon **also stops any running OpenClaw containers** (data is preserved; restart and they come back).
+
+#### What's in the Docker Desktop window?
+
+Menu-bar 🐳 → **Dashboard** (or click the app icon) opens the GUI. Sidebar tabs:
+
+| Tab | What |
+|---|---|
+| **Containers** | Running & stopped containers. ▶️ start, ⏹ stop, 🗑 delete, view logs — all clickable. OpenClaw containers show up here. |
+| **Images** | Downloaded container images (disk usage). |
+| **Volumes** | Persistent data stores (OpenClaw backups & sessions live here). |
+| **Builds** | Images you built locally (rarely used by OpenClaw users). |
+| **Settings (⚙)** | RAM/CPU allocation, auto-start toggle, Rosetta toggle, etc. |
+
+> 💡 **You can do everything via the Dashboard** without typing — but for OpenClaw, prefer `./openclaw` commands so security features (network isolation, automatic backups) apply.
+
+#### How OpenClaw uses the daemon
+
+```
+┌─────────────────┐         ┌────────────────────┐         ┌──────────────────┐
+│ ./openclaw start│ ──────> │ Docker daemon      │ ──────> │ OpenClaw         │
+│ ./openclaw stop │ command │ (menu-bar 🐳)       │ manages │ container        │
+│ ./openclaw logs │         └────────────────────┘         └──────────────────┘
+└─────────────────┘
+```
+
+`./openclaw` calls `docker compose` for you. You almost never need to run `docker` directly (only for debugging / curiosity).
+
+#### Handy `docker` commands (reference)
+
+| Command | What |
+|---|---|
+| `docker ps` | Running containers |
+| `docker ps -a` | Including stopped |
+| `docker images` | Downloaded images |
+| `docker logs <name>` | One container's logs (use `./openclaw logs` for OpenClaw) |
+| `docker stats` | Live CPU / memory |
+| `docker system df` | Disk used by Docker (or use `./openclaw clean --status`) |
+
+Number of `docker` commands an OpenClaw user must memorise: **zero**. `./openclaw` handles it all.
 
 ### Step 3 — Download Ollama directly (optional — for local LLMs)
 
