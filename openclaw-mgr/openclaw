@@ -12,7 +12,7 @@ set -euo pipefail
 OPENCLAW_MGR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 export OPENCLAW_MGR_DIR
 
-VERSION="0.1.1"
+VERSION="0.1.2"
 
 # .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
 # Auto-init: create .env from .env.example on first run — zero-config for beginners
@@ -73,6 +73,7 @@ openclaw — OpenClaw 셀프호스트 자동화 (macOS)
   restore <file>      백업 파일에서 복원 — Restore from snapshot
   schedule enable|disable|status   매일 자동 update 스케줄 — Daily auto-update toggle
   network status|isolated|online   외부 인터넷 차단 토글 — Network isolation toggle (default isolated)
+  models [list|add|remove|pull|suggest]   로컬 LLM 모델 관리 — Manage local Ollama models
   clean [--light|--all|--status]   메모리·디스크 정리 — Memory/disk cleanup (interactive)
   uninstall [--purge] OpenClaw 제거 — Remove (--purge 도 Docker/Ollama 제거)
   self-update         openclaw-workspace 매니저 자체 업데이트 — Update this launcher
@@ -97,7 +98,7 @@ cmd="${1:-menu}"
 case "$cmd" in
   -h|--help|help) usage; exit 0 ;;
   -v|--version|version) printf 'openclaw-mgr %s\n' "$VERSION"; exit 0 ;;
-  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu|self-update)
+  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu|self-update|models)
     script="$OPENCLAW_MGR_DIR/cmd/${cmd}.sh"
     [ -x "$script" ] || [ -f "$script" ] || die "내부 오류: $script 없음"
     # shellcheck disable=SC1090

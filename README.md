@@ -126,8 +126,65 @@ cd openclaw-workspace/openclaw-mgr
 | `./openclaw restore <file>` | 백업 파일에서 안전 복원 (체크섬·미리보기 검증) |
 | `./openclaw schedule enable\|disable\|status` | 매일 자동 업데이트 launchd 등록/해제 |
 | `./openclaw network status\|isolated\|online` | 외부 인터넷 차단 토글 (기본: isolated) |
+| `./openclaw models list\|add\|remove\|pull\|suggest` | 로컬 LLM 모델 관리 (·env 자동 수정) |
 | `./openclaw clean [--light\|--all\|--status]` | 메모리·디스크 정리 (비개발자용 대화형) |
 | `./openclaw uninstall [--purge]` | OpenClaw 제거. `--purge` 면 Docker/Ollama까지 |
+
+---
+
+## 🤖 모델 관리 — 내 로컬 Ollama 모델 그대로 쓰기
+
+> **핵심**: OpenClaw 의 컨테이너는 호스트의 Ollama (`host.docker.internal:11434`) 를 공유합니다. **이미 `ollama pull` 로 받아둔 모델은 재설치 필요 없으며**, 아래 목록이 그리는 그대로 동작합니다.
+
+```
+사용자 PC                                          OpenClaw 컨테이너
+┌──────────────────────────────┐                  ┌──────────────────────┐
+│ ollama list                  │   <─── 같은 ───> │ host.docker.internal │
+│  • solar-pro                 │      Ollama      │      :11434          │
+│  • exaone4.0                 │      서비스       │   (이 모델들 그대로  │
+│  • qwen2.5-coder:7b          │                  │    사용 가능)        │
+└──────────────────────────────┘                  └──────────────────────┘
+```
+
+### 비개발자 모드 (한 줄 명령)
+
+```bash
+openclaw models                  # 현재 .env 목록 + 로컬 설치된 모델 모두 보기
+openclaw models suggest          # 24GB 맥용 추천 모델 목록
+openclaw models add llama3.1:8b  # .env 에 추가 + 자동 pull
+openclaw models remove llama3.1:8b           # .env 에서 빼기 (모델 파일은 남김)
+openclaw models remove llama3.1:8b --purge   # 모델 파일까지 삭제
+openclaw models pull llava:7b    # .env 건들지 않고 pull 만
+```
+
+메뉴에서는 **14번** "모델 목록·추가". `.env` 파일을 직접 열 필요 없습니다.
+
+### 개발자 모드 (직접 편집 또는 호스트 명령)
+
+세 가지 매커니즘 중 아무거나:
+
+1. **`.env` 직접 편집** → `openclaw update` (컨테이너도 같이 갱신)
+   ```bash
+   $EDITOR ~/.openclaw-mgr/.env   # OLLAMA_MODELS="qwen2.5-coder:7b,llama3.1:8b"
+   openclaw update
+   ```
+2. **호스트에서 그냥 `ollama pull`** — OpenClaw 는 별도 설정 없이 즉시 사용 가능 (UI 에서 모델 선택)
+   ```bash
+   ollama pull qwen2.5:14b
+   ```
+3. **`openclaw models add ... --no-pull`** — 명단에만 등록하고 다음번 update 때 받기
+
+### ⚠️ isolated 모드 주의
+
+기본값 `isolated` 에서는 **호스트 Ollama 도 차단** 됩니다 (컨테이너→외부 완전 차단). 로컬 LLM 을 쓰려면:
+
+```bash
+openclaw network online --restart    # 일시 허용
+# 작업…
+openclaw network isolated --restart   # 다시 잠그기 (항상 이 상태 권장)
+```
+
+> 💡 참고: `openclaw update` 는 필요한 동안만 **자동으로** online 으로 전환하고 끝나면 원래 모드로 복귀합니다. `openclaw models add` 의 `ollama pull` 은 호스트에서 돌아 컨테이너 네트워크 토글한 필요 없습니다 (호스트 인터넷만 필요).
 
 ---
 
@@ -173,9 +230,8 @@ BACKUP_ENCRYPT="1"                                        # .env GPG 암호화
 git clone https://github.com/GoGoComputer/korea-sovereign-ai.git ~/DEV/llmDev/korea-ai
 cd ~/DEV/llmDev/korea-ai && ./install.sh --minimal     # EXAONE + A.X (~5GB)
 
-# 그 다음 OpenClaw 의 .env 에서 한국 모델 사용:
-# OLLAMA_MODELS="exaone3.5:7.8b,solar-pro:22b"
-./openclaw install
+# 그 다음 OpenClaw 에서 한 줄로 등록 (·env 자동 수정):
+openclaw models add exaone3.5:7.8b solar-pro:22b
 ```
 
 `./openclaw doctor` 가 자동으로 한국 모델을 감지해 `한국 소버린 AI: ✓` 로 표시합니다. 메모리는 24GB 에서 동시 1개 모델만 로드하는 걸 권장합니다 (`./openclaw clean` 으로 다른 모델 언로드 가능).
@@ -276,7 +332,7 @@ brew services restart ollama
 <details>
 <summary><b>다른 Ollama 모델로 바꾸려면?</b></summary>
 
-`.env` 의 `OLLAMA_MODELS` 를 수정하고 `./openclaw update` 실행. 24GB RAM 에서는 7~8B 모델 권장. 13B 이상은 자동 경고가 뜹니다.
+가장 간단: `openclaw models add <이름>` (·env 자동 수정 + pull). 이미 로컬에 있는 모델은 `openclaw models` 로 모두 확인. 추천 목록은 `openclaw models suggest`. 수동으로 하고 싶으면 `.env` 의 `OLLAMA_MODELS` 편집 후 `./openclaw update`. 24GB RAM 에서는 7~8B 추천, 13B 이상은 자동 경고.
 </details>
 
 <details>

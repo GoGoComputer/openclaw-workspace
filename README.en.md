@@ -124,8 +124,65 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 | `./openclaw restore <file>` | Verified safe restore (checksum + traversal check) |
 | `./openclaw schedule enable\|disable\|status` | Daily auto-update via launchd |
 | `./openclaw network status\|isolated\|online` | Toggle outbound internet (default: isolated) |
+| `./openclaw models list\|add\|remove\|pull\|suggest` | Manage local Ollama models (auto-edits `.env`) |
 | `./openclaw clean [--light\|--all\|--status]` | Memory & disk cleanup (interactive, non-developer friendly) |
 | `./openclaw uninstall [--purge]` | Remove. `--purge` also removes Docker/Ollama |
+
+---
+
+## 🤖 Models — use your existing local Ollama models
+
+> **Key fact**: the OpenClaw container shares your host's Ollama (`host.docker.internal:11434`). **Models you already pulled with `ollama pull` are reused as-is** — nothing to re-download. The list below just illustrates the wiring.
+
+```
+Your Mac                                       OpenClaw container
+┌──────────────────────────────┐                  ┌──────────────────────┐
+│ ollama list                  │ <─── same ───> │ host.docker.internal │
+│  • solar-pro                 │    Ollama        │      :11434          │
+│  • exaone4.0                 │    daemon        │  (these are usable   │
+│  • qwen2.5-coder:7b          │                  │   inside OpenClaw)   │
+└──────────────────────────────┘                  └──────────────────────┘
+```
+
+### Non-developer mode (one-line commands)
+
+```bash
+openclaw models                  # show .env entries + every model on your host
+openclaw models suggest          # curated picks for 24GB Apple Silicon
+openclaw models add llama3.1:8b  # append to .env + auto `ollama pull`
+openclaw models remove llama3.1:8b           # remove from .env (model file kept)
+openclaw models remove llama3.1:8b --purge   # also `ollama rm`
+openclaw models pull llava:7b    # pull only — no .env change
+```
+
+In the interactive menu, choose **option 14** — "List / add models". You never need to open `.env` by hand.
+
+### Developer mode (edit directly or use the host)
+
+Any of these works:
+
+1. **Edit `.env` and run update** (containers refresh too):
+   ```bash
+   $EDITOR ~/.openclaw-mgr/.env   # OLLAMA_MODELS="qwen2.5-coder:7b,llama3.1:8b"
+   openclaw update
+   ```
+2. **Just `ollama pull` on the host** — OpenClaw picks it up immediately (selectable in the UI):
+   ```bash
+   ollama pull qwen2.5:14b
+   ```
+3. **`openclaw models add ... --no-pull`** — register the name now, fetch on next update.
+
+### ⚠️ Caveat: `isolated` mode blocks the host Ollama too
+
+In the default `isolated` mode the container has **no network at all**, including to your host's Ollama. To use local LLMs:
+
+```bash
+openclaw network online --restart    # temporarily allow
+# … work …
+openclaw network isolated --restart   # lock back down (recommended default)
+```
+
+> 💡 `openclaw update` flips the mode to `online` **automatically** for the duration, then restores it. `openclaw models add` runs `ollama pull` on the host (not inside the container), so it works regardless of the container's network mode — it only needs host internet.
 
 ---
 
@@ -171,9 +228,8 @@ Sister project [**korea-sovereign-ai**](https://github.com/GoGoComputer/korea-so
 git clone https://github.com/GoGoComputer/korea-sovereign-ai.git ~/DEV/llmDev/korea-ai
 cd ~/DEV/llmDev/korea-ai && ./install.sh --minimal     # EXAONE + A.X (~5GB)
 
-# Then in OpenClaw's .env:
-# OLLAMA_MODELS="exaone3.5:7.8b,solar-pro:22b"
-./openclaw install
+# Then register them in OpenClaw with one command (auto-edits .env):
+openclaw models add exaone3.5:7.8b solar-pro:22b
 ```
 
 `./openclaw doctor` auto-detects Korean models and shows them in the report. With 24GB RAM, keep only one model loaded at a time (use `./openclaw clean` to unload others).
@@ -273,7 +329,7 @@ brew services restart ollama
 <details>
 <summary><b>How do I switch Ollama models?</b></summary>
 
-Edit `OLLAMA_MODELS` in `.env`, then `./openclaw update`. With 24GB RAM, 7–8B models are recommended; 13B+ triggers a confirmation prompt.
+Easiest: `openclaw models add <name>` (auto-edits `.env` + pulls). To see what you already have locally and what's configured, run `openclaw models`. For a curated list: `openclaw models suggest`. The manual route still works — edit `OLLAMA_MODELS` in `.env`, then `./openclaw update`. With 24GB RAM, 7–8B models are recommended; 13B+ triggers a confirmation prompt.
 </details>
 
 <details>

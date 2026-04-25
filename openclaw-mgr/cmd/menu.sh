@@ -67,6 +67,9 @@ show_menu() {
   ─── $(t "보안 / Security" "Security") ───────────────────────────────────────
   11) $(t "네트워크 격리 토글 (network)" "Toggle network isolation (network)")
 
+  ─── $(t "모델 / Models" "Models") ─────────────────────────────────────────────
+  14) $(t "모델 목록·추가 (models)" "List / add models (models)")
+
   ─── $(t "삭제 / Uninstall" "Uninstall") ────────────────────────────────────
   12) $(t "OpenClaw 제거 (uninstall)" "Remove OpenClaw (uninstall)")
 
@@ -152,6 +155,12 @@ while true; do
           pause ;;
       esac ;;
     13) run_cmd self-update || true; pause ;;
+    14)
+      run_cmd models list || true
+      printf '  %s ' "$(t '추가할 모델명 (Enter 로 건너뛰기):' 'Model name to add (Enter to skip):')"
+      read -r m || true
+      if [ -n "${m:-}" ]; then run_cmd models add "$m" || true; fi
+      pause ;;
     q|Q|"") clear 2>/dev/null || true; exit 0 ;;
     *)
       printf '  %s\n' "$(t '알 수 없는 선택입니다.' 'Unknown selection.')"; pause ;;
