@@ -62,6 +62,35 @@ arch -x86_64 echo ok    # Rosetta 정상 작동 시: ok
 
 > 💡 **권장**: OpenClaw 만 쓸 거면 그냥 **Disable Rosetta**. 나중에 필요해지면 Settings → General → "Use Rosetta for x86_64/amd64 emulation" 로 다시 켤 수 있습니다.
 
+### Docker Desktop 첫 실행 — 업데이트 안내 / 시스템 비밀번호 / "백그라운드 실행" 알림
+
+[Disable Rosetta] 다음에 **순서대로** 다음 화면들이 뜨는 것은 모두 **정상** 입니다. 그냥 따라가시면 됩니다.
+
+| 순서 | 화면 / 다이얼로그 | 어떻게 |
+|---|---|---|
+| 1 | "**A new version of Docker Desktop is available**" 업데이트 안내 | **[Update and Restart]** 또는 **[Install Update]** 클릭. 길어야 1~2분, 자동 재시작. (지금은 [Skip] 가능하지만 빨리 깔수록 좋음.) |
+| 2 | "**Docker Desktop needs privileged access**" + macOS 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → **[OK]**. 이건 Docker 가 가상화 헬퍼·네트워크 드라이버를 설치하기 위한 1회성 권한입니다. |
+| 3 | "**Welcome to Docker**" / 설문 (사용 목적 등) | 원하면 작성, **[Skip]** 도 가능. OpenClaw 와 무관. |
+| 4 | 우측 상단 알림 — "**'Docker' can run in the background. You can manage background activity in Login Items & Extensions.**" | macOS 의 정보성 알림. **그냥 무시** 하면 됩니다. 의미: Docker 데몬이 메뉴바에 살아 있는다는 뜻 (정상). 자동시작이 싫으면 **시스템 설정 → 일반 → 로그인 항목 → 백그라운드 항목** 에서 `Docker` 토글 OFF. |
+
+### ⚠️ 비밀번호 다이얼로그가 의심스러우면
+
+진짜 macOS 시스템 다이얼로그인지 확인하는 법:
+- 다이얼로그가 **화면 중앙**에 뜨고 (앱 안이 아니라)
+- 자물쇠 아이콘 + "Touch ID 또는 비밀번호로..." 문구
+- 발신자: `com.docker.vmnetd` 또는 `com.docker.helper`
+- macOS 의 다른 모든 작업이 어두워짐 (모달)
+
+위 4가지가 모두 맞으면 진짜입니다. 1회만 묻고 그 뒤로는 안 묻습니다.
+
+### 첫 실행 끝났는지 확인
+
+메뉴바 우측 상단 🐳 고래 아이콘이 **움직이지 않는 상태** = 데몬 준비 완료. 터미널에서:
+```bash
+docker --version
+docker info        # Server: ... 행이 보이면 OK
+```
+
 ### `pull access denied for ...` (compose pull 실패)
 
 비공개 레지스트리 또는 잘못된 이미지 태그. `OPENCLAW_REPO` 확인 + `docker login` 필요할 수 있음.

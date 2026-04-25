@@ -85,6 +85,17 @@ clang --version
    > 🖡️ **외장 마우스 사용자**: 단순히 왼쪽 버튼을 꾹 누른 상태로 이동 → 목적지에서 놈기.
 
 5. **Applications 폴더 열기** (Finder 왼쪽 사이드바 → "응용 프로그램" 또는 `Cmd+⇧+A`) → **Docker** 더블클릭으로 첫 실행 → 약관 동의 → 권한 다이얼로그(헬퍼 설치) 통과 → 메뉴바 우측 상단에 🐳 고래 아이콘 등장.
+
+   #### 첫 실행 시 순서대로 뜨는 다이얼로그들 (전부 정상)
+
+   | 순서 | 화면 | 어떻게 |
+   |---|---|---|
+   | 1 | **Rosetta installation failed** (Apple Silicon만, 가끔) | **[Disable Rosetta]** 클릭. OpenClaw 이미지는 ARM64 네이티브라 불필요. ([상세](TROUBLESHOOTING.md#docker-desktop---rosetta-installation-failed--vzerrordomain-code1-apple-silicon)) |
+   | 2 | **A new version of Docker Desktop is available** | **[Update and Restart]** — 1~2분 후 자동 재시작 |
+   | 3 | **Docker needs privileged access** + 시스템 비밀번호 입력창 | macOS 로그인 비밀번호 (Touch ID 가능) 입력 → [OK]. 1회성 권한. |
+   | 4 | **Welcome to Docker** + 사용 목적 설문 | 원하면 작성, **[Skip]** 가능 |
+   | 5 | 우측 상단 알림 "**'Docker' can run in the background**" | 무시. Docker 가 메뉴바에 살아 있다는 뜻 (정상) |
+
 6. 고래 아이콘이 멈춘 상태(움직이지 않음) = 준비 완료.
 
 확인:
@@ -328,6 +339,17 @@ clang --version
    > 🖡️ **External-mouse users**: hold the left button down while moving → release at the destination.
 
 5. **Open Applications** (Finder sidebar → "Applications" or `Cmd+⇧+A`) → double-click **Docker** to launch first time → accept terms → grant the helper permission dialog → 🐳 whale icon appears in the menu bar.
+
+   #### First-launch dialogs you'll see, in order (all normal)
+
+   | # | Screen | What to do |
+   |---|---|---|
+   | 1 | **Rosetta installation failed** (Apple Silicon only, sometimes) | Click **[Disable Rosetta]**. OpenClaw images are ARM64-native — Rosetta isn't needed. ([details](TROUBLESHOOTING.md#docker-desktop---rosetta-installation-failed--vzerrordomain-code1-apple-silicon)) |
+   | 2 | **A new version of Docker Desktop is available** | Click **[Update and Restart]** — auto-restarts in ~1–2 min |
+   | 3 | **Docker needs privileged access** + macOS password prompt | Enter your macOS login password (Touch ID works) → [OK]. One-time permission. |
+   | 4 | **Welcome to Docker** + usage survey | Fill if you want, or **[Skip]** |
+   | 5 | Top-right notification: "**'Docker' can run in the background**" | Ignore. Just means Docker lives in the menu bar (normal). |
+
 6. Whale stops animating = ready.
 
 Verify:
