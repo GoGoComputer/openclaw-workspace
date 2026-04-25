@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# =============================================================================
+# scripts/shorts — Pinterest → 미리캔버스 → CapCut Web → 쇼츠 자동화 CLI
+# -----------------------------------------------------------------------------
+# 사용법:
+#   shorts setup                      # 1회 세팅 (의존성 + 영구 프로필)
+#   shorts refs "여행 감성 풍경"      # 핀터레스트에서 레퍼런스 다운로드
+#   shorts miri-login                 # 미리캔버스 로그인 (1회)
+#   shorts miri "여행 감성 풍경"      # 미리캔버스 1080×1920에 이미지 배치
+#   shorts capcut-login               # CapCut Web 로그인 (1회)
+#   shorts capcut "여행 감성 풍경"    # CapCut Web 슬라이드쇼 + BGM + 자막 + 내보내기
+#   shorts run "여행 감성 풍경"       # refs → miri → capcut 풀체인
+#   shorts doctor                     # 환경 진단
+#
+# 보안 모델:
+#   • 호스트(맥북) 위에서 실행. OpenClaw Docker 컨테이너는 isolated 그대로.
+#   • Playwright 영구 프로필(profiles/miri-1, capcut-1)에 세션만 저장.
+#   • 호스트 ~/.ssh, OpenClaw .env 접근 0. 모든 산출물은 SHORTS_HOME 내.
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SHORTS_HOME="${SHORTS_HOME:-$HOME/openclaw-shorts}"
+ENV_FILE="$SHORTS_HOME/.env"
+
+c_ok()   { printf '\033[0;32m✔\033[0m %s\n' "$*"; }
+c_info() { printf '\033[0;36m▸\033[0m %s\n' "$*"; }
+c_warn() { printf '\033[0;33m!\033[0m %s\n' "$*"; }
+c_die()  { printf '\033[0;31m✗\033[0m %s\n' "$*" >&2; exit 1; }
+
+# ── env / venv 로드 ─────────────────────────────────────────────────────────
+load_env() {
+  [ -f "$ENV_FILE" ] || c_die ".env 없음 — 먼저 'shorts setup' 실행"
+  set -a; . "$ENV_FILE"; set +a
+  VENV="$SHORTS_HOME/.venv"
+  [ -f "$VENV/bin/activate" ] || c_die "venv 없음 — 'shorts setup' 다시 실행"
+  . "$VENV/bin/activate"
+}
+
+# ── 간단 슬러그 (한글 보존) ─────────────────────────────────────────────────
+slugify() {
+  python3 -c "import re,sys; s=sys.argv[1].lower(); s=re.sub(r'[^a-z0-9가-힣]+','-',s); print(s.strip('-')[:50] or 'shorts')" "$1"
+}
+
+# ── subcommands ─────────────────────────────────────────────────────────────
+cmd_setup() {
+  exec "$REPO_DIR/scripts/shorts-setup.sh"
+}
+
+cmd_refs() {
+  load_env
+  local q="${1:-}"; [ -n "$q" ] || c_die "사용: shorts refs \"검색어\""
+  local slug; slug="$(slugify "$q")"
+  local out="$SHORTS_HOME/refs/$slug"
+  mkdir -p "$out"
+  c_info "Pinterest: '$q' → $out"
+  command -v gallery-dl >/dev/null || c_die "gallery-dl 미설치 — 'shorts setup'"
+  # 핀터레스트 검색 결과를 N개 다운로드
+  local n="${REFS_PER_QUERY:-12}"
+  gallery-dl --range "1-$n" --dest "$out" \
+    "https://www.pinterest.com/search/pins/?q=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))' "$q")" \
+    || c_warn "gallery-dl 결과가 없거나 일부 실패 (Pinterest UA/쿠키 이슈 가능)"
+  c_ok "다운로드 완료: $(find "$out" -type f \( -iname '*.jpg' -o -iname '*.png' -o -iname '*.webp' \) | wc -l | tr -d ' ') 개"
+}
+
+cmd_miri_login() {
+  load_env
+  python3 "$REPO_DIR/scripts/shorts-lib/miri.py" login
+}
+
+cmd_miri() {
+  load_env
+  local q="${1:-}"; [ -n "$q" ] || c_die "사용: shorts miri \"검색어\""
+  local slug; slug="$(slugify "$q")"
+  python3 "$REPO_DIR/scripts/shorts-lib/miri.py" run \
+    --slug "$slug" --refs "$SHORTS_HOME/refs/$slug" \
+    "${@:2}"
+}
+
+cmd_capcut_login() {
+  load_env
+  python3 "$REPO_DIR/scripts/shorts-lib/capcut.py" login
+}
+
+cmd_capcut() {
+  load_env
+  local q="${1:-}"; [ -n "$q" ] || c_die "사용: shorts capcut \"검색어\""
+  local slug; slug="$(slugify "$q")"
+  python3 "$REPO_DIR/scripts/shorts-lib/capcut.py" run \
+    --slug "$slug" --refs "$SHORTS_HOME/refs/$slug" \
+    "${@:2}"
+}
+
+cmd_run() {
+  local q="${1:-}"; [ -n "$q" ] || c_die "사용: shorts run \"검색어\""
+  cmd_refs "$q"
+  cmd_miri "$q"
+  cmd_capcut "$q"
+  c_ok "풀체인 완료. 결과: $SHORTS_HOME/out/$(slugify "$q")/"
+}
+
+cmd_doctor() {
+  load_env
+  python3 "$REPO_DIR/scripts/shorts-lib/doctor.py"
+}
+
+cmd_help() {
+  sed -n '4,20p' "$0" | sed 's/^# //; s/^#//'
+}
+
+# ── dispatch ────────────────────────────────────────────────────────────────
+case "${1:-help}" in
+  setup)         shift; cmd_setup ;;
+  refs)          shift; cmd_refs "$@" ;;
+  miri-login)    shift; cmd_miri_login ;;
+  miri)          shift; cmd_miri "$@" ;;
+  capcut-login)  shift; cmd_capcut_login ;;
+  capcut)        shift; cmd_capcut "$@" ;;
+  run)           shift; cmd_run "$@" ;;
+  doctor)        shift; cmd_doctor ;;
+  -h|--help|help) cmd_help ;;
+  *) c_die "알 수 없는 명령: $1 (shorts help)" ;;
+esac
