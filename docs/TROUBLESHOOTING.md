@@ -74,6 +74,57 @@ curl -sIL -o /dev/null -w "%{http_code}\n" \
 
 > 💡 502 / 503 / 504 는 모두 동일한 처방. GitHub 상태는 https://www.githubstatus.com 에서 확인.
 
+#### 502 가 계속될 때 — 개발자용 수동 설치 / Manual install fallback (developer)
+
+GitHub codeload 가 길게 죽었을 때, 또는 brew 의존 없이 바로 쓰고 싶을 때:
+
+**A) git clone 으로 바로 사용 (가장 확실)**
+
+```bash
+git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/openclaw-workspace
+cd ~/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+./openclaw install
+
+# PATH 에 등록하고 싶으면 (선택)
+ln -sf "$PWD/openclaw" /usr/local/bin/openclaw    # Intel macOS
+# 또는
+ln -sf "$PWD/openclaw" /opt/homebrew/bin/openclaw # Apple Silicon
+```
+
+> Git 은 codeload 가 아닌 다른 GitHub 엔드포인트를 사용해서 502 영향을 덜 받습니다.
+
+**B) tarball 직접 다운로드 후 brew 로 설치 (formula 만 사용)**
+
+```bash
+# 1) tarball 직접 받기
+curl -fL -o /tmp/openclaw-v0.1.6.tar.gz \
+  https://github.com/GoGoComputer/openclaw-workspace/archive/refs/tags/v0.1.6.tar.gz
+
+# 2) Homebrew 다운로드 캐시에 미리 넣어두기 (brew 가 다시 받지 않게)
+mv /tmp/openclaw-v0.1.6.tar.gz \
+   "$(brew --cache)/downloads/$(shasum -a 256 < /tmp/openclaw-v0.1.6.tar.gz 2>/dev/null | awk '{print $1}')--openclaw-workspace-0.1.6.tar.gz" 2>/dev/null \
+   || cp /tmp/openclaw-v0.1.6.tar.gz "$(brew --cache)/openclaw-workspace--0.1.6.tar.gz"
+
+# 3) 평소처럼 설치 시도
+brew install gogocomputer/openclaw/openclaw-workspace
+```
+
+**C) tap 없이 Formula 단일 파일로 설치**
+
+```bash
+brew install --build-from-source \
+  https://raw.githubusercontent.com/GoGoComputer/homebrew-openclaw/main/Formula/openclaw-workspace.rb
+```
+
+**D) 특정 커밋(태그) 으로 고정 / Pin to a specific tag**
+
+```bash
+git -C ~/openclaw-workspace fetch --tags
+git -C ~/openclaw-workspace checkout v0.1.6
+~/openclaw-workspace/openclaw-mgr/openclaw doctor
+```
+
 ### `zsh: unknown file attribute: ^-` 가 다음 줄에 떴다
 
 이전 출력 줄의 글리프(`✘`, `✓`)를 zsh 가 다음 명령의 일부로 잘못 해석한 결과입니다. **무해**하므로 무시하고 다음 명령을 입력하세요.
