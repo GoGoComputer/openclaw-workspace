@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.3 — 2026-04-25
+- `openclaw install`: added directory banner at start (shows exact paths before installing) and at completion (confirms actual paths created)
+- `scripts/install.sh`: added directory summary in completion banner (tool path, future agent/config/backup locations)
+
 ## v0.2.2 — 2026-04-25
 ### Security fixes (audit)
 - **BUGFIX**: `network.sh` `isolated`/`online` compose overlays used `app:` → fixed to `openclaw-gateway` + `openclaw-cli` (network isolation was NOT working before this fix)

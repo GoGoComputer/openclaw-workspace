@@ -143,13 +143,26 @@ cat <<EOF
 ${C_G}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C_OFF}
 ${C_BOLD}🎉  openclaw-workspace installed!${C_OFF}
 
+  ${C_BOLD}📂 설치 위치 / Installed locations:${C_OFF}
+    관리 도구 / Tool:       ${OPENCLAW_PREFIX}
+    명령어 링크 / Command:  ${OPENCLAW_BIN_DIR}/openclaw → ${OPENCLAW_PREFIX}/openclaw-mgr/openclaw
+
+  ${C_BOLD}설치 후 생성될 위치 / Created by 'openclaw install':${C_OFF}
+    OpenClaw 본체 / Engine: ~/DEV/openclaw            (공식 clone — 직접 수정 X)
+    에이전트 파일 / Agent:  ~/DEV/openclawAgent       (Finder 에서 확인 가능)
+    설정·토큰 / Config:    ~/.openclaw                (숨김, 자동 관리)
+    백업 / Backups:         ~/openclaw-backups
+
+  ⚠  이 레포는 로컬에 아무것도 직접 설치하지 않습니다.
+     에이전트 실행은 Docker 컨테이너 안에서만 이루어집니다.
+
   ${C_BOLD}Next — install dependencies from official sites:${C_OFF}
     Docker Desktop  https://www.docker.com/products/docker-desktop/
-    Ollama          https://ollama.com/download    (optional — local LLMs)
+    Ollama          https://ollama.com/download    (optional — local LLMs, M5 Pro GPU)
 
   ${C_BOLD}Then run:${C_OFF}
-    openclaw doctor         # verify everything is ready
-    openclaw install        # guided setup (clone OpenClaw + start containers)
+    openclaw doctor                   # verify everything is ready
+    OPENCLAW_SANDBOX=1 openclaw install  # setup with sandbox isolation (recommended)
 
   ${C_BOLD}Docs:${C_OFF}
     https://github.com/GoGoComputer/openclaw-workspace/blob/main/docs/GUIDE-MANUAL-INSTALL.md

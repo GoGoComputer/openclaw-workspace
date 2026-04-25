@@ -25,6 +25,18 @@ title "OpenClaw 설치 시작"
 info "상태 파일: $STATE_FILE  (이미 끝난 단계는 자동 스킵됩니다)"
 info "재시작/중단 후 다시 실행해도 안전합니다."
 
+# 디렉토리 안내 (설치 전 사용자에게 미리 고지)
+hr
+printf '%s📂 설치 위치 안내%s\n' "$C_BOLD" "$C_RESET" >&2
+printf '  %-32s %s\n' "OpenClaw 본체 코드:" "${OPENCLAW_DIR:-$HOME/DEV/openclaw}" >&2
+printf '  %-32s %s\n' "에이전트 작업 파일 (Finder 확인):" "${OPENCLAW_WORKSPACE_DIR:-$HOME/DEV/openclawAgent}" >&2
+printf '  %-32s %s\n' "설정·토큰 (숨김, 자동 관리):" "${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}" >&2
+printf '  %-32s %s\n' "이 관리 도구:" "$OPENCLAW_MGR_DIR" >&2
+printf '\n  %s⚠  이 레포는 로컬에 아무것도 직접 설치하지 않습니다.%s\n' "$C_YELLOW" "$C_RESET" >&2
+printf '     Docker/Ollama/OpenClaw 는 각 공식 사이트에서 받고,\n' >&2
+printf '     에이전트 실행은 Docker 컨테이너 안에서만 이루어집니다.\n' >&2
+hr
+
 # ── 1. Xcode Command Line Tools ──────────────────────────────────────────────
 step_xcode() {
   if xcode-select -p >/dev/null 2>&1; then
@@ -384,7 +396,12 @@ ok "설치 완료! 다음 단계:"
 printf '  %s./openclaw doctor%s          현재 상태 확인\n' "$C_BOLD" "$C_RESET"
 printf '  %s./openclaw logs%s            컨테이너 로그 보기\n' "$C_BOLD" "$C_RESET"
 printf '  %s./openclaw schedule enable%s 매일 자동 업데이트 활성화\n' "$C_BOLD" "$C_RESET"
-printf '\n%s🔒 네트워크 모드는 기본 isolated (외부 차단)%s\n' "$C_BOLD" "$C_RESET"
+printf '\n%s� 생성된 디렉토리%s\n' "$C_BOLD" "$C_RESET"
+printf '  %-34s %s\n' "OpenClaw 본체:" "$OPENCLAW_DIR"
+printf '  %-34s %s\n' "에이전트 파일 (Finder 에서 확인):" "$OPENCLAW_WORKSPACE_DIR"
+printf '  %-34s %s\n' "설정·토큰 (자동 관리):" "$OPENCLAW_CONFIG_DIR"
+printf '  %-34s %s\n' "백업 위치:" "${BACKUP_DIR:-$HOME/openclaw-backups}"
+printf '\n%s�🔒 네트워크 모드는 기본 isolated (외부 차단)%s\n' "$C_BOLD" "$C_RESET"
 printf '  업데이트가 필요할 때만 잠깐 켜세요:\n'
 printf '    %s./openclaw network online --restart%s\n' "$C_BOLD" "$C_RESET"
 printf '    %s./openclaw update%s\n' "$C_BOLD" "$C_RESET"
