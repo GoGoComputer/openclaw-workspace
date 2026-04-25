@@ -36,6 +36,32 @@ sudo rm -rf /Library/Developer/CommandLineTools
 xcode-select --install
 ```
 
+### `Docker Desktop - Rosetta installation failed` / `VZErrorDomain Code=1` (Apple Silicon)
+
+Docker Desktop 첫 실행 시 Apple Silicon 맥에서 Rosetta 2 자동 설치가 실패할 때 뜨는 다이얼로그입니다. **Docker 자체는 정상**이며, OpenClaw 가 사용하는 모든 이미지는 ARM64 네이티브라 Rosetta 가 **필요 없습니다**.
+
+**가장 쉬운 해결: 다이얼로그의 [Disable Rosetta] 버튼을 클릭하세요.** 끝.
+
+그래도 Rosetta 를 깔고 싶으면 (다른 Intel-only 이미지를 같이 쓸 일이 있을 때):
+
+```bash
+# 터미널에서 직접 설치 (자동 설치보다 성공률이 높음)
+softwareupdate --install-rosetta --agree-to-license
+
+# 그 다음 Docker 다이얼로그의 [Retry] 클릭
+# 또는 Docker 자체를 재시작:
+osascript -e 'quit app "Docker"' && sleep 5 && open -a Docker
+```
+
+확인:
+```bash
+docker --version
+docker info       # Server: ... 행이 보이면 OK
+arch -x86_64 echo ok    # Rosetta 정상 작동 시: ok
+```
+
+> 💡 **권장**: OpenClaw 만 쓸 거면 그냥 **Disable Rosetta**. 나중에 필요해지면 Settings → General → "Use Rosetta for x86_64/amd64 emulation" 로 다시 켤 수 있습니다.
+
 ### `pull access denied for ...` (compose pull 실패)
 
 비공개 레지스트리 또는 잘못된 이미지 태그. `OPENCLAW_REPO` 확인 + `docker login` 필요할 수 있음.
