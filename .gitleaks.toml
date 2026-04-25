@@ -1,0 +1,13 @@
+# gitleaks 설정 — 커스텀 룰 추가 가능
+# 기본 룰셋이 강력하므로 보통 비워둬도 됩니다.
+
+title = "openclaw-workspace gitleaks"
+
+[allowlist]
+description = "허용 목록"
+paths = [
+  '''README\.md''',
+  '''README\.en\.md''',
+  '''docs/.*''',
+  '''.env\.example''',
+]

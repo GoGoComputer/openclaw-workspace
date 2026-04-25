@@ -1,0 +1,308 @@
+#!/usr/bin/env bash
+# =============================================================================
+# cmd/install.sh — 부족한 부분만 자동 설치 (멱등, 이어서 세팅 가능)
+# 단계: Xcode CLT → Homebrew → Docker → (Ollama+모델) → 저장소 clone →
+#       .env 머지 → compose up → 헬스체크
+# 각 단계는 state 에 마킹되어 다음 실행 시 자동 스킵.
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+# shellcheck disable=SC1091
+. "${OPENCLAW_MGR_DIR}/lib/common.sh"
+# shellcheck disable=SC1091
+. "${OPENCLAW_MGR_DIR}/lib/sec.sh"
+# shellcheck disable=SC1091
+. "${OPENCLAW_MGR_DIR}/lib/detect.sh"
+# shellcheck disable=SC1091
+. "${OPENCLAW_MGR_DIR}/lib/prompt.sh"
+
+require_macos
+trap cleanup_tmp EXIT
+
+# ── 0. 사전 점검 ─────────────────────────────────────────────────────────────
+title "OpenClaw 설치 시작"
+info "상태 파일: $STATE_FILE  (이미 끝난 단계는 자동 스킵됩니다)"
+info "재시작/중단 후 다시 실행해도 안전합니다."
+
+# ── 1. Xcode Command Line Tools ──────────────────────────────────────────────
+step_xcode() {
+  if xcode-select -p >/dev/null 2>&1; then
+    info "이미 설치됨: $(xcode-select -p)"
+    return 0
+  fi
+  warn "Xcode Command Line Tools 가 필요합니다."
+  info "GUI 다이얼로그가 뜹니다. 설치 완료 후 이 스크립트를 다시 실행하세요."
+  xcode-select --install || true
+  return 1
+}
+run_step xcode_clt "Xcode CLT 설치 확인" -- step_xcode
+
+# ── 2. Homebrew ──────────────────────────────────────────────────────────────
+step_brew() {
+  if command -v brew >/dev/null 2>&1; then
+    info "이미 설치됨: $(brew --prefix)"
+    return 0
+  fi
+  warn "Homebrew 를 공식 설치 스크립트로 설치합니다."
+  info "출처: https://brew.sh (apple.com 에서 노션을 받음)"
+  if ! confirm "Homebrew 를 설치하시겠습니까?" y; then
+    err "Homebrew 없이는 진행할 수 없습니다."
+    return 1
+  fi
+  /bin/bash -c "$(curl -fsSL --proto '=https' --tlsv1.2 \
+    https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  # PATH 보정 (Apple Silicon)
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
+run_step brew "Homebrew 설치" -- step_brew
+
+# ── 3. Docker Desktop ────────────────────────────────────────────────────────
+step_docker_install() {
+  if command -v docker >/dev/null 2>&1; then
+    info "이미 설치됨"
+    return 0
+  fi
+  info "Homebrew Cask 로 Docker Desktop 설치"
+  brew install --cask docker
+}
+run_step docker_install "Docker Desktop 설치" -- step_docker_install
+
+step_docker_start() {
+  if docker info >/dev/null 2>&1; then
+    info "Docker 데몬 이미 실행 중"
+    return 0
+  fi
+  info "Docker Desktop 앱 실행"
+  open -a "Docker" || die "Docker.app 을 열 수 없습니다. 수동 실행 후 재시도하세요."
+  info "데몬 기동을 기다립니다 (최대 90초)..."
+  local i
+  for i in $(seq 1 90); do
+    if docker info >/dev/null 2>&1; then
+      ok "Docker 데몬 준비 완료 (${i}s)"
+      return 0
+    fi
+    sleep 1
+  done
+  err "Docker 데몬이 시간 내 기동하지 않았습니다."
+  err "Docker Desktop 첫 실행 시 약관 동의가 필요할 수 있습니다."
+  return 1
+}
+run_step docker_start "Docker 데몬 시작" -- step_docker_start
+
+# ── 4. Ollama (선택) ─────────────────────────────────────────────────────────
+ENABLE_OLLAMA="${ENABLE_OLLAMA:-1}"
+if [ "$ENABLE_OLLAMA" = "1" ]; then
+  step_ollama_install() {
+    command -v ollama >/dev/null 2>&1 && { info "이미 설치됨"; return 0; }
+    brew install ollama
+  }
+  run_step ollama_install "Ollama 설치" -- step_ollama_install
+
+  step_ollama_start() {
+    if curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+      info "Ollama 이미 실행 중"
+      return 0
+    fi
+    brew services start ollama
+    local i
+    for i in $(seq 1 30); do
+      if curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+        ok "Ollama 데몬 준비 완료 (${i}s)"
+        return 0
+      fi
+      sleep 1
+    done
+    err "Ollama 데몬이 응답하지 않습니다."
+    return 1
+  }
+  run_step ollama_start "Ollama 데몬 시작" -- step_ollama_start
+
+  step_ollama_models() {
+    local models="${OLLAMA_MODELS:-}"
+    if [ -z "$models" ]; then
+      info "OLLAMA_MODELS 가 비어 있어 다운로드 단계를 스킵합니다."
+      return 0
+    fi
+    if ! sec_validate_models "$models"; then
+      err "OLLAMA_MODELS 형식이 올바르지 않습니다: $models"
+      return 1
+    fi
+    # RAM 경고
+    eval "$(detect_hw)"
+    local m
+    IFS=','
+    for m in $models; do
+      m="$(printf '%s' "$m" | tr -d '[:space:]')"
+      [ -z "$m" ] && continue
+      case "$m" in
+        *:1[3-9]b*|*:[2-9][0-9]b*|*:70b*)
+          if [ "${ram_gb:-0}" -lt 32 ]; then
+            warn "$m 은 24GB RAM 에서 부담스럽습니다. 계속하려면 확인하세요."
+            confirm "$m 을 계속 다운로드?" n || continue
+          fi
+          ;;
+      esac
+      info "ollama pull $m"
+      ollama pull "$m" || warn "$m pull 실패 — 다음 모델 진행"
+    done
+    unset IFS
+  }
+  run_step ollama_models "Ollama 모델 다운로드" -- step_ollama_models
+else
+  info "ENABLE_OLLAMA=0 — Ollama 단계 스킵"
+fi
+
+# ── 5. OpenClaw 저장소 ───────────────────────────────────────────────────────
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+
+step_repo() {
+  local repo="${OPENCLAW_REPO:-}"
+  if [ -z "$repo" ]; then
+    warn ".env 의 OPENCLAW_REPO 가 비어 있습니다."
+    info "OpenClaw 공식 저장소 URL을 입력하세요 (https://github.com/<owner>/<repo>.git)"
+    info "URL을 모르면 빈 값으로 두고 Enter — 이 단계는 다음 실행에서 다시 시도합니다."
+    repo="$(ask_value "OPENCLAW_REPO" "" sec_validate_repo_url || true)"
+    if [ -z "$repo" ]; then
+      err "저장소 URL 없이는 진행할 수 없습니다. .env 에 OPENCLAW_REPO 를 설정하고 다시 실행하세요."
+      return 1
+    fi
+  fi
+  if ! sec_validate_repo_url "$repo"; then
+    err "안전하지 않은 저장소 URL: $repo"
+    return 1
+  fi
+  if [ -d "$OPENCLAW_DIR/.git" ]; then
+    info "이미 클론됨: $OPENCLAW_DIR"
+    git -C "$OPENCLAW_DIR" fetch --tags --prune || warn "git fetch 실패"
+  else
+    info "git clone --depth 1 $repo → $OPENCLAW_DIR"
+    git clone --depth 1 -- "$repo" "$OPENCLAW_DIR"
+  fi
+  # 핀 모드: 특정 커밋 체크아웃
+  if [ -n "${OPENCLAW_PIN_COMMIT:-}" ]; then
+    info "핀 적용: $OPENCLAW_PIN_COMMIT"
+    git -C "$OPENCLAW_DIR" fetch origin "$OPENCLAW_PIN_COMMIT" --depth 1 || true
+    git -C "$OPENCLAW_DIR" checkout --detach "$OPENCLAW_PIN_COMMIT"
+  fi
+}
+run_step repo_clone "OpenClaw 저장소 준비" -- step_repo
+
+# ── 5b. compose 보안 사전 검사 (소켓 마운트 차단) ─────────────────────────────
+step_compose_scan() {
+  if ! sec_scan_compose "$OPENCLAW_DIR" >/dev/null 2>&1; then
+    err "위험: compose 파일에 /var/run/docker.sock 마운트가 발견되었습니다."
+    err "이 마운트는 컨테이너에서 호스트를 완전히 장악할 수 있는 권한입니다."
+    err "해당 줄을 제거하거나, 신뢰 가능한 fork 를 사용하세요."
+    return 1
+  fi
+  ok "compose 파일에 위험 마운트 없음"
+}
+run_step compose_scan "compose 보안 검사" -- step_compose_scan
+
+# ── 6. .env 머지 ─────────────────────────────────────────────────────────────
+step_env_merge() {
+  local target="$OPENCLAW_DIR/.env" example="$OPENCLAW_DIR/.env.example"
+  if [ ! -f "$example" ]; then
+    info "저장소에 .env.example 없음 — 단계 스킵"
+    return 0
+  fi
+  if [ ! -f "$target" ]; then
+    cp -- "$example" "$target"
+    ok "$target 생성"
+  else
+    # 누락 키만 추가 (덮어쓰지 않음)
+    local key
+    while IFS= read -r line; do
+      case "$line" in
+        ''|'#'*) continue ;;
+        *=*)
+          key="${line%%=*}"
+          if ! grep -qE "^${key}=" "$target" 2>/dev/null; then
+            printf '%s\n' "$line" >> "$target"
+            info "키 추가: $key"
+          fi
+          ;;
+      esac
+    done < "$example"
+  fi
+  chmod 600 "$target" 2>/dev/null || true
+  sec_check_env_file "$target" || true
+}
+run_step env_merge ".env 머지" -- step_env_merge
+
+# ── 7. compose up ────────────────────────────────────────────────────────────
+step_compose_up() {
+  cd "$OPENCLAW_DIR"
+  local files="-f docker-compose.yml"
+  [ -f compose.yml ] && files="-f compose.yml"
+  # 보안 override 가 우리 디렉터리에 있으면 함께 사용
+  local sec="$OPENCLAW_MGR_DIR/compose.security.yml"
+  [ -f "$sec" ] && files="$files -f $sec"
+  # 첫 실행 시 컨테이너가 의존성을 받아야 할 수도 있으므로 install 단계에서는
+  # online 으로 시작합니다. 끝나고 자동으로 isolated 로 전환합니다.
+  bash "$OPENCLAW_MGR_DIR/cmd/network.sh" online >/dev/null
+  local net="$OPENCLAW_MGR_DIR/compose.network.yml"
+  [ -f "$net" ] && files="$files -f $net"
+  # shellcheck disable=SC2086
+  docker compose $files up -d
+}
+run_step compose_up "OpenClaw 컨테이너 시작" -- step_compose_up
+
+# ── 8. 헬스체크 ──────────────────────────────────────────────────────────────
+step_health() {
+  cd "$OPENCLAW_DIR"
+  local i
+  for i in $(seq 1 60); do
+    local n_total n_running
+    n_total="$(docker compose ps -q | wc -l | tr -d ' ')"
+    n_running="$(docker compose ps --status running -q | wc -l | tr -d ' ')"
+    if [ "$n_total" -gt 0 ] && [ "$n_running" -ge "$n_total" ]; then
+      ok "모든 컨테이너 실행 중 ($n_running/$n_total)"
+      # Ollama 연결 확인 (옵션)
+      if [ "${ENABLE_OLLAMA:-1}" = "1" ]; then
+        if curl -sS --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+          ok "Ollama 호스트 연결 OK"
+        else
+          warn "Ollama 호스트 응답 없음 — 컨테이너에서 host.docker.internal 로 연결 필요"
+        fi
+      fi
+      return 0
+    fi
+    sleep 2
+  done
+  warn "헬스체크 타임아웃 — './openclaw logs' 로 확인하세요"
+  return 0
+}
+run_step health "헬스체크" -- step_health
+
+# ── 9. 보안 기본값: isolated 로 자동 전환 ────────────────────────────────────
+step_lockdown() {
+  bash "$OPENCLAW_MGR_DIR/cmd/network.sh" isolated >/dev/null
+  info "재기동 후 isolated 모드 적용"
+  cd "$OPENCLAW_DIR"
+  local files="-f docker-compose.yml"
+  [ -f compose.yml ] && files="-f compose.yml"
+  local sec="$OPENCLAW_MGR_DIR/compose.security.yml"
+  local net="$OPENCLAW_MGR_DIR/compose.network.yml"
+  [ -f "$sec" ] && files="$files -f $sec"
+  [ -f "$net" ] && files="$files -f $net"
+  # shellcheck disable=SC2086
+  docker compose $files up -d
+}
+run_step lockdown "네트워크 격리(isolated) 적용" -- step_lockdown
+
+hr
+ok "설치 완료! 다음 단계:"
+printf '  %s./openclaw doctor%s          현재 상태 확인\n' "$C_BOLD" "$C_RESET"
+printf '  %s./openclaw logs%s            컨테이너 로그 보기\n' "$C_BOLD" "$C_RESET"
+printf '  %s./openclaw schedule enable%s 매일 자동 업데이트 활성화\n' "$C_BOLD" "$C_RESET"
+printf '\n%s🔒 네트워크 모드는 기본 isolated (외부 차단)%s\n' "$C_BOLD" "$C_RESET"
+printf '  업데이트가 필요할 때만 잠깐 켜세요:\n'
+printf '    %s./openclaw network online --restart%s\n' "$C_BOLD" "$C_RESET"
+printf '    %s./openclaw update%s\n' "$C_BOLD" "$C_RESET"
+printf '    %s./openclaw network isolated --restart%s\n' "$C_BOLD" "$C_RESET"

@@ -1,0 +1,30 @@
+# 시크릿 / 환경 파일 (절대 커밋 금지)
+.env
+*.env
+!.env.example
+secrets/
+
+# 백업 / 아카이브 (저장소가 커지지 않도록)
+*.tgz
+*.tar.gz
+*.tar
+*.sha256
+*.gpg
+openclaw-backups/
+
+# 로컬 상태/로그
+.openclaw-mgr/
+*.log
+
+# 자동 생성되는 compose override (./openclaw network 토글 결과)
+openclaw-mgr/compose.network.yml
+
+# OS / 에디터 부산물
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

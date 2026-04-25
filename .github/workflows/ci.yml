@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: shell static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: bash -n (parse all shell scripts)
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r -d '' f; do
+            if ! bash -n "$f"; then
+              echo "::error file=$f::bash -n failed"
+              fail=1
+            fi
+          done < <(find openclaw-mgr -type f \( -name '*.sh' -o -name openclaw \) -print0)
+          exit "$fail"
+
+      - name: shellcheck
+        # ludeeus/action-shellcheck@2.0.0
+        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca
+        env:
+          SHELLCHECK_OPTS: -S style -e SC1091 -e SC2155
+        with:
+          scandir: openclaw-mgr
+          additional_files: openclaw-mgr/openclaw
+
+      - name: shfmt diff
+        shell: bash
+        run: |
+          curl -fsSL --proto '=https' --tlsv1.2 \
+            -o /tmp/shfmt \
+            https://github.com/mvdan/sh/releases/download/v3.8.0/shfmt_v3.8.0_linux_amd64
+          echo "afef96d8e30b75c1f5a7d4dbf95a6db7e79ce5d50e66c5fbcde1ec3e1bb1c1e9 */tmp/shfmt" | sha256sum -c - || true
+          chmod +x /tmp/shfmt
+          /tmp/shfmt -d -i 2 -ci openclaw-mgr || true   # 보고용, 차단하지 않음
+
+  gitleaks:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        # gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@cc7adb6d5dfba1d5f4ab37a35b8c8cdf80d9572f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

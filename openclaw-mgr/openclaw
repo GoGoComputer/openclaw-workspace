@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# =============================================================================
+# openclaw — 단일 진입 디스패처
+# -----------------------------------------------------------------------------
+# 사용법: ./openclaw <subcommand> [args...]
+# 서브커맨드: doctor | install | start | stop | logs | update |
+#             backup | restore | schedule | uninstall | help | version
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+OPENCLAW_MGR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+export OPENCLAW_MGR_DIR
+
+VERSION="0.1.0"
+
+# .env 자동 로드 (있으면). 위치: 스크립트 디렉터리/.env  또는  $OPENCLAW_MGR_HOME/.env
+_load_env_file() {
+  local f="$1"
+  [ -f "$f" ] || return 0
+  # set -a 로 export 자동 적용. shellcheck 가 보면 disable.
+  # shellcheck disable=SC1090
+  set -a; . "$f"; set +a
+}
+_load_env_file "$OPENCLAW_MGR_DIR/.env"
+_load_env_file "${OPENCLAW_MGR_HOME:-$HOME/.openclaw-mgr}/.env"
+
+# 공통 라이브러리 로드.
+# shellcheck disable=SC1091
+. "$OPENCLAW_MGR_DIR/lib/common.sh"
+# shellcheck disable=SC1091
+. "$OPENCLAW_MGR_DIR/lib/sec.sh"
+# shellcheck disable=SC1091
+. "$OPENCLAW_MGR_DIR/lib/detect.sh"
+# shellcheck disable=SC1091
+. "$OPENCLAW_MGR_DIR/lib/prompt.sh"
+
+usage() {
+  cat <<'EOF'
+openclaw — OpenClaw 셀프호스트 자동화 (macOS)
+
+사용법:
+  ./openclaw <명령> [옵션]
+
+명령 / Commands:
+  menu                대화형 메뉴 (한국어/영어) — Interactive menu
+  doctor              현재 시스템/설치 상태를 점검 — Diagnose state
+  install             부족한 부분만 자동 설치 — Auto-install missing parts
+  start               OpenClaw 컨테이너 시작 — Start container
+  stop                OpenClaw 컨테이너 정지 — Stop container
+  logs                컨테이너 로그를 실시간으로 보기 — Tail logs
+  update              저장소 pull + 이미지 갱신 + Ollama 모델 — Update everything
+  backup [--name N]   현재 데이터(볼륨+.env) 백업 — Snapshot data
+  restore <file>      백업 파일에서 복원 — Restore from snapshot
+  schedule enable|disable|status   매일 자동 update 스케줄 — Daily auto-update toggle
+  network status|isolated|online   외부 인터넷 차단 토글 — Network isolation toggle (default isolated)
+  clean [--light|--all|--status]   메모리·디스크 정리 — Memory/disk cleanup (interactive)
+  uninstall [--purge] OpenClaw 제거 — Remove (--purge 도 Docker/Ollama 제거)
+  version             버전 출력 — Print version
+  help                이 도움말 — This help message
+
+환경 변수 (.env 또는 셸):
+  OPENCLAW_REPO         OpenClaw GitHub 저장소 URL (필수)
+  OPENCLAW_DIR          로컬 클론 경로 (기본: ~/openclaw)
+  OPENCLAW_PORT         외부 노출 포트 (기본: 8000, 127.0.0.1 바인딩)
+  ENABLE_OLLAMA         1=Ollama 자동 설치/연동, 0=비활성 (기본: 1)
+  OLLAMA_MODELS         콤마 구분 모델 목록 (예: qwen2.5-coder:7b,llama3.1:8b)
+  OPENCLAW_PIN_COMMIT   특정 커밋 핀(보안). 비우면 main 최신.
+
+문서: https://github.com/GoGoComputer/openclaw-workspace
+EOF
+}
+
+cmd="${1:-menu}"
+[ $# -gt 0 ] && shift || true
+
+case "$cmd" in
+  -h|--help|help) usage; exit 0 ;;
+  -v|--version|version) printf 'openclaw-mgr %s\n' "$VERSION"; exit 0 ;;
+  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu)
+    script="$OPENCLAW_MGR_DIR/cmd/${cmd}.sh"
+    [ -x "$script" ] || [ -f "$script" ] || die "내부 오류: $script 없음"
+    # shellcheck disable=SC1090
+    bash "$script" "$@"
+    ;;
+  *)
+    err "알 수 없는 명령: $cmd"
+    usage
+    exit 2
+    ;;
+esac

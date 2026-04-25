@@ -1,0 +1,408 @@
+# openclaw-workspace
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)](#)
+[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-blue?logo=apple)](#)
+[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B-1f425f?logo=gnu-bash)](#)
+[![CI](https://img.shields.io/github/actions/workflow/status/GoGoComputer/openclaw-workspace/ci.yml?branch=main)](https://github.com/GoGoComputer/openclaw-workspace/actions)
+
+> **OpenClaw self-host automation for macOS — install, maintain, and uninstall with one command.**
+>
+> One `./openclaw install` on a fresh MacBook sets up Docker, (optionally) Ollama, and the OpenClaw container. Idempotent: if interrupted, just rerun and it picks up where it left off. 100% local sandboxing by default.
+
+> 🇰🇷 한국어 (메인): [README.md](README.md)
+
+---
+
+## 🚀 5-minute start (non-developer friendly)
+
+> Never used a terminal? See [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) for a step-by-step walkthrough with example terminal output.
+
+```bash
+# 1) Get the code
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace/openclaw-mgr
+
+# 2) Create your settings file (only OPENCLAW_REPO is mandatory)
+cp .env.example .env
+open -e .env       # or: nano .env
+
+# 3) Just run the launcher (interactive menu — Korean/English auto-detected)
+./openclaw
+
+# Or run subcommands directly:
+./openclaw doctor          # check current state
+./openclaw install         # auto-install only what's missing
+```
+
+You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. When done:
+
+```bash
+./openclaw doctor          # everything ✓
+./openclaw schedule enable # daily auto-update at 3 AM (optional)
+```
+
+> ⚠️ **The official OpenClaw core repository URL is not yet confirmed.** You must set `OPENCLAW_REPO` in `.env` for the container step to proceed. If you know the canonical URL, please open an [issue](https://github.com/GoGoComputer/openclaw-workspace/issues/new) or PR.
+
+---
+
+## 🤔 What is this?
+
+[**OpenClaw**](https://clawbro.ai) is a powerful open-source AI agent that can run shell commands, touch files, and browse the web on your behalf. Because of that power, you must run it inside a Docker sandbox. This project automates the setup on a brand-new macOS machine.
+
+| What this tool does | What it doesn't |
+|---|---|
+| Auto-installs Homebrew · Docker · Ollama | Develop OpenClaw itself |
+| Clones the OpenClaw repo & boots containers | Cloud hosting (see [ClawBro.ai](https://clawbro.ai)) |
+| Daily auto-update via launchd | Windows / Linux |
+| Backup · restore · clean uninstall | Multi-instance |
+| Security hardening (read-only, cap_drop, 127.0.0.1-only, ...) | Channel integrations (Telegram, etc.) |
+
+---
+
+## 📋 Command catalog
+
+| Command | Description |
+|---|---|
+| `./openclaw` (or `menu`) | Interactive menu (auto KO/EN) — pick a number to do anything |
+| `./openclaw doctor` | Diagnose installed/running state (✓/✗/⚠ table) |
+| `./openclaw install` | Idempotent install. Resumes after interruption |
+| `./openclaw start` | Start container |
+| `./openclaw stop` | Stop container (data preserved) |
+| `./openclaw logs [service]` | Tail container logs (auto secret masking) |
+| `./openclaw update` | `git pull --ff-only` + image refresh + Ollama models |
+| `./openclaw backup [--name N]` | Volumes + `.env` (sha256, optional GPG encryption) |
+| `./openclaw restore <file>` | Verified safe restore (checksum + traversal check) |
+| `./openclaw schedule enable\|disable\|status` | Daily auto-update via launchd |
+| `./openclaw network status\|isolated\|online` | Toggle outbound internet (default: isolated) |
+| `./openclaw clean [--light\|--all\|--status]` | Memory & disk cleanup (interactive, non-developer friendly) |
+| `./openclaw uninstall [--purge]` | Remove. `--purge` also removes Docker/Ollama |
+
+---
+
+## ⚙️ Configuration (`.env`)
+
+Every variable in `.env.example` is commented. Highlights:
+
+```bash
+OPENCLAW_REPO="https://github.com/<owner>/openclaw.git"  # required
+OPENCLAW_DIR="$HOME/openclaw"                             # clone target
+OPENCLAW_PORT="8000"                                      # always bound to 127.0.0.1
+ENABLE_OLLAMA="1"                                         # 0 = external API only
+OLLAMA_MODELS="qwen2.5-coder:7b"                          # comma-separated
+OPENCLAW_PIN_COMMIT=""                                    # security: pin a commit
+SCHEDULE_TIME="03:00"                                     # daily auto-update
+BACKUP_DIR="$HOME/openclaw-backups"
+BACKUP_KEEP="7"                                           # rotate old backups
+BACKUP_ENCRYPT="1"                                        # GPG-encrypt .env
+```
+
+---
+
+## 💻 Shell compatibility (zsh / bash)
+
+macOS uses **zsh** by default. All scripts here start with `#!/usr/bin/env bash`, so they always run under bash regardless of the user's shell. **zsh users can use this tool directly with no changes.**
+
+```zsh
+# Works the same in zsh:
+./openclaw doctor
+./openclaw install
+```
+
+You never `source` these scripts, so `source`/`.` compatibility is a non-issue.
+
+---
+
+## 🇰🇷 Use with Korean Sovereign AI
+
+Sister project [**korea-sovereign-ai**](https://github.com/GoGoComputer/korea-sovereign-ai) (LG EXAONE / SKT A.X / Upstage Solar) by the same maintainer is **naturally compatible**. Both share the host Ollama, so once Korean models are installed, OpenClaw can use them as-is.
+
+```bash
+# Optionally install Korean Sovereign AI first
+git clone https://github.com/GoGoComputer/korea-sovereign-ai.git ~/DEV/llmDev/korea-ai
+cd ~/DEV/llmDev/korea-ai && ./install.sh --minimal     # EXAONE + A.X (~5GB)
+
+# Then in OpenClaw's .env:
+# OLLAMA_MODELS="exaone3.5:7.8b,solar-pro:22b"
+./openclaw install
+```
+
+`./openclaw doctor` auto-detects Korean models and shows them in the report. With 24GB RAM, keep only one model loaded at a time (use `./openclaw clean` to unload others).
+
+---
+
+## 🧹 Memory & disk cleanup (for non-developers)
+
+Docker and Ollama accumulate caches and unused images over time. One command to clean up:
+
+```bash
+./openclaw clean --status   # report only
+./openclaw clean            # interactive — asks y/n at each step (safe)
+./openclaw clean --light    # caches + stopped containers only (fast, safe)
+./openclaw clean --all      # aggressive: unused images/models + macOS purge
+```
+
+`--all` only asks for `sudo` once (for `sudo purge` — macOS unified memory compression). Your data (volumes, `.env`, backups) is never touched.
+
+---
+
+## 🔒 Network isolation modes (explicit outbound kill switch)
+
+**Outbound traffic is fully blocked by default.** Only open it briefly for installs/updates.
+
+```bash
+./openclaw network status                  # current mode
+./openclaw network online --restart        # open temporarily (install/update)
+./openclaw network isolated --restart      # close again ← keep this as the steady state
+```
+
+| Mode | Outbound (container→internet) | Web UI (127.0.0.1) | host Ollama | When to use |
+|---|---|---|---|---|
+| **`isolated`** 🔒 (default) | Fully blocked | ✓ | Blocked | Always — safe even if AI goes rogue |
+| **`online`** 🌐 | Allowed | ✓ | ✓ | Only briefly for install/update/model pulls |
+
+### What `isolated` (default) **blocks**
+- All outbound DNS and IP traffic from inside the container.
+- Therefore the following are blocked (flip to `online` if needed):
+  - `pip install <pkg>`, `npm install`, `apt-get update`
+  - `git clone https://github.com/...` and other GitHub/GitLab pulls
+  - Hugging Face / pypi / docker registry downloads
+  - **host Ollama** (`host.docker.internal:11434`) — also blocked under isolated
+  - **Any data exfiltration attempt** (malicious prompt-injection "upload my files to X" is physically impossible)
+
+### When this matters
+- **High-stakes security**: when an AI agent browses the web, downloads code, or installs packages, the entire fetch path is removed — nothing malicious can be pulled in.
+- **Defense against exfil**: even if a prompt instructs "send my file to attacker.com", there's no network path out.
+- **Public Wi-Fi**: cafes, airports — outside↔container traffic is fully cut, so safe.
+
+### Standard install/update workflow
+```bash
+./openclaw network online --restart    # briefly open
+./openclaw update                       # update
+./openclaw network isolated --restart   # close again immediately
+```
+
+> `./openclaw update` automates this (auto-flip to online → update → restore previous mode).
+
+---
+
+## 🔒 Security (please read)
+
+OpenClaw agents have direct shell + filesystem access. To use it safely:
+
+1. **Never bypass the Docker sandbox** — installing OpenClaw on the host directly is unsafe.
+2. **Do not mount sensitive folders.** Especially: `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config`, `~/Library`, `/etc`, `/var`, `/usr`.
+3. **Never commit `.env`.** Already in `.gitignore`. If accidentally pushed, rotate keys immediately.
+4. **Don't set `OLLAMA_HOST=0.0.0.0`** — `host.docker.internal` is sufficient on Mac. `0.0.0.0` exposes models on LAN/public Wi-Fi.
+5. **Use `OPENCLAW_PIN_COMMIT`** — pinning to a verified commit hardens against supply-chain attacks.
+6. **All ports bind to `127.0.0.1`** — enforced by `compose.security.yml`.
+7. **`.env` in backups** is GPG-encrypted by default (`BACKUP_ENCRYPT=1`).
+8. **Vulnerability reports** — please follow [SECURITY.md](SECURITY.md), not public issues.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the threat model and container hardening details.
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><b>Docker Desktop won't start</b></summary>
+
+`./openclaw install` runs `open -a Docker` automatically, but the first launch requires accepting the EULA. After that, rerun `./openclaw install` and it resumes.
+</details>
+
+<details>
+<summary><b>Port 11434 is already in use</b></summary>
+
+Another Ollama instance may be running.
+```bash
+lsof -nP -iTCP:11434 -sTCP:LISTEN
+brew services restart ollama
+```
+</details>
+
+<details>
+<summary><b>How do I switch Ollama models?</b></summary>
+
+Edit `OLLAMA_MODELS` in `.env`, then `./openclaw update`. With 24GB RAM, 7–8B models are recommended; 13B+ triggers a confirmation prompt.
+</details>
+
+<details>
+<summary><b>Where are backups stored?</b></summary>
+
+`~/openclaw-backups/openclaw-YYYYmmdd-HHMMSS-<name>.tar.gz` (with `.sha256`). Override via `BACKUP_DIR` in `.env`. Retention via `BACKUP_KEEP` (default 7).
+</details>
+
+<details>
+<summary><b>How do I uninstall completely?</b></summary>
+
+```bash
+./openclaw backup --name before-uninstall   # safety
+./openclaw uninstall --purge                # also removes Docker/Ollama
+```
+</details>
+
+<details>
+<summary><b>I interrupted the install. What now?</b></summary>
+
+Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and only the rest runs. State file: `~/.openclaw-mgr/state`.
+</details>
+
+<details>
+<summary><b>My Mac feels slow / memory is full</b></summary>
+
+```bash
+./openclaw clean --status   # see what's using space
+./openclaw clean            # safe step-by-step cleanup
+```
+</details>
+
+<details>
+<summary><b>Can I use Korean LLMs (EXAONE/A.X/Solar) too?</b></summary>
+
+Yes. Install [korea-sovereign-ai](https://github.com/GoGoComputer/korea-sovereign-ai) first; OpenClaw will pick up host Ollama models via `host.docker.internal:11434`. `./openclaw doctor` auto-detects them.
+
+⚠ Note: under the default `isolated` network mode, host Ollama is also blocked. To use Korean models, briefly switch to `./openclaw network online --restart`.
+</details>
+
+<details>
+<summary><b>How much of my computer can OpenClaw access? Is it folder-scoped?</b></summary>
+
+By default, **OpenClaw only operates inside its Docker container** — it cannot touch host (Mac) files directly.
+
+| Resource | Accessible? |
+|---|---|
+| Container filesystem | ✅ (read-only root + `/tmp` tmpfs) |
+| Docker volumes (backup/session data) | ✅ |
+| Host `~/Documents`, `~/.ssh`, `~/Library`, etc. | ❌ (not mounted) |
+| Host USB / external drives | ❌ |
+| Other host apps (browser cookies, etc.) | ❌ |
+| Outbound internet | ❌ (`isolated` — default) / ✅ (`online`) |
+
+Unless you explicitly mount a folder, **OpenClaw stays inside its container box.** To share a folder, edit OpenClaw's base `docker-compose.yml` and add a `volumes:` entry. We recommend a dedicated folder like `~/Desktop/openclaw-share`.
+</details>
+
+<details>
+<summary><b>Can the AI download and execute malicious code from the internet?</b></summary>
+
+**Not under the default `isolated` mode.** The Docker network is created with `internal: true`, blocking all outbound packets. DNS is also blocked, so even domain resolution fails.
+
+`pip install`, `npm install`, `git clone https://...`, Hugging Face downloads — all blocked. Open `online` only briefly when you need them.
+</details>
+
+<details>
+<summary><b>Can the AI exfiltrate my data?</b></summary>
+
+**Not under the default `isolated` mode.** There's no outbound path, so even if a prompt-injection attack instructs "upload this file to X", it physically cannot run.
+
+Additional defenses:
+- Auto secret-masking on log output (`./openclaw logs`)
+- `.env` in backups is GPG-encrypted
+- All ports bind to `127.0.0.1` (no LAN exposure)
+</details>
+
+<details>
+<summary><b>Can the AI delete or modify my files?</b></summary>
+
+It cannot touch host files (see folder access table). It can only write inside the container, whose root filesystem is `read_only: true` — only `/tmp` (tmpfs, wiped on restart) is writable.
+
+Persistent data lives in Docker volumes, which `./openclaw backup` snapshots safely.
+</details>
+
+<details>
+<summary><b>Does the script change my system arbitrarily? Is it safe?</b></summary>
+
+All install/uninstall actions go through user confirmation. The scripts:
+- Install Homebrew, Docker Desktop, Ollama (official channels only)
+- Clone OpenClaw to `~/openclaw`
+- Register a daily update job in launchd (only if you opt in)
+- Keep state under `~/.openclaw-mgr/`
+
+`sudo` is used in exactly one place: `clean --all` calls `sudo purge` (a standard macOS memory-compression command). All source is open and densely commented — you can read it.
+</details>
+
+<details>
+<summary><b>Are Docker Desktop / Ollama auto-started?</b></summary>
+
+`./openclaw start` launches Docker Desktop (`open -a Docker`). Ollama is registered as a Homebrew service and starts at boot (`brew services start ollama`).
+</details>
+
+<details>
+<summary><b>Does OpenClaw work offline (no Wi-Fi)?</b></summary>
+
+In `isolated` mode it doesn't use the internet anyway, so **everything runs normally** (uses already-installed models/code). In `online` mode, only external API calls would fail; everything else still works.
+</details>
+
+<details>
+<summary><b>Can multiple users share one Mac?</b></summary>
+
+Use separate macOS user accounts (each gets their own `OPENCLAW_DIR`, `BACKUP_DIR` under `$HOME`). Multiple instances under one account is not currently supported.
+</details>
+
+<details>
+<summary><b>What if an upgrade breaks something?</b></summary>
+
+```bash
+./openclaw backup --name before-upgrade   # always back up first
+./openclaw update
+# if something goes wrong:
+./openclaw restore ~/openclaw-backups/openclaw-...-before-upgrade.tar.gz
+```
+`update` uses `git pull --ff-only` — no force merges — and data volumes are preserved on failure.
+</details>
+
+<details>
+<summary><b>Does it work behind a corporate proxy / restricted network?</b></summary>
+
+`isolated` mode doesn't talk to the internet anyway, so it's fine. Only `install` / `update` need internet; if you're behind a proxy, set shell env `HTTPS_PROXY` / `HTTP_PROXY` and they propagate to docker / git / brew. For self-signed CAs, register them in macOS Keychain.
+</details>
+
+---
+
+## 🛠 For developers
+
+### Directory layout
+
+```
+openclaw-mgr/
+├── openclaw                # single entry dispatcher
+├── .env.example            # configuration template
+├── compose.security.yml    # security override
+├── lib/                    # common.sh / sec.sh / detect.sh / prompt.sh
+├── cmd/                    # doctor / install / start / stop / logs / update /
+│                           # backup / restore / uninstall / schedule / clean
+├── etc/pre-commit.tmpl     # gitleaks hook
+└── docs/                   # QUICKSTART / ARCHITECTURE / TROUBLESHOOTING / CONTRIBUTING
+```
+
+### Idempotency (`state` file)
+
+`~/.openclaw-mgr/state` accumulates `KEY=done` lines per completed step. `./openclaw install` checks each key and skips done steps. To rerun a single step, delete its line.
+
+### Static checks
+
+```bash
+find openclaw-mgr -name '*.sh' -exec bash -n {} \;
+shellcheck -S style openclaw-mgr/openclaw openclaw-mgr/lib/*.sh openclaw-mgr/cmd/*.sh
+shfmt -d -i 2 openclaw-mgr
+```
+
+### Contributing
+
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md).
+
+### Publishing your own fork
+
+```bash
+brew install gh
+gh auth login
+./scripts/publish.sh   # creates repo, pushes, sets topics, makes v0.1.0 release
+```
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) © 2026 박성모 Park Sungmo
+
+ClawBro / OpenClaw trademarks and code belong to their respective owners. This project is independent and unaffiliated.

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# pre-commit 템플릿: gitleaks 로 시크릿 누설 사전 검사
+# 설치:  cp openclaw-mgr/etc/pre-commit.tmpl .git/hooks/pre-commit
+#        chmod +x .git/hooks/pre-commit
+# 의존:  brew install gitleaks
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-commit] gitleaks 미설치 — 'brew install gitleaks' 권장" >&2
+  exit 0
+fi
+
+# 스테이지 된 변경분만 검사 (빠름)
+if ! gitleaks protect --staged --redact -v; then
+  echo "[pre-commit] 시크릿이 발견되어 커밋이 차단되었습니다." >&2
+  echo "             해결 후 다시 시도하세요. 우회: --no-verify (권장하지 않음)" >&2
+  exit 1
+fi

@@ -1,0 +1,30 @@
+name: ✨ 기능 제안
+description: 새로운 기능이나 개선 아이디어
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 어떤 문제를 해결하나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 제안하는 해결책
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 검토한 대안
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 범위 확인
+      options:
+        - label: 이 기능은 macOS 자동화 범위에 들어맞습니다 (OpenClaw 내부 변경이 아닙니다)
+          required: true

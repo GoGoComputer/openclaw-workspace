@@ -1,0 +1,55 @@
+name: 🐛 Bug 리포트
+description: 동작이 이상하거나 오류가 납니다
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🚨 **보안 취약점은 공개 이슈 대신 [SECURITY.md](../../blob/main/SECURITY.md) 절차를 따라주세요.**
+
+  - type: input
+    id: version
+    attributes:
+      label: 버전 / 커밋
+      placeholder: "0.1.0 또는 commit hash"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 버전 / 칩
+      placeholder: "macOS 15.4, Apple M5 Pro / 24GB"
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: ./openclaw doctor 출력
+      description: 시크릿은 자동 마스킹되지만 한 번 더 검토해 주세요.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 재현 단계
+      placeholder: |
+        1. ./openclaw install
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작 (오류 메시지)
+    validations:
+      required: true

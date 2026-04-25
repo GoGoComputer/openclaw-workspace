@@ -1,0 +1,451 @@
+# openclaw-workspace
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)](#)
+[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-blue?logo=apple)](#)
+[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B-1f425f?logo=gnu-bash)](#)
+[![CI](https://img.shields.io/github/actions/workflow/status/GoGoComputer/openclaw-workspace/ci.yml?branch=main)](https://github.com/GoGoComputer/openclaw-workspace/actions)
+
+> **OpenClaw 셀프호스트 자동화 — macOS용 한 줄 설치/유지보수 도구**
+>
+> 새 맥북에서 `./openclaw install` 한 번이면 Docker · (선택)Ollama · OpenClaw 컨테이너까지 자동으로 준비됩니다. 중간에 끊겨도 다시 실행하면 **이어서** 진행합니다. 로컬 100% 격리 환경을 지향합니다.
+
+> 🇬🇧 English version: [README.en.md](README.en.md)
+
+---
+
+## 🚀 5분 시작 (비개발자 OK)
+
+> "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
+
+```bash
+# 1) 코드 받기
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace/openclaw-mgr
+
+# 2) 설정 파일 만들기 (한 줄만 채우면 됩니다 — OPENCLAW_REPO)
+cp .env.example .env
+open -e .env       # 또는 nano .env
+
+# 3) 런처 실행 (인자 없이 = 대화형 메뉴, 한국어/영어 자동)
+./openclaw
+
+# 혹은 단일 명령으로도 다 가능:
+./openclaw doctor          # 이 명령 하나로 진단
+./openclaw install         # 부족한 부분만 자동 설치
+```
+
+설치 중 Docker Desktop 실행 동의/Xcode CLT 다이얼로그가 뜰 수 있습니다. 따라가면 됩니다. 끝나면:
+
+```bash
+./openclaw doctor          # 모두 ✓ 인지 확인
+./openclaw schedule enable # 매일 새벽 자동 업데이트 (선택)
+```
+
+> ⚠️ **OpenClaw 공식 코어 저장소 URL이 아직 미확정입니다.** `.env` 의 `OPENCLAW_REPO` 를 채워야 컨테이너 단계가 진행됩니다. 정확한 URL을 아시는 분은 [Issue](https://github.com/GoGoComputer/openclaw-workspace/issues/new) 또는 PR 로 알려주세요.
+
+---
+
+## 🤔 이게 뭐예요?
+
+[**OpenClaw**](https://clawbro.ai)는 사용자 PC에서 셸 명령어 실행·파일 시스템 접근·웹 탐색을 직접 수행할 수 있는 강력한 오픈소스 AI 에이전트입니다. 강력한 만큼 보안이 중요해서, **반드시 Docker 같은 격리된 환경(샌드박스)** 에서 실행해야 합니다.
+
+이 프로젝트는 그 셋업을 **새 맥북에서 한 번에** 끝낼 수 있게 해주는 도구입니다.
+
+| 이 도구가 해주는 것 | 이 도구가 안 하는 것 |
+|---|---|
+| Homebrew · Docker · Ollama 자동 설치 | OpenClaw 자체 개발/수정 |
+| OpenClaw 저장소 clone & 컨테이너 기동 | 클라우드 호스팅 (그건 [ClawBro.ai](https://clawbro.ai)) |
+| 매일 자동 업데이트 (launchd) | Windows / Linux 지원 |
+| 백업·복원·완전 제거 | 멀티 인스턴스 동시 운영 |
+| 보안 하드닝 (read-only, cap_drop, 127.0.0.1만 바인딩 등) | OpenClaw 의 채널 연동 (Telegram 등) |
+
+---
+
+## 📋 명령 카탈로그
+
+| 명령 | 한 줄 설명 |
+|---|---|
+| `./openclaw` (또는 `menu`) | 대화형 메뉴 (한국어/영어 자동) — 모든 작업을 번호로 선택 |
+| `./openclaw doctor` | 현재 시스템/설치 상태 점검 (✓/✗/⚠ 표) |
+| `./openclaw install` | 부족한 부분만 자동 설치. 중간에 끊겨도 이어서 진행 |
+| `./openclaw start` | 컨테이너 시작 |
+| `./openclaw stop` | 컨테이너 정지 (데이터 보존) |
+| `./openclaw logs [service]` | 컨테이너 로그 실시간 보기 (시크릿 자동 마스킹) |
+| `./openclaw update` | 코드 pull + 이미지 갱신 + Ollama 모델 갱신 |
+| `./openclaw backup [--name N]` | 볼륨+`.env` 백업 (sha256, 선택적 GPG 암호화) |
+| `./openclaw restore <file>` | 백업 파일에서 안전 복원 (체크섬·미리보기 검증) |
+| `./openclaw schedule enable\|disable\|status` | 매일 자동 업데이트 launchd 등록/해제 |
+| `./openclaw network status\|isolated\|online` | 외부 인터넷 차단 토글 (기본: isolated) |
+| `./openclaw clean [--light\|--all\|--status]` | 메모리·디스크 정리 (비개발자용 대화형) |
+| `./openclaw uninstall [--purge]` | OpenClaw 제거. `--purge` 면 Docker/Ollama까지 |
+
+---
+
+## ⚙️ 설정 (`.env`)
+
+`.env.example` 의 모든 변수에 주석이 달려 있습니다. 핵심:
+
+```bash
+OPENCLAW_REPO="https://github.com/<owner>/openclaw.git"  # 필수
+OPENCLAW_DIR="$HOME/openclaw"                             # 클론 위치
+OPENCLAW_PORT="8000"                                      # 항상 127.0.0.1 만
+ENABLE_OLLAMA="1"                                         # 0=외부 API만 사용
+OLLAMA_MODELS="qwen2.5-coder:7b"                          # 콤마 구분
+OPENCLAW_PIN_COMMIT=""                                    # 보안: 특정 커밋 고정
+SCHEDULE_TIME="03:00"                                     # 자동 업데이트 시각
+BACKUP_DIR="$HOME/openclaw-backups"
+BACKUP_KEEP="7"                                           # 오래된 것 자동 삭제
+BACKUP_ENCRYPT="1"                                        # .env GPG 암호화
+```
+
+---
+
+## 💻 셸 호환성 (zsh / bash)
+
+맥에서 기본 셸은 **zsh** 입니다. 이 도구는 모든 스크립트가 `#!/usr/bin/env bash` 로 시작해 항상 bash 로 실행되므로, **zsh 사용자가 그대로 써도 100% 호환** 됩니다.
+
+```zsh
+# zsh 에서도 동일하게:
+./openclaw doctor
+./openclaw install
+```
+
+수동으로 라이브러리 함수를 셸에 불러올 일은 없으니 `source` / `.` 호환은 신경쓰지 않아도 됩니다.
+
+---
+
+## 🇰🇷 한국 소버린 AI 와 함께 쓰기
+
+같은 메인테이너의 자매 프로젝트 [**korea-sovereign-ai**](https://github.com/GoGoComputer/korea-sovereign-ai) (LG EXAONE / SKT A.X / Upstage Solar) 와 **자연 호환** 됩니다. 둘 다 호스트 Ollama 를 공유하기 때문에 한 번 깔아두면 OpenClaw 가 그 모델들을 그대로 쓸 수 있습니다.
+
+```bash
+# 한국 소버린 AI 먼저 깔기 (선택)
+git clone https://github.com/GoGoComputer/korea-sovereign-ai.git ~/DEV/llmDev/korea-ai
+cd ~/DEV/llmDev/korea-ai && ./install.sh --minimal     # EXAONE + A.X (~5GB)
+
+# 그 다음 OpenClaw 의 .env 에서 한국 모델 사용:
+# OLLAMA_MODELS="exaone3.5:7.8b,solar-pro:22b"
+./openclaw install
+```
+
+`./openclaw doctor` 가 자동으로 한국 모델을 감지해 `한국 소버린 AI: ✓` 로 표시합니다. 메모리는 24GB 에서 동시 1개 모델만 로드하는 걸 권장합니다 (`./openclaw clean` 으로 다른 모델 언로드 가능).
+
+---
+
+## 🧹 메모리·디스크 정리 (비개발자용)
+
+Docker 와 Ollama 는 시간이 갈수록 디스크와 메모리를 많이 차지할 수 있습니다. 한 줄 명령으로 정리:
+
+```bash
+./openclaw clean --status   # 현재 사용량만 보고
+./openclaw clean            # 대화형 — 단계마다 y/n 묻기 (안전)
+./openclaw clean --light    # 캐시·정지 컨테이너만 (빠름·안전)
+./openclaw clean --all      # 강함: 미사용 이미지·모델 삭제 + macOS 메모리 압축
+```
+
+`--all` 모드는 `sudo purge` (macOS 통합메모리 압축)를 실행할 때만 비밀번호를 한 번 묻습니다. 데이터(볼륨·`.env`·백업)는 절대 건드리지 않습니다.
+
+---
+
+## 🔒 네트워크 격리 모드 (명시적 외부 차단 토글)
+
+**완전 차단이 기본값** 입니다. 설치/업데이트 때만 잠깐 열어서 쓰세요.
+
+```bash
+./openclaw network status                  # 현재 모드 보기
+./openclaw network online --restart        # 일시적으로 열기 (설치/업데이트용)
+./openclaw network isolated --restart      # 다시 꼉아서 잠그기 ← 항상 이 상태로 둘 것
+```
+
+| 모드 | 아웃바운드(컨테이너→외부) | 웹UI(127.0.0.1) | host Ollama | 언제 쓰나 |
+|---|---|---|---|---|
+| **`isolated`** 🔒 (기본) | 완전 차단 | 접속 ✓ | 연결 안됨 | 평소, 실제 작업 시 — 난 시에도 안전 |
+| **`online`** 🌐 | 허용 | 접속 ✓ | 연결 ✓ | 설치/업데이트/모델 다운로드 잠깐만 |
+
+### 🔒 isolated (기본) 에서 **막히는** 것
+- 대뛜대단한 **컨테이너 안에서 외부 DNS / 외부 IP 로 나가는 모든 통신**.
+- 이 때문에 다음이 안 됩니다 — 허용하려면 `online` 으로 잠깐 전환:
+  - `pip install <패키지>`, `npm install`, `apt-get update`
+  - `git clone https://github.com/...` 등 GitHub·GitLab 다운로드
+  - Hugging Face / pypi / docker registry 다운로드
+  - **호스트의 Ollama** 호출 (`host.docker.internal:11434`) — isolated 에서는 차단됩니다.
+  - **외부로의 데이터 유출 시도** (악성 주입·제로데이 이메일 프롬프트 등) 도 자동으로 차단.
+
+### 어떤 장면에서 썰죠
+- **궁극 보안**: AI 에이전트가 웹을 돌아다니며 코드/패키지를 다운로드해 실행할 때 악성 패키지/익스플로잇트를 **붙잡아오는 경로 자체를 막아 버립니다**.
+- **데이터 유출 공격 대비**: 프롬프트 인젝션으로 "내 파일을 X 주소로 보내" 라는 시도가 있어도 네트워크 자체가 없으니 **나갈 수 있는 통로가 물리적으로 없는 상태**.
+- **공공 Wi-Fi**: 카페·공항 와이파이에 접속해서도 외부 서버↔컨테이너가 온전히 차단되어 있으니 안전.
+
+### 설치/업데이트 른 표준 워크플로우
+```bash
+./openclaw network online --restart    # 잠깐 열고
+./openclaw update                       # 업데이트
+./openclaw network isolated --restart   # 곧장 다시 잠그기
+```
+
+> `./openclaw update` 는 이 과정을 **자동으로** 처리합니다 (잠깐 online→완료 후 이전 모드로 복귀).
+
+---
+
+## 🔒 보안 주의 (꼭 읽으세요)
+
+OpenClaw 에이전트는 **셸과 파일을 직접 만지는 권한**을 가집니다. 안전하게 쓰려면:
+
+1. **샌드박스(Docker)를 절대 우회하지 마세요.** 호스트에 직접 설치하면 안 됩니다.
+2. **민감한 폴더를 마운트 금지** — 다음 폴더는 절대 컨테이너에 `:rw` 로 노출하지 마세요:
+   - `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config`, `~/Library`, `/etc`, `/var`, `/usr`
+3. **`.env` 를 커밋하지 마세요.** `.gitignore` 에 이미 들어 있습니다. 만약 실수로 올렸다면 즉시 키를 회전하세요.
+4. **`OLLAMA_HOST=0.0.0.0` 사용 금지** — Mac 에서는 `host.docker.internal` 로 충분합니다. 0.0.0.0 은 LAN/공용 Wi-Fi에서 모델을 노출시킵니다.
+5. **`OPENCLAW_PIN_COMMIT` 권장** — 검증된 커밋으로 핀하면 공급망 공격에 강해집니다.
+6. **외부 노출은 모두 `127.0.0.1`** 만 — `compose.security.yml` 이 강제합니다.
+7. **백업의 `.env`** 는 GPG 대칭키로 암호화됩니다 (`BACKUP_ENCRYPT=1`).
+8. **취약점 발견 시** 공개 이슈 대신 [SECURITY.md](SECURITY.md) 절차를 따라주세요.
+
+자세한 위협 모델과 컨테이너 하드닝 옵션은 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 를 참조하세요.
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><b>Docker Desktop 이 안 켜져요</b></summary>
+
+`./openclaw install` 이 자동으로 `open -a "Docker"` 를 실행하지만, 첫 실행 시 약관 동의가 필요합니다. 동의 후 다시 `./openclaw install` 하면 이어서 진행됩니다.
+</details>
+
+<details>
+<summary><b>포트 11434 가 이미 사용 중이래요</b></summary>
+
+다른 Ollama 인스턴스가 떠 있을 수 있습니다.
+```bash
+lsof -nP -iTCP:11434 -sTCP:LISTEN
+brew services restart ollama
+```
+</details>
+
+<details>
+<summary><b>다른 Ollama 모델로 바꾸려면?</b></summary>
+
+`.env` 의 `OLLAMA_MODELS` 를 수정하고 `./openclaw update` 실행. 24GB RAM 에서는 7~8B 모델 권장. 13B 이상은 자동 경고가 뜹니다.
+</details>
+
+<details>
+<summary><b>백업은 어디에 저장되나요?</b></summary>
+
+`~/openclaw-backups/openclaw-YYYYmmdd-HHMMSS-<name>.tar.gz` (그리고 `.sha256`). 위치는 `.env` 의 `BACKUP_DIR` 로 변경 가능. 보관 개수는 `BACKUP_KEEP` (기본 7개).
+</details>
+
+<details>
+<summary><b>완전히 지우고 싶어요</b></summary>
+
+```bash
+./openclaw backup --name before-uninstall   # 안전을 위해
+./openclaw uninstall --purge                # Docker/Ollama 까지 제거
+```
+</details>
+
+<details>
+<summary><b>설치를 중간에 멈췄는데 다시 시작하면?</b></summary>
+
+`./openclaw install` 을 다시 실행하세요. 이미 끝난 단계는 `[skip]` 로 표시되고 남은 단계만 진행합니다. (상태 파일: `~/.openclaw-mgr/state`)
+</details>
+
+<details>
+<summary><b>맥북이 느려졌어요 / 메모리가 가득 찼어요</b></summary>
+
+```bash
+./openclaw clean --status   # 무엇이 얼마나 차지하는지 보기
+./openclaw clean            # 단계별 y/n 으로 안전하게 정리
+```
+Docker/Ollama 가 시간이 갈수록 캐시·이미지를 쌓습니다. 위 명령은 데이터(볼륨·.env·백업)는 절대 건드리지 않고 캐시·미사용 이미지만 청소합니다.
+</details>
+
+<details>
+<summary><b>한국어 LLM(EXAONE/A.X/Solar)도 같이 쓸 수 있나요?</b></summary>
+
+네. [korea-sovereign-ai](https://github.com/GoGoComputer/korea-sovereign-ai) 를 먼저 깔면 호스트 Ollama 에 한국 모델들이 등록되고, OpenClaw 가 `host.docker.internal:11434` 로 그대로 사용합니다. `./openclaw doctor` 가 자동 감지합니다.
+
+⚠ 단, 기본 `isolated` 모드에서는 host Ollama 도 차단됩니다. 한국 모델을 쓰려면 `./openclaw network online --restart` 로 잠깐 열어야 합니다.
+</details>
+
+<details>
+<summary><b>OpenClaw 가 제 컴퓨터의 어디까지 접근하나요? 이 폴더 안에서만 동작하나요?</b></summary>
+
+**기본적으로 컨테이너(Docker) 안에서만** 동작하며, 호스트(맥북) 의 파일을 직접 건드리지 못합니다.
+
+| 무엇 | 접근 가능? |
+|---|---|
+| 컨테이너 내부 파일시스템 | ✅ (read-only 루트 + `/tmp` tmpfs) |
+| Docker 볼륨 (백업·세션 데이터) | ✅ |
+| 호스트의 `~/Documents`, `~/.ssh`, `~/Library` 등 | ❌ (마운트 안 함) |
+| 호스트 USB·외장 디스크 | ❌ |
+| 호스트의 다른 앱 (브라우저 쿠키 등) | ❌ |
+| 외부 인터넷 | ❌ (`isolated` 모드 — 기본값) / ✅ (`online`) |
+
+**즉, 사용자가 의도적으로 폴더를 마운트해 주지 않는 한** OpenClaw 는 자기 컨테이너 박스 안에서만 일합니다. 폴더를 공유하고 싶으면 OpenClaw 의 base `docker-compose.yml` 에 `volumes:` 항목을 직접 추가하세요. (보안상 `~/Desktop/openclaw-share` 같은 전용 폴더 권장)
+</details>
+
+<details>
+<summary><b>AI 가 인터넷에서 악성 코드를 다운로드해서 실행할 수 있나요?</b></summary>
+
+**기본 `isolated` 모드에서는 불가능합니다.** Docker 네트워크 자체를 `internal: true` 로 만들어 컨테이너에서 외부로 나가는 모든 패킷이 막힙니다. DNS 도 막혀 도메인 해석조차 안 됩니다.
+
+`pip install`, `npm install`, `git clone https://...`, Hugging Face 다운로드 모두 차단됩니다. 잠깐 필요할 때만 `./openclaw network online --restart` 로 여세요.
+</details>
+
+<details>
+<summary><b>AI 가 제 데이터를 외부로 빼돌릴 수 있나요?</b></summary>
+
+**기본 `isolated` 모드에서는 불가능합니다.** 외부로 나가는 통로 자체가 없으니, 프롬프트 인젝션 등으로 "이 파일 내용을 X 서버로 보내" 라는 지시가 들어와도 실행 불가합니다.
+
+추가 방어:
+- 로그 출력 시 자동 비밀 마스킹 (`./openclaw logs`)
+- 백업의 `.env` 는 GPG 암호화
+- 모든 포트는 `127.0.0.1` 바인딩 (LAN 노출 안 함)
+</details>
+
+<details>
+<summary><b>AI 가 제 파일을 지우거나 수정할 수 있나요?</b></summary>
+
+호스트 파일은 못 건드립니다 (위 폴더 접근 표 참조). 컨테이너 안의 파일만 수정 가능하며, 컨테이너의 루트 파일시스템도 `read_only: true` 로 잠겨 있어 임시 파일은 `/tmp` (tmpfs, 재시작 시 삭제) 에만 쓸 수 있습니다.
+
+영구 데이터는 Docker 볼륨에 저장되며, `./openclaw backup` 으로 언제든 복구 가능합니다.
+</details>
+
+<details>
+<summary><b>스크립트가 제 시스템을 마음대로 바꾸나요? 안전한가요?</b></summary>
+
+설치/삭제 동작은 모두 **사용자 확인 후** 진행되며, 스크립트가 하는 일은:
+- Homebrew, Docker Desktop, Ollama 설치 (공식 채널)
+- `~/openclaw` 에 OpenClaw clone
+- launchd 에 매일 update 스케줄 등록 (활성화 했을 때만)
+- `~/.openclaw-mgr/` 에 상태 파일 저장
+
+`sudo` 는 거의 쓰지 않으며, 쓰는 곳은 `clean --all` 의 `sudo purge` (메모리 압축, 표준 macOS 명령) 한 곳뿐입니다. 모든 소스가 공개돼 있고 50줄 안에 1번씩 주석으로 설명돼 있어 직접 읽어볼 수 있습니다.
+</details>
+
+<details>
+<summary><b>Docker Desktop / Ollama 가 자동으로 켜지나요?</b></summary>
+
+`./openclaw start` 가 Docker Desktop 을 자동 실행합니다 (`open -a Docker`). Ollama 는 Homebrew 서비스로 등록돼 부팅 시 자동 시작합니다 (`brew services start ollama`).
+</details>
+
+<details>
+<summary><b>Wi-Fi 가 끊겨도 OpenClaw 가 동작하나요?</b></summary>
+
+`isolated` 모드에서는 어차피 인터넷을 안 쓰므로 **완전히 정상 동작** 합니다 (이미 깔린 모델·코드만 사용). `online` 모드일 때 Wi-Fi 가 끊기면 외부 API 호출만 실패하고 나머지는 동작합니다.
+</details>
+
+<details>
+<summary><b>여러 사람이 같은 맥에서 쓸 수 있나요?</b></summary>
+
+각자 다른 macOS 사용자 계정으로 로그인해 따로 설치하는 걸 권장합니다 (`OPENCLAW_DIR`, `BACKUP_DIR` 가 `$HOME` 기준이므로 자연스럽게 분리). 같은 계정 내 멀티 인스턴스는 현재 미지원입니다.
+</details>
+
+<details>
+<summary><b>업그레이드하다 깨지면 어떡하죠?</b></summary>
+
+```bash
+./openclaw backup --name before-upgrade   # 항상 먼저 백업
+./openclaw update
+# 문제 시:
+./openclaw restore ~/openclaw-backups/openclaw-...-before-upgrade.tar.gz
+```
+`update` 는 `git pull --ff-only` 만 사용해 강제 머지가 없고, 실패해도 데이터(볼륨) 는 그대로입니다.
+</details>
+
+<details>
+<summary><b>회사 보안 정책으로 외부 통신이 일부 차단된 환경에서도 되나요?</b></summary>
+
+`isolated` 모드는 어차피 외부 통신을 안 하므로 영향 없습니다. `install` / `update` 시점에만 인터넷이 필요한데, 사내 프록시가 있는 경우 셸 환경 변수 `HTTPS_PROXY`, `HTTP_PROXY` 가 docker / git / brew 에 자동 적용됩니다. 자체 서명 인증서가 필요하면 macOS 키체인에 등록하면 됩니다.
+</details>
+
+---
+
+## 🛠 개발자용
+
+### 디렉터리 구조
+
+```
+openclaw-mgr/
+├── openclaw                # 단일 진입 디스패처 (서브커맨드 라우팅 + .env 로드)
+├── .env.example            # 환경 변수 템플릿
+├── compose.security.yml    # 보안 override (read_only, cap_drop, ...)
+├── lib/
+│   ├── common.sh           # 로그·확인·멱등 단계 관리 (run_step, state)
+│   ├── sec.sh              # 입력 검증·시크릿 마스킹·위험 마운트 검사
+│   ├── detect.sh           # 시스템 상태 KV 출력 (eval 가능)
+│   └── prompt.sh           # 대화형 입력 헬퍼
+├── cmd/
+│   ├── doctor.sh           # 진단 (✓/✗/⚠)
+│   ├── install.sh          # 멱등 설치 (이어서 진행)
+│   ├── start.sh / stop.sh / logs.sh
+│   ├── update.sh           # git pull --ff-only + compose 갱신
+│   ├── backup.sh / restore.sh
+│   ├── uninstall.sh        # --purge 옵션
+│   └── schedule.sh         # launchd plist enable/disable/status
+├── etc/
+│   └── pre-commit.tmpl     # gitleaks 훅
+└── docs/
+    ├── QUICKSTART-ko.md
+    ├── ARCHITECTURE.md
+    ├── TROUBLESHOOTING.md
+    └── CONTRIBUTING.md
+```
+
+### 멱등 설계 (`state` 파일 포맷)
+
+`~/.openclaw-mgr/state` 는 한 줄에 `KEY=done` 형태로 누적됩니다.
+
+```
+xcode_clt=done
+brew=done
+docker_install=done
+docker_start=done
+ollama_install=done
+ollama_start=done
+ollama_models=done
+repo_clone=done
+compose_scan=done
+env_merge=done
+compose_up=done
+health=done
+```
+
+`./openclaw install` 은 `state_has KEY` 검사 후 `done` 이면 단계를 건너뜁니다. 특정 단계만 다시 돌리려면 그 줄을 지우면 됩니다.
+
+### 정적 검사
+
+```bash
+# Bash 문법 검사
+find openclaw-mgr -name '*.sh' -exec bash -n {} \;
+# 진입 스크립트
+bash -n openclaw-mgr/openclaw
+
+# shellcheck (brew install shellcheck)
+shellcheck -S style openclaw-mgr/openclaw openclaw-mgr/lib/*.sh openclaw-mgr/cmd/*.sh
+
+# shfmt (brew install shfmt)
+shfmt -d -i 2 openclaw-mgr
+```
+
+### 기여하기
+
+[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) 를 참조하세요.
+
+### 자체 게시 (자기 fork 를 GitHub 에 올릴 때)
+
+```bash
+brew install gh
+gh auth login
+./scripts/publish.sh   # 저장소 생성·푸시·토픽·v0.1.0 릴리스까지 자동
+```
+
+---
+
+## 📜 라이선스
+
+[MIT](LICENSE) © 2026 박성모 Park Sungmo
+
+ClawBro / OpenClaw 상표 및 코드는 각 권리자의 자산입니다. 이 저장소는 어떤 공식 기관과도 제휴 관계가 없습니다.
