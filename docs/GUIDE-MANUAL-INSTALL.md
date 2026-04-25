@@ -13,7 +13,233 @@
 
 ---
 
-## 🇰🇷 한국어
+## ⚡ 명령어만 (빠른 복사용) / Commands Only (quick copy)
+
+> 설명 없이 명령만 순서대로. 각 명령의 의미가 궁금하면 아래 단계별 섹션을 참고.
+> Just the commands in order. See the step-by-step sections below for explanations.
+
+<details>
+<summary>🇰🇷 한국어 — 명령어만 펼치기</summary>
+
+```zsh
+# ── 0. 칩/OS 확인 ──────────────────────────────────
+uname -m          # arm64 = Apple Silicon / x86_64 = Intel
+sw_vers           # macOS 버전 확인
+
+# ── 1. Xcode CLT ───────────────────────────────────
+xcode-select --install          # 다이얼로그 → 설치 클릭 → 5~10분 대기
+# 이미 있으면: "command line tools are already installed"
+git --version                   # git version 2.x 가 나오면 OK
+
+# ── 2. Docker Desktop ──────────────────────────────
+# 브라우저: https://www.docker.com/products/docker-desktop/
+# Apple Silicon: "Download for Mac – Apple Silicon"
+# Intel:         "Download for Mac – Intel Chip"
+# → .dmg 더블클릭 → Docker 아이콘을 Applications 폴더로 드래그
+open -a Docker                  # Docker Desktop 실행
+# 메뉴바 🐳 고래가 움직임을 멈출 때까지 30~60초 대기
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
+docker --version
+docker compose version
+
+# ── 3. Ollama (선택 — 로컬 LLM 쓸 때) ─────────────
+# 브라우저: https://ollama.com/download
+# Download for macOS → .dmg/.zip → Applications 로 드래그 → 실행
+ollama --version
+ollama list                     # 처음엔 빈 목록
+curl -s http://localhost:11434/api/version
+# 모델 받기 (원하는 것으로):
+# ollama pull <모델>:<태그>      # 예: ollama pull llama3.1:8b
+
+# ── 4. openclaw-workspace 소스 받기 ────────────────
+mkdir -p ~/DEV
+cd ~/DEV
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace
+ls                              # README.md, openclaw-mgr/, docs/ 보이면 OK
+
+# ── 4.5 .env 준비 ──────────────────────────────────
+cd openclaw-mgr
+cp .env.example .env
+chmod 600 .env
+# 편집 (필요 시): open -e .env   또는  nano .env
+# 최소 확인: OPENCLAW_REPO, OPENCLAW_DIR
+
+# ── 5. 진단 ────────────────────────────────────────
+./openclaw doctor
+# ✓ 다 보이면 OK / ✗ 있으면 해당 단계 재확인
+
+# ── 5b. OpenClaw 본체 git clone ────────────────────
+OPENCLAW_DIR="${HOME}/openclaw"
+OPENCLAW_REPO="$(grep '^OPENCLAW_REPO=' .env | cut -d= -f2-)"
+[ -z "$OPENCLAW_REPO" ] && OPENCLAW_REPO="https://github.com/openclaw/openclaw.git"
+git clone --depth 1 "$OPENCLAW_REPO" "$OPENCLAW_DIR"
+ls "$OPENCLAW_DIR"              # docker-compose.yml 보이면 OK
+
+# 5b-.env 머지
+SRC="$OPENCLAW_DIR/.env.example"; DST="$OPENCLAW_DIR/.env"
+[ -f "$DST" ] || cp "$SRC" "$DST"
+while IFS= read -r line; do
+  case "$line" in ''|'#'*) continue;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" "$DST" 2>/dev/null || echo "$line" >> "$DST"
+done < "$SRC"
+chmod 600 "$DST"
+
+# 5b-컨테이너 기동
+cd "$OPENCLAW_DIR"
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f compose.yml ] && COMPOSE_FILES="-f compose.yml"
+SEC="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.security.yml"
+[ -f "$SEC" ] && COMPOSE_FILES="$COMPOSE_FILES -f $SEC"
+docker compose $COMPOSE_FILES up -d
+docker compose $COMPOSE_FILES ps   # State=running 확인
+
+# 헬스체크
+curl -sS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8000
+# HTTP 200 이면 UI 열림 → 브라우저: http://localhost:8000
+
+# 네트워크 격리 적용 (보안 권장)
+NET="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.network.yml"
+[ -f "$NET" ] && COMPOSE_FILES="$COMPOSE_FILES -f $NET"
+docker compose $COMPOSE_FILES up -d
+mkdir -p "$HOME/.openclaw-mgr" && echo isolated > "$HOME/.openclaw-mgr/network-mode"
+
+# ── 6. PATH 등록 (선택) ────────────────────────────
+echo 'export PATH="$HOME/DEV/openclaw-workspace/openclaw-mgr:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+which openclaw                  # 경로가 나오면 OK
+
+# ── Docker 상태 관리 alias 등록 (선택) ────────────
+cat >> ~/.zshrc <<'EOF'
+alias dockerstop='osascript -e "quit app \"Docker\"" 2>/dev/null; sleep 3; \
+  pkill -TERM -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  sleep 2; \
+  pkill -KILL -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ Docker 완전 종료"'
+EOF
+source ~/.zshrc
+type dockerstop                 # alias dockerstop=... 나오면 OK
+
+# ── 최종 확인 ──────────────────────────────────────
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw doctor               # 모두 정상입니다 🎉 가 나오면 완료
+```
+
+</details>
+
+<details>
+<summary>🇬🇧 English — commands only, expand</summary>
+
+```zsh
+# ── 0. Check chip / OS ─────────────────────────────
+uname -m          # arm64 = Apple Silicon / x86_64 = Intel
+sw_vers
+
+# ── 1. Xcode CLT ───────────────────────────────────
+xcode-select --install          # click Install in dialog → ~5–10 min
+git --version                   # git version 2.x = OK
+
+# ── 2. Docker Desktop ──────────────────────────────
+# Browser: https://www.docker.com/products/docker-desktop/
+# Apple Silicon: "Download for Mac – Apple Silicon"
+# Intel:         "Download for Mac – Intel Chip"
+# → double-click .dmg → drag Docker to Applications
+open -a Docker                  # launch Docker Desktop
+# wait 30–60 s for menu-bar 🐳 whale to stop animating
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
+docker --version
+docker compose version
+
+# ── 3. Ollama (optional — local LLMs) ──────────────
+# Browser: https://ollama.com/download
+# Download for macOS → .dmg/.zip → drag to Applications → launch
+ollama --version
+ollama list
+curl -s http://localhost:11434/api/version
+# Pull a model (your choice):
+# ollama pull <model>:<tag>     # e.g. ollama pull llama3.1:8b
+
+# ── 4. Get openclaw-workspace source ───────────────
+mkdir -p ~/DEV
+cd ~/DEV
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace
+ls                              # README.md, openclaw-mgr/, docs/ visible = OK
+
+# ── 4.5 Prepare .env ───────────────────────────────
+cd openclaw-mgr
+cp .env.example .env
+chmod 600 .env
+# Edit if needed: open -e .env   or   nano .env
+# Key fields: OPENCLAW_REPO, OPENCLAW_DIR
+
+# ── 5. Doctor ──────────────────────────────────────
+./openclaw doctor
+# all ✓ = OK / any ✗ = revisit that step
+
+# ── 5b. Clone OpenClaw upstream ────────────────────
+OPENCLAW_DIR="${HOME}/openclaw"
+OPENCLAW_REPO="$(grep '^OPENCLAW_REPO=' .env | cut -d= -f2-)"
+[ -z "$OPENCLAW_REPO" ] && OPENCLAW_REPO="https://github.com/openclaw/openclaw.git"
+git clone --depth 1 "$OPENCLAW_REPO" "$OPENCLAW_DIR"
+ls "$OPENCLAW_DIR"              # docker-compose.yml visible = OK
+
+# 5b — merge .env
+SRC="$OPENCLAW_DIR/.env.example"; DST="$OPENCLAW_DIR/.env"
+[ -f "$DST" ] || cp "$SRC" "$DST"
+while IFS= read -r line; do
+  case "$line" in ''|'#'*) continue;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" "$DST" 2>/dev/null || echo "$line" >> "$DST"
+done < "$SRC"
+chmod 600 "$DST"
+
+# 5b — start containers
+cd "$OPENCLAW_DIR"
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f compose.yml ] && COMPOSE_FILES="-f compose.yml"
+SEC="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.security.yml"
+[ -f "$SEC" ] && COMPOSE_FILES="$COMPOSE_FILES -f $SEC"
+docker compose $COMPOSE_FILES up -d
+docker compose $COMPOSE_FILES ps   # State=running = OK
+
+# Health check
+curl -sS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8000
+# HTTP 200 → open browser: http://localhost:8000
+
+# Apply network isolation (recommended)
+NET="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.network.yml"
+[ -f "$NET" ] && COMPOSE_FILES="$COMPOSE_FILES -f $NET"
+docker compose $COMPOSE_FILES up -d
+mkdir -p "$HOME/.openclaw-mgr" && echo isolated > "$HOME/.openclaw-mgr/network-mode"
+
+# ── 6. Add to PATH (optional) ──────────────────────
+echo 'export PATH="$HOME/DEV/openclaw-workspace/openclaw-mgr:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+which openclaw
+
+# ── Register dockerstop alias (optional) ───────────
+cat >> ~/.zshrc <<'EOF'
+alias dockerstop='osascript -e "quit app \"Docker\"" 2>/dev/null; sleep 3; \
+  pkill -TERM -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  sleep 2; \
+  pkill -KILL -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ Docker fully stopped"'
+EOF
+source ~/.zshrc
+type dockerstop                 # should print: alias dockerstop=...
+
+# ── Final check ────────────────────────────────────
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw doctor               # "All good 🎉" = done
+```
+
+</details>
+
+---
+
+
 
 ### 0단계 — 준비물 확인
 
