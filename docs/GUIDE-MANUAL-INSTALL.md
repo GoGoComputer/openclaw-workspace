@@ -246,13 +246,21 @@ ollama list           # 처음엔 빈 목록 (NAME  ID  SIZE  MODIFIED)
 curl -s http://localhost:11434/api/version    # {"version":"0.x.x"}
 ```
 
-모델 한 개 받아보기:
+모델 받기 (선택 — 사람마다 쓰는 모델이 다릅니다):
 ```bash
-ollama pull qwen2.5-coder:7b   # 약 5GB, 5~15분
-ollama list                     # qwen2.5-coder:7b 보이면 OK
+ollama pull <모델명>:<태그>      # 예: ollama pull llama3.1:8b
+ollama list                       # 받은 모델이 보이면 OK
 ```
 
-> 💡 첫 모델은 작은 걸로 (`qwen2.5-coder:7b`, `llama3.1:8b`). 24GB RAM 기준 7~8B 가 안전선.
+> 💡 **어떤 모델을 받을지 모르겠다면:**
+> - 모델 카탈로그: <https://ollama.com/library> 에서 용도·크기·라이선스 확인
+> - **재스크리트/코드**: `qwen2.5-coder`, `deepseek-coder-v2`
+> - **범용 대화/추론**: `llama3.1`, `qwen2.5`, `gemma2`, `mistral`
+> - **한국어 강점**: `solar`, `qwen2.5` (멀티린갈)
+> - **크기 고르기**: 24GB RAM 기준 7~8B 가 안전, 32GB+ 는 13~14B, 64GB+ 는 30B+ 가능
+> - **태그 의미**: `:7b` → 파라미터 수 / `:q4_K_M` → 양자화 정밀도 (생략 시 기본값)
+>
+> OpenClaw 자체는 모델 선택을 강제하지 않습니다. `.env` 의 `OLLAMA_DEFAULT_MODEL` 또는 OpenClaw UI 에서 원하는 모델명을 지정하면 됩니다.
 
 ### 4단계 — openclaw-workspace 소스 직접 받기
 
@@ -726,13 +734,21 @@ ollama list
 curl -s http://localhost:11434/api/version
 ```
 
-Pull one model:
+Pull a model (optional — different users want different models):
 ```bash
-ollama pull qwen2.5-coder:7b   # ~5 GB, 5–15 min
-ollama list
+ollama pull <model>:<tag>     # e.g. ollama pull llama3.1:8b
+ollama list                    # downloaded model should appear
 ```
 
-> 💡 Start small (`qwen2.5-coder:7b`, `llama3.1:8b`). On 24 GB RAM, 7–8 B is the safe ceiling.
+> 💡 **Not sure which to pick?**
+> - Browse the catalog: <https://ollama.com/library> for use case, size, licence
+> - **Code/refactor**: `qwen2.5-coder`, `deepseek-coder-v2`
+> - **General chat/reasoning**: `llama3.1`, `qwen2.5`, `gemma2`, `mistral`
+> - **Multilingual / strong Korean**: `solar`, `qwen2.5`
+> - **Sizing rule of thumb**: 24 GB RAM → 7–8 B safe; 32 GB+ → 13–14 B; 64 GB+ → 30 B+
+> - **Tag meaning**: `:7b` = parameters / `:q4_K_M` = quantisation (default if omitted)
+>
+> OpenClaw doesn't force a specific model. Set the one you want via `.env`'s `OLLAMA_DEFAULT_MODEL` or in the OpenClaw UI.
 
 ### Step 4 — Get openclaw-workspace source
 
