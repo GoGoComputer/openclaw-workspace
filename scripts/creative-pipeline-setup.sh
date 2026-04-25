@@ -36,15 +36,18 @@ done
 # ── 2. 디렉터리 ──────────────────────────────────────────────────────────────
 mkdir -p "$CREATIVE_HOME"/{refs,prompts,out,logs}
 mkdir -p "$CREATIVE_HOME"/profiles/banana-{1,2,3,4}
+mkdir -p "$CREATIVE_HOME"/profiles/figma-1
 chmod 700 "$CREATIVE_HOME" "$CREATIVE_HOME/profiles"
 c_ok "디렉터리 준비: $CREATIVE_HOME"
 
 # ── 3. .env (자리만, 채우는 건 사용자가) ─────────────────────────────────────
 if [ ! -f "$CREATIVE_HOME/.env" ]; then
   cat > "$CREATIVE_HOME/.env" <<'ENVEOF'
-# Figma (선택). 토큰은 https://www.figma.com/developers/api 에서 발급.
-# FIGMA_TOKEN=figd_xxx
+# Figma — GUI 자동화 (기본): 파일 키만 필요
 # FIGMA_FILE_KEY=xxxxxxxxxxxxxxxx
+#
+# Figma — REST API (`creative figma --api` 사용 시만 필요): https://www.figma.com/developers/api
+# FIGMA_TOKEN=figd_xxx
 
 # Ollama 모델 기본값 (변경 가능)
 OLLAMA_VLM_MODEL=qwen2.5vl:7b
@@ -107,10 +110,13 @@ $(c_bold '다음 단계:')
   1) Gemini 4창 1회 로그인:
        creative banana-login
 
-  2) Figma 토큰 채우기 (선택):
-       \$EDITOR $CREATIVE_HOME/.env
+  2) Figma 1창 로그인 (GUI 방식):
+       creative figma-login
 
-  3) 첫 작업:
+  3) Figma 파일 키 채우기 (URL 에서 복사):
+       \$EDITOR $CREATIVE_HOME/.env   # FIGMA_FILE_KEY=...
+
+  4) 첫 작업:
        creative run "cyberpunk cafe interior" --refs 8 --variations 12 --windows 4
 
 상세: docs/GUIDE-CREATIVE-PIPELINE.md

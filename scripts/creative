@@ -7,7 +7,8 @@
 #   creative prompts <slug> [--variations N] [--model NAME]
 #   creative banana --jobs <jsonl> [--windows N] [--rate-limit S] [--headed]
 #   creative banana-login
-#   creative figma --slug <slug> [--page NAME]
+#   creative figma-login
+#   creative figma --slug <slug> [--page NAME] [--cols 4] [--api] [--headed]
 #   creative run <키워드> [--refs N] [--variations N] [--windows N] [--figma-page NAME]
 #   creative doctor
 # Copyright 2026 박성모 Park Sungmo — MIT License
@@ -129,23 +130,43 @@ case "$cmd" in
       $headed
     ;;
 
+  figma-login)
+    python "$SCRIPTS/figma_gui.py" login \
+      --profiles-dir "$CREATIVE_HOME/profiles"
+    ;;
+
   figma)
-    slug=""; page="Mood-$(date +%Y-%m)"
+    slug=""; page="Mood-$(date +%Y-%m)"; use_api=0; cols=4; headed=""
     while [ $# -gt 0 ]; do
       case "$1" in
         --slug) slug="$2"; shift 2 ;;
         --page) page="$2"; shift 2 ;;
+        --cols) cols="$2"; shift 2 ;;
+        --api) use_api=1; shift ;;
+        --headed) headed="--headed"; shift ;;
         *) shift ;;
       esac
     done
     [ -n "$slug" ] || { echo "--slug 필요" >&2; exit 2; }
-    : "${FIGMA_TOKEN:?FIGMA_TOKEN 미설정 — ~/openclaw-creative/.env}"
-    : "${FIGMA_FILE_KEY:?FIGMA_FILE_KEY 미설정}"
-    python "$SCRIPTS/figma.py" \
-      --src "$CREATIVE_HOME/out/$slug" \
-      --page "$page" \
-      --token "$FIGMA_TOKEN" \
-      --file "$FIGMA_FILE_KEY"
+    src="$CREATIVE_HOME/out/$slug"
+    [ -d "$src" ] || { echo "✗ $src 없음 (먼저 banana 단계 수행)" >&2; exit 2; }
+
+    if [ "$use_api" -eq 1 ]; then
+      : "${FIGMA_TOKEN:?FIGMA_TOKEN 미설정 — ~/openclaw-creative/.env}"
+      : "${FIGMA_FILE_KEY:?FIGMA_FILE_KEY 미설정}"
+      python "$SCRIPTS/figma.py" \
+        --src "$src" --page "$page" \
+        --token "$FIGMA_TOKEN" --file "$FIGMA_FILE_KEY"
+    else
+      : "${FIGMA_FILE_KEY:?FIGMA_FILE_KEY 미설정 — ~/openclaw-creative/.env 에 추가}"
+      python "$SCRIPTS/figma_gui.py" place \
+        --profiles-dir "$CREATIVE_HOME/profiles" \
+        --file-key "$FIGMA_FILE_KEY" \
+        --page "$page" \
+        --src "$src" \
+        --cols "$cols" \
+        $headed
+    fi
     ;;
 
   run)
@@ -165,10 +186,10 @@ case "$cmd" in
     "$0" prompts "$keyword" --variations "$variations"
     slug="$(slugify "$keyword")"
     "$0" banana  --jobs "$CREATIVE_HOME/prompts/$slug.jsonl" --windows "$windows"
-    if [ -n "${FIGMA_TOKEN:-}" ] && [ -n "${FIGMA_FILE_KEY:-}" ]; then
+    if [ -n "${FIGMA_FILE_KEY:-}" ]; then
       "$0" figma --slug "$slug" --page "$figma_page"
     else
-      echo "ℹ Figma 토큰 미설정 — 업로드 건너뜀 (~/openclaw-creative/out/$slug/ 에 저장됨)"
+      echo "ℹ Figma 키 미설정 — 업로드 건너뜀 (~/openclaw-creative/out/$slug/ 에 저장됨)"
     fi
     ;;
 

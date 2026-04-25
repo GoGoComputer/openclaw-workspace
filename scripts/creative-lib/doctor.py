@@ -27,10 +27,13 @@ def main() -> int:
     venv = home / ".venv"
     fails += not check("venv", (venv / "bin" / "python").is_file())
 
-    for p in ("banana-1", "banana-2", "banana-3", "banana-4"):
+    for p in ("banana-1", "banana-2", "banana-3", "banana-4", "figma-1"):
         path = home / "profiles" / p
         has_state = path.is_dir() and any(path.iterdir())
-        check(f"profile {p}", has_state, "logged-in" if has_state else "empty — `creative banana-login`")
+        hint = "logged-in" if has_state else (
+            "empty — `creative figma-login`" if p == "figma-1"
+            else "empty — `creative banana-login`")
+        check(f"profile {p}", has_state, hint)
 
     fails += not check("gallery-dl", shutil.which("gallery-dl") is not None)
     fails += not check("imagemagick (mogrify)", shutil.which("mogrify") is not None)
