@@ -97,7 +97,31 @@ Docker Volumes               # OpenClaw 의 세션·DB (영구 데이터)
 | 컨테이너 정지 | `openclaw stop` |
 | 다시 켜기 | `openclaw start` |
 | 디스크가 꽉 참 | `openclaw clean` |
+### 🌐 웹에서 뉴스·코스피 정보 가져오기 — 가능한가요?
 
+**네, 됩니다. 단 기본 `isolated` 모드에서는 차단되므로 잠깐 열어야 합니다.**
+
+```bash
+openclaw network online --restart    # 1) 잠깐 열기
+# OpenClaw UI 에서 "코스피 오늘 종가", "한겨레 1면 요약" 등 자유롭게
+openclaw network isolated --restart   # 2) 끝나면 바로 잠그기 (습관화 권장)
+```
+
+#### `online` 모드여도 **여전히 보호되는** 것
+
+| 위험 | online 에서도 차단됨? |
+|---|---|
+| 다운로드한 악성 코드가 호스트(맥북) 파일 건드림 | ✅ 차단 (컨테이너 격리, 호스트 마운트 없음) |
+| `~/.ssh`, `~/Documents` 등 접근 | ✅ 차단 (마운트 자체 안 됨) |
+| 컨테이너 루트 파일시스템 영구 변경 | ✅ 차단 (`read_only: true`) |
+| 권한 상승(sudo 류) | ✅ 차단 (`cap_drop`, `no-new-privileges`) |
+| LAN 의 다른 기기에서 접근 | ✅ 차단 (`127.0.0.1` 만 바인딩) |
+| **임의 외부 서버 호출** | ⚠️ 허용 (online 의 본질) |
+| **프롬프트 인젝션으로 데이터 외부 전송** | ⚠️ 이론상 가능 |
+
+즉, **도커 격리·파일 안전·권한 격리는 그대로 유지**되고, 인터넷 통로만 해제됩니다. 작업 끝나면 바로 잠그는 습관이 핵심.
+
+> ⚠️ 사용자가 직접 `~/Desktop/openclaw-share` 같은 폴더를 마운트한 경우, 웹에서 받은 파일이 그 폴더에는 쓰일 수 있습니다 (그게 마운트의 목적). `~/.ssh` 같은 민감 폴더는 절대 마운트하지 마세요.
 ### 다음에 읽을 것
 - [README](../README.md) — 명령 카탈로그·`.env`·FAQ
 - [QUICKSTART-ko](QUICKSTART-ko.md) — 단계별 예시 출력
@@ -198,6 +222,32 @@ Details: see the main README's [🔒 Security section](../README.en.md#-security
 | Stop the container | `openclaw stop` |
 | Start it again | `openclaw start` |
 | Disk getting full | `openclaw clean` |
+
+### 🌐 Browsing the web for news / stock prices — does it work?
+
+**Yes — but the default `isolated` mode blocks the internet, so you have to flip it temporarily.**
+
+```bash
+openclaw network online --restart    # 1) open the gate
+# In the OpenClaw UI:  "summarize today's NYT front page", "what's KOSPI today?"
+openclaw network isolated --restart   # 2) lock back down (build the habit)
+```
+
+#### What's still protected even in `online` mode
+
+| Risk | Blocked in online? |
+|---|---|
+| Downloaded malware touching host (Mac) files | ✅ Blocked (container isolation, no host mounts) |
+| Access to `~/.ssh`, `~/Documents`, etc. | ✅ Blocked (not mounted at all) |
+| Persistent changes to container rootfs | ✅ Blocked (`read_only: true`) |
+| Privilege escalation (sudo-like) | ✅ Blocked (`cap_drop`, `no-new-privileges`) |
+| Other devices on your LAN reaching it | ✅ Blocked (`127.0.0.1` only) |
+| **Calling arbitrary external servers** | ⚠️ Allowed (that's the point of online) |
+| **Prompt-injection-driven exfiltration** | ⚠️ Theoretically possible |
+
+In other words, **Docker isolation, file safety, and privilege boundaries stay intact**; only the internet gate is opened. Habit: lock it back down right after you finish.
+
+> ⚠️ If you've explicitly mounted a folder like `~/Desktop/openclaw-share`, web-fetched files can land there (that's the mount's purpose). Never mount sensitive folders like `~/.ssh`.
 
 ### What to read next
 - [README (EN)](../README.en.md) — command catalog, `.env`, FAQ
