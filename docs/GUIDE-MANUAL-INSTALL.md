@@ -818,37 +818,23 @@ docker compose logs -f --tail=50    # 로그 실시간 확인 (Ctrl+C 로 종료
 
 #### 5b-A. OpenClaw 본체 git clone (수동)
 
-> 이 가이드의 4단계는 **이 도구 (`openclaw-workspace`)** 를 받았습니다. 이제 받아야 할 것은 **OpenClaw 본체 (실제 AI 에이전트, 별개 저장소)**.
+> ✅ **5단계 경로 B (직접 clone) 로 왔다면 이미 완료** — `~/DEV/openclaw` 에 본체가 있으면 이 절 전체를 건너뛰고 바로 5b-B 로 이동하세요.
+
+> 아직 본체를 받지 않았다면 (경로 A로 진행 중인 경우):
 
 ```bash
-# 1) .env 에서 본체 저장소 URL 확인
-cd ~/DEV/openclaw-workspace/openclaw-mgr
-grep '^OPENCLAW_REPO=' .env || grep '^OPENCLAW_REPO=' .env.example
-# 예: OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
-```
-
-`.env` 가 없으면:
-```bash
-cp .env.example .env
-chmod 600 .env
-$EDITOR .env       # OPENCLAW_REPO 와 OPENCLAW_DIR 만 확인 (둘 다 기본값 OK)
-```
-
-```bash
-# 2) 본체 clone (얕게 — 이력 절약)
-OPENCLAW_DIR="${HOME}/openclaw"          # .env 의 OPENCLAW_DIR 와 동일하게
+# 1) 본체 clone
 git clone --depth 1 \
   https://github.com/openclaw/openclaw.git \
-  "$OPENCLAW_DIR"
+  ~/DEV/openclaw
 
-# 3) 받았는지 확인
-ls "$OPENCLAW_DIR"                        # docker-compose.yml, README.md 등이 보이면 OK
-git -C "$OPENCLAW_DIR" log --oneline -5
+# 2) 받았는지 확인
+ls ~/DEV/openclaw    # docker-compose.yml, README.md 등이 보이면 OK
 ```
 
-> 🔐 보안 검사 (선택): `docker.sock` 마운트가 있으면 호스트 장악 위험 — `openclaw install` 은 자동 검사. 수동에서는:
+> 🔐 보안 검사 (선택): `docker.sock` 마운트가 있으면 호스트 장악 위험:
 > ```bash
-> grep -RIn '/var/run/docker.sock' "$OPENCLAW_DIR"/*compose*.y*ml || echo "OK — 위험 마운트 없음"
+> grep -RIn '/var/run/docker.sock' ~/DEV/openclaw/*compose*.y*ml || echo "OK — 위험 마운트 없음"
 > ```
 
 #### 5b-B. `.env` 머지 (선택 — 본체 .env.example 의 누락 키 추가)
@@ -1646,37 +1632,23 @@ Open **http://localhost:8000** → UI appears.
 
 #### 5b-A. git clone the OpenClaw upstream (manual)
 
-> Step 4 of this guide fetched **this tool (`openclaw-workspace`)**. Now we need the **OpenClaw upstream (the actual AI agent — a different repo)**.
+> ✅ **Already done if you followed Step 5 Path B** — if `~/DEV/openclaw` exists, skip this section and go straight to 5b-B.
+
+> If you haven't cloned the upstream yet (following Path A):
 
 ```bash
-# 1) Find upstream URL in .env
-cd ~/DEV/openclaw-workspace/openclaw-mgr
-grep '^OPENCLAW_REPO=' .env || grep '^OPENCLAW_REPO=' .env.example
-# e.g. OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
-```
-
-If `.env` doesn't exist yet:
-```bash
-cp .env.example .env
-chmod 600 .env
-$EDITOR .env       # check OPENCLAW_REPO and OPENCLAW_DIR (defaults are fine)
-```
-
-```bash
-# 2) Shallow clone of the upstream
-OPENCLAW_DIR="${HOME}/openclaw"          # match .env's OPENCLAW_DIR
+# Shallow clone (saves disk space)
 git clone --depth 1 \
   https://github.com/openclaw/openclaw.git \
-  "$OPENCLAW_DIR"
+  ~/DEV/openclaw
 
-# 3) Verify
-ls "$OPENCLAW_DIR"                        # docker-compose.yml, README.md, etc.
-git -C "$OPENCLAW_DIR" log --oneline -5
+# Verify
+ls ~/DEV/openclaw    # docker-compose.yml, README.md, etc. → OK
 ```
 
-> 🔐 Security check (optional): a `docker.sock` mount in compose = host takeover risk. `openclaw install` checks automatically; manual:
+> 🔐 Security check (optional): a `docker.sock` mount in compose = host takeover risk:
 > ```bash
-> grep -RIn '/var/run/docker.sock' "$OPENCLAW_DIR"/*compose*.y*ml || echo "OK — no risky mount"
+> grep -RIn '/var/run/docker.sock' ~/DEV/openclaw/*compose*.y*ml || echo "OK — no risky mount"
 > ```
 
 #### 5b-B. Merge `.env` (optional — fill missing keys from upstream's example)
