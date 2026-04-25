@@ -432,7 +432,7 @@ Docker/Ollama 가 시간이 갈수록 캐시·이미지를 쌓습니다. 위 명
 
 설치/삭제 동작은 모두 **사용자 확인 후** 진행되며, 스크립트가 하는 일은:
 - Homebrew, Docker Desktop, Ollama 설치 (공식 채널)
-- `~/openclaw` 에 OpenClaw clone
+- `~/DEV/openclaw` 에 OpenClaw clone
 - launchd 에 매일 update 스케줄 등록 (활성화 했을 때만)
 - `~/.openclaw-mgr/` 에 상태 파일 저장
 

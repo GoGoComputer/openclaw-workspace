@@ -645,7 +645,7 @@ ollama list                       # 받은 모델이 보이면 OK
 > | 저장소 | 누구 | 무엇 | 언제 받나? |
 > |---|---|---|---|
 > | 🟢 **`GoGoComputer/openclaw-workspace`** (지금 이 저장소) | 박성모 (이 도구 메인테이너) | macOS 자동화 도구 (`./openclaw` 명령·docker-compose 보안 override·이 가이드 등) | **항상 받아야 함** — 4단계가 이걸 받는 단계 |
-> | 🔵 **`openclaw/openclaw`** (OpenClaw 본체) | OpenClaw 공식팀 | AI 에이전트 본체 (Python/JS 코드, 컨테이너 이미지 소스) | **수동으로 받을 필요 없음** — `./openclaw install` 이 자동으로 `~/openclaw` 에 clone 함 |
+> | 🔵 **`openclaw/openclaw`** (OpenClaw 본체) | OpenClaw 공식팀 | AI 에이전트 본체 (Python/JS 코드, 컨테이너 이미지 소스) | **수동으로 받을 필요 없음** — `./openclaw install` 이 자동으로 `~/DEV/openclaw` 에 clone 함 |
 >
 > 즉 4단계에서는 **이 저장소 (`GoGoComputer/openclaw-workspace`)** 만 받으면 됩니다. OpenClaw 본체는 5단계의 `./openclaw install` 이 알아서 가져옵니다. 본체 사이트도 보고 싶다면 [💡 OpenClaw 본체 사이트 직접 방문하기](#-openclaw-본체-사이트-직접-방문하기-선택) 섹션 참조.
 
@@ -699,14 +699,14 @@ ls    # README.md, openclaw-mgr/, docs/ 등이 보이면 OK
 
 ```bash
 # Git
-git clone https://github.com/openclaw/openclaw.git ~/openclaw
+git clone https://github.com/openclaw/openclaw.git ~/DEV/openclaw
 
 # 또는 ZIP: 위 GitHub 페이지 → 초록 [<> Code] → Download ZIP →
 unzip ~/Downloads/openclaw-main.zip -d ~/
-mv ~/openclaw-main ~/openclaw
+mv ~/openclaw-main ~/DEV/openclaw
 ```
 
-이렇게 미리 받아두면 `~/openclaw` 에 본체가 있으니 `./openclaw install` 이 그걸 그대로 사용합니다 (clone 단계 [skip]). 다른 위치에 받았으면 `.env` 의 `OPENCLAW_DIR` 만 수정하세요.
+이렇게 미리 받아두면 `~/DEV/openclaw` 에 본체가 있으니 `./openclaw install` 이 그걸 그대로 사용합니다 (clone 단계 [skip]). 다른 위치에 받았으면 `.env` 의 `OPENCLAW_DIR` 만 수정하세요.
 
 > ⚠ **주의**: 본체 저장소 URL 이나 클론 위치를 바꾸려면 `.env` 의 `OPENCLAW_REPO`, `OPENCLAW_DIR` 두 변수를 함께 맞춰주세요. 첫 실행 시 `.env` 가 자동 생성되니 그때 편집하면 됩니다.
 
@@ -920,7 +920,7 @@ sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/b
 > | 무엇 | 어떻게 갱신 | 무엇이 갱신되나 |
 > |---|---|---|
 > | 🟢 내 도구 (`openclaw-workspace`) | `git pull` (수동 모드) 또는 `openclaw self-update` (brew 모드) | `openclaw` CLI, `lib/`, `cmd/`, 보안 override, 가이드 문서 |
-> | 🔵 OpenClaw 본체 (`~/openclaw`) | `openclaw update` ← 내 도구가 알아서 본체 git pull + 이미지 pull + 모델 pull 까지 | 본체 코드, Docker 이미지, Ollama 모델 |
+> | 🔵 OpenClaw 본체 (`~/DEV/openclaw`) | `openclaw update` ← 내 도구가 알아서 본체 git pull + 이미지 pull + 모델 pull 까지 | 본체 코드, Docker 이미지, Ollama 모델 |
 >
 > 즉 **내 도구만 최신 ≠ 본체도 최신**. 둘 다 최신으로 두고 싶으면 두 명령을 차례로 돌리세요.
 
@@ -943,7 +943,7 @@ git pull --ff-only
 ```
 openclaw update
   ├── network online (잠깐 외부 허용)
-  ├── cd ~/openclaw && git pull --ff-only          ← 본체 코드 갱신
+  ├── cd ~/DEV/openclaw && git pull --ff-only          ← 본체 코드 갱신
   ├── docker compose pull                            ← 본체 이미지 갱신
   ├── docker compose up -d                           ← 새 이미지로 재기동
   ├── ollama pull <OLLAMA_MODELS 의 각 모델>        ← 모델 갱신
@@ -1430,7 +1430,7 @@ ollama list                    # downloaded model should appear
 > | Repository | Owner | What it is | Do I need to download it? |
 > |---|---|---|---|
 > | 🟢 **`GoGoComputer/openclaw-workspace`** (this repo) | Park Sungmo (maintainer of this tool) | macOS automation tool — the `./openclaw` CLI, security compose overrides, this guide | **Yes — that's what Step 4 fetches** |
-> | 🔵 **`openclaw/openclaw`** (OpenClaw upstream) | Official OpenClaw team | The AI agent itself (Python/JS code, container image source) | **No need to fetch manually** — `./openclaw install` clones it into `~/openclaw` automatically |
+> | 🔵 **`openclaw/openclaw`** (OpenClaw upstream) | Official OpenClaw team | The AI agent itself (Python/JS code, container image source) | **No need to fetch manually** — `./openclaw install` clones it into `~/DEV/openclaw` automatically |
 >
 > So in Step 4 you only download **this repo (`GoGoComputer/openclaw-workspace`)**. The upstream agent is fetched for you in Step 5. Want to peek at the upstream too? See [💡 Visiting the OpenClaw upstream site](#-visiting-the-openclaw-upstream-site-optional) below.
 
@@ -1481,14 +1481,14 @@ Pre-fetching the upstream manually (optional — skips the clone step in `./open
 
 ```bash
 # Git
-git clone https://github.com/openclaw/openclaw.git ~/openclaw
+git clone https://github.com/openclaw/openclaw.git ~/DEV/openclaw
 
 # Or ZIP: GitHub page → green [<> Code] → Download ZIP →
 unzip ~/Downloads/openclaw-main.zip -d ~/
-mv ~/openclaw-main ~/openclaw
+mv ~/openclaw-main ~/DEV/openclaw
 ```
 
-If `~/openclaw` already exists, `./openclaw install` will skip the clone step. Using a different location? Edit `OPENCLAW_DIR` in `.env`.
+If `~/DEV/openclaw` already exists, `./openclaw install` will skip the clone step. Using a different location? Edit `OPENCLAW_DIR` in `.env`.
 
 > ⚠ If you change the upstream URL or location, keep `OPENCLAW_REPO` and `OPENCLAW_DIR` in `.env` consistent. The `.env` file is auto-created on first run, so you can edit it then.
 
@@ -1692,7 +1692,7 @@ sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/b
 > | What | How to update | What it refreshes |
 > |---|---|---|
 > | 🟢 This tool (`openclaw-workspace`) | `git pull` (manual mode) or `openclaw self-update` (brew mode) | `openclaw` CLI, `lib/`, `cmd/`, security overrides, guide docs |
-> | 🔵 OpenClaw upstream (`~/openclaw`) | `openclaw update` ← this tool runs upstream `git pull` + image pull + model pull for you | Upstream code, Docker images, Ollama models |
+> | 🔵 OpenClaw upstream (`~/DEV/openclaw`) | `openclaw update` ← this tool runs upstream `git pull` + image pull + model pull for you | Upstream code, Docker images, Ollama models |
 >
 > So **tool up-to-date ≠ upstream up-to-date**. Run both to keep everything fresh.
 
@@ -1715,7 +1715,7 @@ git pull --ff-only
 ```
 openclaw update
   ├── network online (briefly allow outbound)
-  ├── cd ~/openclaw && git pull --ff-only          ← upstream code
+  ├── cd ~/DEV/openclaw && git pull --ff-only          ← upstream code
   ├── docker compose pull                            ← upstream images
   ├── docker compose up -d                           ← restart with new images
   ├── ollama pull <each model in OLLAMA_MODELS>     ← refresh models

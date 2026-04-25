@@ -427,7 +427,7 @@ Persistent data lives in Docker volumes, which `./openclaw backup` snapshots saf
 
 All install/uninstall actions go through user confirmation. The scripts:
 - Install Homebrew, Docker Desktop, Ollama (official channels only)
-- Clone OpenClaw to `~/openclaw`
+- Clone OpenClaw to `~/DEV/openclaw`
 - Register a daily update job in launchd (only if you opt in)
 - Keep state under `~/.openclaw-mgr/`
 

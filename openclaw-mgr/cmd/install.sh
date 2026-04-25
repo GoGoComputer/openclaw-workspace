@@ -161,7 +161,7 @@ else
 fi
 
 # ── 5. OpenClaw 저장소 ───────────────────────────────────────────────────────
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/openclaw}"
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 
 step_repo() {
   local repo="${OPENCLAW_REPO:-}"
