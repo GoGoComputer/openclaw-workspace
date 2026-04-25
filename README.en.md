@@ -23,11 +23,8 @@
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
 cd openclaw-workspace/openclaw-mgr
 
-# 2) Create your settings file (only OPENCLAW_REPO is mandatory)
-cp .env.example .env
-open -e .env       # or: nano .env
-
-# 3) Just run the launcher (interactive menu — Korean/English auto-detected)
+# 2) Just run the launcher — .env is created automatically (no cp needed)
+#    Running with no arguments opens the interactive menu (Korean/English auto-detected)
 ./openclaw
 
 # Or run subcommands directly:
@@ -42,7 +39,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 ./openclaw schedule enable # daily auto-update at 3 AM (optional)
 ```
 
-> ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — already set as the default in `.env.example`. Just `cp .env.example .env` and you're ready.
+> ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — `.env` is **created automatically on first run**. Just run `./openclaw install` — no manual setup needed.
 
 ---
 

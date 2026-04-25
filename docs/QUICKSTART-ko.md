@@ -42,31 +42,17 @@ git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/openclaw-work
 cd ~/openclaw-workspace/openclaw-mgr
 ```
 
-## 4. 설정 파일 만들기
+## 4. 설정 파일 (자동 생성 — 아무것도 안 해도 됩니다)
 
-```bash
-cp .env.example .env
-open -e .env
+`./openclaw` 를 처음 실행하면 `.env` 파일이 자동으로 만들어집니다. OpenClaw 공식 저장소 주소도 이미 기본값으로 들어 있습니다.
+
+```
+✔ .env 자동 생성됨 (.env.example 기본값 적용)
 ```
 
-`open -e .env` 를 실행하면 macOS 의 기본 텍스트 편집기(TextEdit) 가 열리고 다음과 비슷한 내용이 보입니다:
+이 메시지가 보이면 성공입니다. **아무것도 수정하지 않아도 바로 설치로 넘어갈 수 있습니다.**
 
-```text
-# ── OpenClaw 저장소 (필수) ──────────────────────────────────────────────
-# OpenClaw 공식 GitHub 저장소 URL
-OPENCLAW_REPO=""
-
-# 로컬에 clone 할 경로 (기본 ~/openclaw)
-OPENCLAW_DIR="$HOME/openclaw"
-
-# 외부 노출 포트 (항상 127.0.0.1 에만 바인딩)
-OPENCLAW_PORT="8000"
-...
-```
-
-`OPENCLAW_REPO=""` 라인에 OpenClaw GitHub 주소를 적어넣고 저장(`⌘ + S`).
-
-> ⚠️ 정확한 주소를 모르신다면 일단 빈 값으로 두고 나중에 채워도 됩니다. 다른 단계는 모두 진행되고, 마지막 컨테이너 단계에서만 멈춥니다.
+> 💡 나중에 모델이나 백업 경로 등을 바꾸고 싶으면 `openclaw-mgr/.env` 를 텍스트 편집기로 열어 수정하면 됩니다. 지금은 안 해도 됩니다.
 
 ## 5. 현재 상태 점검
 

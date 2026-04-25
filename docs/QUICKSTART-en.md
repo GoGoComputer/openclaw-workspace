@@ -40,31 +40,17 @@ git clone https://github.com/GoGoComputer/openclaw-workspace.git ~/openclaw-work
 cd ~/openclaw-workspace/openclaw-mgr
 ```
 
-## 4. Create your settings file
+## 4. Settings file (auto-created — nothing to do)
 
-```bash
-cp .env.example .env
-open -e .env
+When you run `./openclaw` for the first time, the `.env` settings file is created automatically. The official OpenClaw repo URL is already pre-filled.
+
+```
+✔ .env 자동 생성됨 (.env.example 기본값 적용)
 ```
 
-`open -e .env` opens TextEdit with content like this:
+When you see that message, you're good. **No editing required — just move straight to install.**
 
-```text
-# ── OpenClaw repo (required) ────────────────────────────────────────────────
-# Official OpenClaw GitHub repository URL.
-OPENCLAW_REPO=""
-
-# Local clone path (default ~/openclaw)
-OPENCLAW_DIR="$HOME/openclaw"
-
-# Exposed port (always bound to 127.0.0.1)
-OPENCLAW_PORT="8000"
-...
-```
-
-Fill in the OpenClaw GitHub URL on the `OPENCLAW_REPO=""` line, then save (`⌘ + S`).
-
-> ⚠️ If you don't know the exact URL yet, leave it empty for now. All other steps still complete; only the final container step waits.
+> 💡 If you later want to change the model, backup path, or other settings, open `openclaw-mgr/.env` in any text editor. You don't need to do this now.
 
 ## 5. Check current state
 

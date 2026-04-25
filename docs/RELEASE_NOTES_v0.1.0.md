@@ -52,9 +52,10 @@ OpenClaw 셀프호스트 자동화 도구의 첫 공개 릴리스입니다.
 ```bash
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
 cd openclaw-workspace/openclaw-mgr
-cp .env.example .env
 ./openclaw            # 대화형 메뉴 (또는: ./openclaw doctor && ./openclaw install)
 ```
+
+> `.env` 는 첫 실행 시 자동 생성됩니다.
 
 ---
 
@@ -104,9 +105,10 @@ First public release of the OpenClaw self-host automation tool.
 ```bash
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
 cd openclaw-workspace/openclaw-mgr
-cp .env.example .env
 ./openclaw            # interactive menu (or: ./openclaw doctor && ./openclaw install)
 ```
+
+> `.env` is created automatically on first run.
 
 ---
 

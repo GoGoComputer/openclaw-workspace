@@ -14,6 +14,13 @@ export OPENCLAW_MGR_DIR
 
 VERSION="0.1.0"
 
+# .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
+# Auto-init: create .env from .env.example on first run — zero-config for beginners
+if [ ! -f "$OPENCLAW_MGR_DIR/.env" ] && [ -f "$OPENCLAW_MGR_DIR/.env.example" ]; then
+  cp -- "$OPENCLAW_MGR_DIR/.env.example" "$OPENCLAW_MGR_DIR/.env"
+  printf '\033[0;32m✔ .env 자동 생성됨 (.env.example 기본값 적용)\033[0m\n' >&2
+fi
+
 # .env 자동 로드 (있으면). 위치: 스크립트 디렉터리/.env  또는  $OPENCLAW_MGR_HOME/.env
 _load_env_file() {
   local f="$1"
