@@ -12,23 +12,44 @@
 
 > 🇬🇧 English version: [README.en.md](README.en.md)
 
+## ⚡ 30초 설치 (터미널에 그대로 붙여넣기)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+```
+
+설치 후 아무 때나 최신 버전으로 업데이트 — 메뉴에서도 새 버전 알림이 뜨면 넘어갑니다:
+
+```bash
+openclaw self-update            # 또는 / or:  openclaw ai-update
+```
+
 ---
 
 ## 🚀 5분 시작 (비개발자 OK)
 
 > "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
 
-### 옵션 A — Homebrew (권장 · 가장 쉬움)
+### 옵션 A — 한 줄 웹 설치 (가장 쉬움)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+openclaw                        # 대화형 메뉴 (한국어/영어 자동)
+```
+
+이 스크립트는 Homebrew 가 없으면 먼저 설치하고, `openclaw-workspace` formula 를 탭에서 설치합니다. 재실행해도 안전.
+
+### 옵션 B — Homebrew 직접
 
 ```bash
 brew tap gogocomputer/openclaw
 brew install openclaw-workspace
-openclaw                        # 대화형 메뉴 (한국어/영어 자동)
+openclaw
 ```
 
-업데이트는 `brew update && brew upgrade openclaw-workspace`. 끝.
+업데이트: `openclaw self-update` (또는 `brew update && brew upgrade openclaw-workspace`).
 
-### 옵션 B — git clone (소스 직접 사용 · 개발자용)
+### 옵션 C — git clone (소스 직접 사용 · 개발자용)
 
 ```bash
 # 1) 코드 받기

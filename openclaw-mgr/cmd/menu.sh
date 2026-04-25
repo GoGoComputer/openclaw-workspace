@@ -10,6 +10,11 @@
 set -euo pipefail
 # shellcheck disable=SC1091
 . "${OPENCLAW_MGR_DIR}/lib/common.sh"
+# shellcheck disable=SC1091
+. "${OPENCLAW_MGR_DIR}/lib/update_check.sh"
+
+# Current launcher version (read from the dispatcher).
+MGR_VERSION="$(awk -F'"' '/^VERSION=/{print $2; exit}' "${OPENCLAW_MGR_DIR}/openclaw" 2>/dev/null || echo 0.0.0)"
 
 # 언어 자동 감지: LANG 이 한국어면 KO, 아니면 EN.
 # Auto language detection: Korean if LANG starts with ko, else English.
@@ -65,9 +70,14 @@ show_menu() {
   ─── $(t "삭제 / Uninstall" "Uninstall") ────────────────────────────────────
   12) $(t "OpenClaw 제거 (uninstall)" "Remove OpenClaw (uninstall)")
 
+  ─── $(t "매니저 / Manager" "Manager") ──────────────────────────────────────
+  13) $(t "매니저 자체 업데이트 (self-update)" "Update this launcher (self-update)")
+
    q) $(t "종료" "Quit")
 
 EOF
+  # Show "new version available" banner if applicable. Safe / silent on errors.
+  update_check_banner "$MGR_VERSION" "$LANG_PREF" || true
   printf '  %s ' "$(t '번호 선택:' 'Select number:')"
 }
 
@@ -141,6 +151,7 @@ while true; do
           esac
           pause ;;
       esac ;;
+    13) run_cmd self-update || true; pause ;;
     q|Q|"") clear 2>/dev/null || true; exit 0 ;;
     *)
       printf '  %s\n' "$(t '알 수 없는 선택입니다.' 'Unknown selection.')"; pause ;;

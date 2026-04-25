@@ -12,7 +12,7 @@ set -euo pipefail
 OPENCLAW_MGR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 export OPENCLAW_MGR_DIR
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 # .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
 # Auto-init: create .env from .env.example on first run — zero-config for beginners
@@ -75,6 +75,7 @@ openclaw — OpenClaw 셀프호스트 자동화 (macOS)
   network status|isolated|online   외부 인터넷 차단 토글 — Network isolation toggle (default isolated)
   clean [--light|--all|--status]   메모리·디스크 정리 — Memory/disk cleanup (interactive)
   uninstall [--purge] OpenClaw 제거 — Remove (--purge 도 Docker/Ollama 제거)
+  self-update         openclaw-workspace 매니저 자체 업데이트 — Update this launcher
   version             버전 출력 — Print version
   help                이 도움말 — This help message
 
@@ -96,11 +97,15 @@ cmd="${1:-menu}"
 case "$cmd" in
   -h|--help|help) usage; exit 0 ;;
   -v|--version|version) printf 'openclaw-mgr %s\n' "$VERSION"; exit 0 ;;
-  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu)
+  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu|self-update)
     script="$OPENCLAW_MGR_DIR/cmd/${cmd}.sh"
     [ -x "$script" ] || [ -f "$script" ] || die "내부 오류: $script 없음"
     # shellcheck disable=SC1090
     bash "$script" "$@"
+    ;;
+  ai-update|upgrade)
+    # Friendly aliases for self-update.
+    bash "$OPENCLAW_MGR_DIR/cmd/self-update.sh" "$@"
     ;;
   *)
     err "알 수 없는 명령: $cmd"

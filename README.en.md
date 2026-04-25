@@ -12,23 +12,44 @@
 
 > 🇰🇷 한국어 (메인): [README.md](README.md)
 
+## ⚡ 30-second install (paste into Terminal)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+```
+
+Update any time — the menu also shows a banner when a new version is out:
+
+```bash
+openclaw self-update            # alias: openclaw ai-update
+```
+
 ---
 
 ## 🚀 5-minute start (non-developer friendly)
 
 > Never used a terminal? See [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) for a step-by-step walkthrough with example terminal output.
 
-### Option A — Homebrew (recommended · easiest)
+### Option A — one-line web install (easiest)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/GoGoComputer/openclaw-workspace/main/scripts/install.sh | bash
+openclaw                        # interactive menu (Korean/English auto-detected)
+```
+
+The script installs Homebrew if missing, then taps and installs the formula. Safe to re-run.
+
+### Option B — Homebrew directly
 
 ```bash
 brew tap gogocomputer/openclaw
 brew install openclaw-workspace
-openclaw                        # interactive menu (Korean/English auto-detected)
+openclaw
 ```
 
-Update with `brew update && brew upgrade openclaw-workspace`. That's it.
+Update: `openclaw self-update` (or `brew update && brew upgrade openclaw-workspace`).
 
-### Option B — git clone (run from source · for developers)
+### Option C — git clone (run from source · for developers)
 
 ```bash
 # 1) Get the code
