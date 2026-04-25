@@ -145,6 +145,13 @@ docker ps                                    # 표 헤더 (CONTAINER ID  IMAGE .
 
 > ⚠️ `docker info | head -5` 는 **Client 섹션만** 출력해서 데몬이 껌져 있어도 동일하게 보입니다. **`Server:` 줄을 확인**하거나 위의 한 줄짜리 방법을 쓰세요.
 
+**✗ daemon down 이 나오면 → Docker 앱이 안 켜져 있는 것입니다:**
+```bash
+open -a Docker          # 앱 실행
+# 메뉴바 🐳 가 움직임을 멈출 때까지 30~60초 대기
+# 그 뒤 위 확인 명령 다시 치기 → ✓ daemon up 이 나와야 OK
+```
+
 `Cannot connect to the Docker daemon` 가 나오면 → 아직 시동 중. 잠시 기다리거나 메뉴바 고래 아이콘을 클릭해 상태 확인.
 
 #### Docker 켜기 / 끄기 / 항상 켜기 / 완전 죽이기 — 한눈에
@@ -909,7 +916,11 @@ docker ps                                    # Header (CONTAINER ID  IMAGE ...) 
 
 > ⚠️ `docker info | head -5` only shows the **Client** section — the daemon could be either up or down and you'd see the same thing. **Look for the `Server:` line**, or use the one-liner above.
 
-If you see `Cannot connect to the Docker daemon` it's still booting — wait a bit, or click the menu-bar whale to see status.
+**If you see ✗ daemon down → Docker is not running:**
+```bash
+open -a Docker          # same as the Start step above
+# wait 30–60 s, then rerun the check
+```
 
 #### Start / Stop / Always-on / Force-kill — at a glance
 
