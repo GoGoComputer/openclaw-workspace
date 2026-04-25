@@ -1,0 +1,45 @@
+# =============================================================================
+# compose.surf.yml — 웹서핑 샌드박스 (Playwright + Python)
+# -----------------------------------------------------------------------------
+# 1회용 컨테이너로 인터넷에서 정보를 수집하고 마크다운 브리프를 생성합니다.
+# OpenClaw 메인 컨테이너와는 별개의 네트워크에서 동작합니다.
+#
+# 격리 규칙:
+#   • 호스트의 Ollama(127.0.0.1:11434) 만 host.docker.internal 로 접근.
+#   • 그 외 인터넷은 일반 인터넷 (DNS 정상). 작업 끝나면 컨테이너 자체가 사라짐.
+#   • 호스트 파일시스템은 출력 디렉터리(~/openclaw-surf) 만 read-write 마운트.
+#   • OPENCLAW_DIR / .env / ~/.ssh 등은 일절 마운트 안 함.
+#   • 매 실행마다 새 컨테이너 (--rm). 안에서 영속 변경 금지.
+# =============================================================================
+name: openclaw-surf
+
+services:
+  surf:
+    image: mcr.microsoft.com/playwright/python:v1.46.0-jammy
+    # 출력 디렉터리만 마운트
+    volumes:
+      - ${SURF_HOME:-${HOME}/openclaw-surf}/out:/work/out:rw
+      - ${SURF_REPO}/scripts/surf-lib:/work/lib:ro
+    working_dir: /work
+    # 호스트의 Ollama 데몬을 host.docker.internal 로 호출
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # 보안 하드닝
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+      - /work/.cache:size=128m
+    cap_drop: ["ALL"]
+    security_opt:
+      - "no-new-privileges:true"
+    # 환경변수: 컨테이너 안 surf.py 가 읽음
+    environment:
+      OLLAMA_HOST: "http://host.docker.internal:11434"
+      OLLAMA_TEXT_MODEL: "${OLLAMA_TEXT_MODEL:-qwen2.5-coder:7b}"
+      QUERY: "${QUERY}"
+      SOURCES: "${SOURCES:-rss,naver,wikipedia}"
+      MAX_PAGES: "${MAX_PAGES:-6}"
+      LANG: "${LANG:-ko}"
+      OUT_FILE: "/work/out/${OUT_FILE}"
+    # 컨테이너에 1개의 명령만: lib/surf.py
+    command: ["python", "/work/lib/surf.py"]

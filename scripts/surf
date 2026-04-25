@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# =============================================================================
+# scripts/surf — 명령 → 웹 검색 → 마크다운 브리프 (샌드박스 컨테이너)
+# -----------------------------------------------------------------------------
+# 사용:
+#   surf "오늘 코스피 종가와 거래대금"
+#   surf "한겨레 1면 5개 요약" --lang ko
+#   surf "S&P 500 weekly recap" --lang en --sources rss,wikipedia
+#   surf "이 논문 요약: https://arxiv.org/abs/2310.06825" --sources url://https://arxiv.org/abs/2310.06825
+#   surf "오늘 IT 빅뉴스" --out today-tech.md --max 8
+#
+# 동작:
+#   1) 임시 Docker 컨테이너(Playwright/Python) 를 띄움
+#   2) 컨테이너 안에서 RSS·네이버·위키 등에서 본문 수집
+#   3) 호스트 Ollama 에 마크다운 브리프 요청
+#   4) ~/openclaw-surf/out/<file>.md 로 저장 후 컨테이너 자동 삭제
+#
+# OpenClaw 메인 컨테이너의 isolated 모드와 무관 — 전혀 영향 없음.
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SURF_HOME="${SURF_HOME:-$HOME/openclaw-surf}"
+mkdir -p "$SURF_HOME/out"
+chmod 700 "$SURF_HOME"
+
+# Ollama 데몬 확인
+if ! curl -s --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null; then
+  echo "✗ Ollama 데몬이 응답하지 않습니다 (127.0.0.1:11434)" >&2
+  echo "  Ollama 앱을 실행한 뒤 다시 시도하세요." >&2
+  exit 2
+fi
+
+# 인자 파싱
+query=""
+sources="rss,naver,wikipedia"
+lang="ko"
+max=6
+out=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sources) sources="$2"; shift 2 ;;
+    --lang)    lang="$2"; shift 2 ;;
+    --max)     max="$2"; shift 2 ;;
+    --out)     out="$2"; shift 2 ;;
+    -h|--help)
+      sed -n '4,18p' "$0" | sed 's/^# //; s/^#//'
+      exit 0 ;;
+    *)
+      if [ -z "$query" ]; then query="$1"; else query="$query $1"; fi
+      shift ;;
+  esac
+done
+
+[ -n "$query" ] || { echo "검색어 필요. 사용: surf \"...\"" >&2; exit 2; }
+
+# 출력 파일명: --out 없으면 슬러그 + 날짜
+if [ -z "$out" ]; then
+  slug="$(echo "$query" | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9가-힣]+/-/g; s/^-+|-+$//g' | cut -c1-40)"
+  out="${slug:-brief}-$(date +%Y%m%d-%H%M).md"
+fi
+
+echo "▸ surf '$query' → $SURF_HOME/out/$out"
+
+# Docker 사용
+command -v docker >/dev/null || { echo "✗ docker 가 필요합니다" >&2; exit 2; }
+docker info >/dev/null 2>&1 || { echo "✗ Docker 가 실행 중이 아닙니다" >&2; exit 2; }
+
+export SURF_HOME SURF_REPO="$REPO_DIR" QUERY="$query" SOURCES="$sources" \
+       LANG="$lang" MAX_PAGES="$max" OUT_FILE="$out"
+
+# 컨테이너 1회 실행 (--rm), 결과는 호스트의 out 디렉터리에 남음
+docker compose -f "$REPO_DIR/openclaw-mgr/compose.surf.yml" \
+  run --rm \
+  --no-deps \
+  surf
+
+echo "✔ 완료: $SURF_HOME/out/$out"
+[ "${SURF_OPEN:-0}" = "1" ] && open "$SURF_HOME/out/$out" || true

@@ -16,6 +16,7 @@
   - [5. 안전 패턴 (꼭 읽기)](#5-안전-패턴-꼭-읽기)
   - [6. 자동화 — 매일 아침 9시 코스피 요약](#6-자동화--매일-아침-9시-코스피-요약)
   - [7. 트러블슈팅](#7-트러블슈팅)
+  - [8. 🧪 샌드박스 자동 브리프 — `surf` 명령](#8--샌드박스-자동-브리프--surf-명령)
 - [🇬🇧 English](#-english)
   - [TL;DR](#tldr)
   - [1. Open the network → work → lock back (recommended cycle)](#1-open-the-network--work--lock-back-recommended-cycle)
@@ -231,6 +232,105 @@ crontab -e
 | `network online` 한 채로 깜빡 잊음 | 사람의 망각 | 위 [1회용 세션 스니펫](#권장-1회용-인터넷-세션-스니펫) 으로 자동 잠금 |
 | 사이트가 봇 차단(403/429) | UA 누락 / rate limit | RSS 로 전환. 정 안 되면 `Mozilla/5.0` UA 명시. 그래도 안 되면 그 사이트는 포기. |
 
+### 8. 🧪 샌드박스 자동 브리프 — `surf` 명령
+
+> **OpenClaw 메인 컨테이너를 건드리지 않고**, 1회용 격리 컨테이너에서 검색·수집·요약·문서화까지 한 번에 끝냅니다. 코스피 종가, 뉴스 5선, 환율 등 **명령 → 검색 → 마크다운** 시나리오에 최적화.
+
+#### 한 줄로:
+
+```bash
+surf "오늘 코스피 종가와 거래대금"
+# → ~/openclaw-surf/out/오늘-코스피-종가와-거래대금-20260426-0930.md
+
+surf "이번 주 IT 빅뉴스 5건" --max 8
+surf "S&P 500 weekly recap" --lang en --sources rss,wikipedia
+surf "이 논문 요약" --sources url://https://arxiv.org/abs/2310.06825
+surf "삼성전자 외국인 매매 추이" --out samsung-foreign.md
+```
+
+#### 어떻게 동작하나
+
+```
+호스트(맥북)                                              인터넷
+  └ surf "오늘 코스피 ..."  ─►  Docker compose run --rm
+                                       │
+                                ┌──────▼──────────────────┐
+                                │ 1회용 컨테이너            │   ⇄ 일반 인터넷
+                                │ Playwright + Python       │
+                                │ read_only: true           │
+                                │ cap_drop: ALL             │
+                                │ tmpfs:/tmp                │
+                                │ 마운트: out/ 만 read-write │
+                                └──────┬──────────────────┘
+                                       │ host.docker.internal:11434
+                                ┌──────▼─────────────────┐
+                                │ 호스트 Ollama          │
+                                │ (qwen2.5-coder:7b)     │
+                                └──────┬─────────────────┘
+                                       │
+            ~/openclaw-surf/out/*.md  ◄┘ (호스트에 저장, 컨테이너는 사라짐)
+```
+
+#### OpenClaw 메인 컨테이너와의 격리
+
+| 항목 | 영향? |
+|---|---|
+| OpenClaw 컨테이너 `isolated` 모드 유지? | ✅ 그대로 유지 (별개 compose 프로젝트, 별개 네트워크) |
+| 호스트 `~/.ssh`, `~/Documents` 접근 | ❌ 마운트 없음 |
+| OpenClaw `.env` / `compose.security.yml` 접근 | ❌ 마운트 없음 |
+| 컨테이너의 영속 변경 | ❌ `read_only: true` + `--rm` (실행 후 자동 삭제) |
+| 권한 상승 (sudo) | ❌ `cap_drop: ALL` + `no-new-privileges` |
+| 호스트 Ollama 호출 | ✅ `host.docker.internal:11434` 만 |
+
+즉, **명령마다 새 컨테이너** 가 떴다 사라지고, 호스트로 빠져나오는 건 출력 마크다운 한 개뿐입니다.
+
+#### 1회 세팅
+
+```bash
+~/DEV/openclaw-workspace/scripts/surf-setup.sh
+# - SURF_HOME (~/openclaw-surf) 생성
+# - Playwright Docker 이미지 사전 pull (~700MB)
+# - ~/bin/surf 런처
+```
+
+#### 옵션
+
+| 옵션 | 효과 | 기본 |
+|---|---|---|
+| `--sources rss,naver,wikipedia` | 출처 선택. `url://https://...` 도 가능 | `rss,naver,wikipedia` |
+| `--lang ko` / `--lang en` | RSS 피드와 위키 언어 | `ko` |
+| `--max N` | 컨테이너가 모을 본문 수 상한 | `6` |
+| `--out NAME.md` | 출력 파일명 (생략 시 자동 슬러그) | 자동 |
+| `SURF_OPEN=1 surf ...` | 완료 후 `open` 으로 자동 열기 | `0` |
+
+#### 환경변수 (compose.surf.yml 가 읽음)
+
+| 변수 | 의미 |
+|---|---|
+| `SURF_HOME` | 결과 저장 위치 (기본 `~/openclaw-surf`) |
+| `OLLAMA_TEXT_MODEL` | 요약 모델 (기본 `qwen2.5-coder:7b`) |
+
+#### 일정 자동화 (cron / launchd)
+
+```bash
+# 평일 오전 9시 5분에 코스피·코스닥 브리프
+crontab -e
+5 9 * * 1-5 ~/bin/surf "오늘 코스피·코스닥 종가·거래대금" --out kospi-$(date +\%F).md
+```
+
+> 결과는 항상 `~/openclaw-surf/out/` 에 마크다운으로 떨어지므로 [Obsidian / Bear / Notes 자동 import](https://help.obsidian.md/Files+and+folders/Folder+structure) 에 그대로 연결됩니다.
+
+#### `surf` 트러블슈팅
+
+| 증상 | 대응 |
+|---|---|
+| `Ollama 데몬이 응답하지 않습니다` | Ollama 앱 실행 후 다시 |
+| 첫 실행이 느림 | Playwright 이미지(~700MB) 첫 pull. 다음부턴 ~5초 |
+| 출처 본문이 비어있음 | RSS 가 가장 안정적. `--sources rss` 만으로도 시도 |
+| 결과가 너무 짧음 | `--max 8` 로 본문 더 모으기, 또는 `OLLAMA_TEXT_MODEL=qwen2.5:14b-instruct-q4_K_M` |
+| Bot 차단(403/429) | `--sources rss,wikipedia` 또는 `url://` 로 직접 URL 지정 |
+
+
 ---
 
 ## 🇬🇧 English
@@ -369,3 +469,31 @@ crontab -e
 | Result truncated | Context length exceeded | Use a larger-context model, or pre-cut HTML with `htmlq`/`pup` |
 | Forgot to lock back to isolated | Human forgetfulness | Use the [one-shot session snippet](#one-shot-internet-session-snippet) |
 | 403 / 429 from a site | Bot detection / rate limit | Switch to RSS; add `Mozilla/5.0` UA; otherwise abandon that source |
+
+### 8. 🧪 Sandboxed auto-brief — the `surf` command
+
+> One command → throwaway Docker container fetches and summarizes → Markdown brief on disk. The OpenClaw main container stays in `isolated` the whole time.
+
+```bash
+surf "today's KOSPI close and turnover"
+surf "S&P 500 weekly recap" --lang en
+surf "this week's IT headlines" --max 8
+surf "summarize this paper" --sources url://https://arxiv.org/abs/2310.06825
+```
+
+**Sandbox guarantees** — every run spawns a fresh `mcr.microsoft.com/playwright/python` container with `read_only: true`, `cap_drop: ALL`, `no-new-privileges`, `tmpfs:/tmp`. Only `~/openclaw-surf/out` is mounted (read-write); `~/.ssh`, the OpenClaw `.env`, and the OpenClaw container are **not** touched. The container hits `host.docker.internal:11434` to reach the host Ollama, then is `--rm`'d.
+
+**One-time setup:**
+
+```bash
+~/DEV/openclaw-workspace/scripts/surf-setup.sh    # pulls Playwright image, creates ~/bin/surf
+```
+
+**Options:** `--sources rss,naver,wikipedia,url://https://...` · `--lang ko|en` · `--max N` · `--out file.md` · env `SURF_OPEN=1` to auto-open.
+
+**Cron example:**
+
+```bash
+5 9 * * 1-5 ~/bin/surf "today's KOSPI/KOSDAQ close and turnover" --out kospi-$(date +\%F).md
+```
+

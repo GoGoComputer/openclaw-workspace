@@ -96,7 +96,7 @@ cd openclaw-workspace/openclaw-mgr
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
 | 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
-| 🌐 **웹에서 코스피·뉴스·환율 가져오기** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | 네트워크 토글 사이클·실전 프롬프트·공식 API 키·자동화·트러블슈팅. KO+EN 병기 |
+| 🌐 **웹에서 코스피·뉴스·환율 가져오기** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | 네트워크 토글 사이클·실전 프롬프트·공식 API 키·자동화·트러블슈팅. **`surf` 명령으로 샌드박스 도커 안에서 검색 → 마크다운 도구 포함**. KO+EN 병기 |
 | 🎨 **디자이너 워크플로우 자동화 (Pinterest → 나노바나나 → Figma)** | [docs/GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) | 4단계 수작업 → 1명령. 나노바나나 4창 병렬로 속도 ~3.7×. KO+EN 병기 |
 | 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
 | 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
