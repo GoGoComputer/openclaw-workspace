@@ -1,27 +1,31 @@
 # =============================================================================
 # compose.security.yml — 보안 강화 override
 # 사용: docker compose -f docker-compose.yml -f compose.security.yml up -d
-# 모든 서비스에 read-only / cap_drop / no-new-privileges / 리소스 한도 강제.
-# 일부 이미지가 read-only 와 호환되지 않으면 해당 서비스만 override 로 풀 수 있음.
+# openclaw-gateway / openclaw-cli 서비스에 cap_drop / no-new-privileges /
+# 리소스 한도 강제. 포트를 127.0.0.1 로만 바인딩 (LAN 노출 차단).
+# ⚠ 서비스명 openclaw-gateway / openclaw-cli 은 openclaw/openclaw 공식 명칭.
 # Copyright 2026 박성모 Park Sungmo — MIT License
 # =============================================================================
-# NOTE: 서비스 이름은 OpenClaw 의 실제 compose 와 일치해야 적용됩니다.
-# OpenClaw 저장소를 clone 한 뒤, 서비스 이름을 확인하고 아래 'app' 자리를
-# 실제 이름으로 바꿔주세요. (또는 익명 anchor 활용을 위해 docs/ARCHITECTURE.md 참조)
-
 services:
-  app:
-    read_only: true
-    tmpfs:
-      - /tmp:size=512m,mode=1777
-      - /run:size=64m
+  openclaw-gateway:
     cap_drop: [ALL]
+    cap_add: []
     security_opt:
       - no-new-privileges:true
     pids_limit: 512
     mem_limit: ${OPENCLAW_MEM_LIMIT:-8g}
     memswap_limit: ${OPENCLAW_MEM_LIMIT:-8g}
     cpus: ${OPENCLAW_CPUS:-8}
-    # 외부 노출은 항상 127.0.0.1 만 — LAN/공용Wi-Fi 노출 차단
-    # ports 는 base compose 에서 그대로 두고 여기서 추가하지 않음.
-    # (필요 시 base 의 "8000:8000" → "127.0.0.1:8000:8000" 으로 직접 수정)
+    # 포트는 항상 127.0.0.1 만 — LAN/공용 Wi-Fi 외부 노출 완전 차단
+    ports:
+      - "127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+      - "127.0.0.1:${OPENCLAW_BRIDGE_PORT:-18790}:18790"
+
+  openclaw-cli:
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: ${OPENCLAW_MEM_LIMIT:-8g}
+    memswap_limit: ${OPENCLAW_MEM_LIMIT:-8g}
+    cpus: ${OPENCLAW_CPUS:-8}

@@ -1,0 +1,40 @@
+# =============================================================================
+# compose.ollama.yml — Ollama 를 Docker 컨테이너로 실행 (선택)
+#
+# 기본값(OLLAMA_MODE=host)은 macOS 에 ollama.com 에서 직접 설치한 Ollama 앱을
+# 사용합니다 (Apple Silicon Neural Engine / GPU 가속 활용, 성능 최고).
+#
+# 이 파일은 Ollama 를 Docker 컨테이너로 실행하고 싶을 때만 사용하세요.
+# ⚠ Docker Ollama 는 Apple Silicon GPU 가속 미지원 — CPU 전용, 느림.
+#
+# 사용:
+#   docker compose -f docker-compose.yml \
+#                  -f compose.security.yml \
+#                  -f compose.ollama.yml up -d
+# =============================================================================
+services:
+  ollama:
+    image: ollama/ollama:latest   # 공식 이미지 (https://hub.docker.com/r/ollama/ollama)
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"   # 로컬호스트 전용 — 외부 노출 없음
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 12g                # M5 Pro 24GB: Ollama 에 12GB 까지 허용
+    memswap_limit: 12g
+
+  # gateway 가 Ollama 컨테이너를 찾도록 환경변수 주입
+  openclaw-gateway:
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    depends_on:
+      - ollama
+
+volumes:
+  ollama_data:
+    driver: local

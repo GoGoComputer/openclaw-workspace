@@ -239,6 +239,64 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 
 ---
 
+## 🔐 이 가이드의 보안 원칙 (읽고 시작하세요)
+
+> **M5 Pro 24GB / macOS / zsh 기준으로 작성되었습니다.**
+
+### ❌ 이 가이드에서 절대 하지 않는 것
+
+| 금지 | 이유 |
+|---|---|
+| `brew install openclaw` | 글로벌 설치 — 시스템 오염 |
+| `npm install -g ...` | 글로벌 npm 패키지 |
+| `pip install ...` | 글로벌 Python 패키지 |
+| `sudo ...` (Docker/Ollama 설치 제외) | 불필요한 관리자 권한 |
+| `curl ... \| bash` (이 레포 web-installer 제외) | 검증 없는 원격 실행 |
+
+> **이 가이드를 따라가다 위 명령이 나오면 멈추고 확인하세요.**
+
+### ✅ 이 레포의 역할 (연결·설정·자동화 전담)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  openclaw-workspace (이 레포)                                    │
+│  역할: 연결 / 설치 설정 / 사용 / 유지보수 자동화                  │
+│                                                                  │
+│  ① Docker Desktop   ← docker.com 공식 사이트에서 직접 설치       │
+│  ② Ollama           ← ollama.com 공식 앱에서 직접 설치           │
+│  ③ OpenClaw 본체    ← github.com/openclaw/openclaw 공식 클론     │
+│                                                                  │
+│  ③을 받아서 Docker 컨테이너로 기동하는 것이 이 레포의 전부입니다  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 🗂 설치 후 폴더 구조
+
+```
+~/DEV/
+├── openclaw/           ← OpenClaw 본체 (공식 클론, 직접 수정 X)
+├── openclaw-workspace/ ← 이 레포 (관리 도구)
+└── openclawAgent/      ← 에이전트가 만드는 파일 (Docker 볼륨 마운트)
+                           Finder 에서 바로 확인 가능
+
+~/.openclaw/            ← 설정·토큰·세션 (숨김, 직접 편집 불필요)
+```
+
+> **에이전트가 파일을 만들어도 `~/DEV/openclawAgent` 밖으로는 나갈 수 없습니다.**  
+> Docker 볼륨 마운트로 격리 + 샌드박스(OPENCLAW_SANDBOX=1)로 이중 격리.
+
+### 🛡 M5 Pro 24GB 권장 보안 설정
+
+| 설정 | 값 | 이유 |
+|---|---|---|
+| 샌드박스 | `OPENCLAW_SANDBOX=1` | 에이전트 코드 실행 격리 컨테이너 |
+| 네트워크 | `isolated` (기본) | 외부 인터넷 차단 |
+| Ollama | `host` 모드 (ollama.com 앱) | Apple Silicon Neural Engine GPU 가속 |
+| 모델 | `qwen2.5-coder:7b` or `llama3.2:3b` | 24GB 에서 안정적 (13B+ 비추) |
+| 포트 | `127.0.0.1` 전용 | LAN/공용 Wi-Fi 노출 없음 |
+
+---
+
 
 
 ### 0단계 — 준비물 확인
@@ -606,37 +664,52 @@ osascript -e 'tell application "System Events" to get the name of every login it
 
 OpenClaw 사용자에게 **꼭 외울 명령 = 0개**. `./openclaw` 가 다 해줍니다.
 
-### 3단계 — Ollama 직접 다운로드 (선택 — 로컬 LLM 쓸 때)
+### 3단계 — Ollama 설치 (로컬 LLM — M5 Pro GPU 가속 활용)
 
-> Ollama = 내 컴퓨터에서 LLM(Llama, Qwen, Solar 등) 을 돌리는 런타임. 외부 API(OpenAI 등) 만 쓸 거면 이 단계는 건너뛰어도 됩니다.
+> Ollama = 내 컴퓨터에서 LLM 을 돌리는 런타임. Apple Silicon Neural Engine 을 직접 활용하므로 **Docker 컨테이너 Ollama보다 수배 빠릅니다.**  
+> 외부 API(OpenAI 등) 만 쓸 거면 이 단계는 건너뛰어도 됩니다.
 
-1. 공식 다운로드 페이지: **https://ollama.com/download**
-2. **Download for macOS** → `Ollama-darwin.zip` 또는 `.dmg` 받기 (~200MB).
-3. zip 이면 더블클릭으로 풀고, **Ollama.app** 을 **Applications** 로 드래그 (위 2단계의 "드래그 앤 드롭" 설명 참조 — 동일한 동작)
-4. **Applications → Ollama** 더블클릭 → 메뉴바에 🦙 라마 아이콘 등장 → 백그라운드로 데몬이 떠 있음.
+> ⚠ **`brew install ollama` 하지 마세요** — 공식 앱 대신 brew 백그라운드 서비스로 설치되어 제어가 불편합니다.
+
+**공식 앱으로 설치:**
+1. **https://ollama.com/download** → **Download for Mac (Apple Silicon)**
+2. `Ollama-darwin.zip` 더블클릭 → **Ollama.app** 을 **Applications** 로 드래그
+3. **Applications → Ollama** 더블클릭 → 메뉴바에 🦙 아이콘 → 데몬 실행 중
 
 확인:
 ```bash
 ollama --version
-ollama list           # 처음엔 빈 목록 (NAME  ID  SIZE  MODIFIED)
 curl -s http://localhost:11434/api/version    # {"version":"0.x.x"}
 ```
 
-모델 받기 (선택 — 사람마다 쓰는 모델이 다릅니다):
+#### M5 Pro 24GB 권장 모델
+
+| 모델 | 크기 | 용도 | 명령 |
+|---|---|---|---|
+| `qwen2.5-coder:7b` | ~4.7GB | **코딩 추천** — Neural Engine 최적화 | `ollama pull qwen2.5-coder:7b` |
+| `llama3.2:3b` | ~2.0GB | 경량 빠른 응답 | `ollama pull llama3.2:3b` |
+| `llama3.1:8b` | ~4.9GB | 고품질 범용 | `ollama pull llama3.1:8b` |
+| `qwen2.5:7b` | ~4.7GB | 한국어 강점 | `ollama pull qwen2.5:7b` |
+
+> ⚠ **13B 이상 비추 (24GB 기준)** — macOS 는 GPU/CPU 메모리 공유 구조라 실제 가용은 ~14GB. 13B 모델은 느리고 시스템 전체가 느려질 수 있습니다.
+
 ```bash
-ollama pull <모델명>:<태그>      # 예: ollama pull llama3.1:8b
-ollama list                       # 받은 모델이 보이면 OK
+ollama pull qwen2.5-coder:7b   # 시작은 이것 하나로 충분
+ollama list                     # 받은 모델 확인
 ```
 
-> 💡 **어떤 모델을 받을지 모르겠다면:**
-> - 모델 카탈로그: <https://ollama.com/library> 에서 용도·크기·라이선스 확인
-> - **재스크리트/코드**: `qwen2.5-coder`, `deepseek-coder-v2`
-> - **범용 대화/추론**: `llama3.1`, `qwen2.5`, `gemma2`, `mistral`
-> - **한국어 강점**: `solar`, `qwen2.5` (멀티린갈)
-> - **크기 고르기**: 24GB RAM 기준 7~8B 가 안전, 32GB+ 는 13~14B, 64GB+ 는 30B+ 가능
-> - **태그 의미**: `:7b` → 파라미터 수 / `:q4_K_M` → 양자화 정밀도 (생략 시 기본값)
->
-> OpenClaw 자체는 모델 선택을 강제하지 않습니다. `.env` 의 `OLLAMA_DEFAULT_MODEL` 또는 OpenClaw UI 에서 원하는 모델명을 지정하면 됩니다.
+#### 대안 — Ollama in Docker (GPU 가속 없음, 느림)
+
+Apple Silicon GPU 가속 없이 순수 Docker 로만 실행하고 싶다면:
+```bash
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+# .env 에서 OLLAMA_MODE="docker" 로 변경 후:
+./openclaw install
+# compose.ollama.yml 이 자동으로 포함됩니다
+```
+> 성능 차이: M5 Pro 기준 host Ollama 대비 3~10배 느림. 가급적 공식 앱 사용 권장.
+
+
 
 ### 4단계 — openclaw-workspace 소스 직접 받기
 
@@ -712,6 +785,12 @@ mv ~/openclaw-main ~/DEV/openclaw
 
 ### 5단계 — `openclaw` 첫 실행
 
+> ⚠ **설치 전 확인**: `~/DEV/openclawAgent` 폴더가 있어야 합니다 (에이전트 파일 저장 위치).
+> ```bash
+> mkdir -p ~/DEV/openclawAgent
+> ls ~/DEV/    # openclaw/  openclaw-workspace/  openclawAgent/  세 개 다 보이면 OK
+> ```
+
 > 🔀 **경로 선택**: 이 가이드는 두 가지 첫 실행 방법을 제공합니다.
 
 | | **경로 A — 관리 도구 사용** | **경로 B — 수동 직접 실행** |
@@ -747,12 +826,22 @@ Disk free             ✓ 60GB
 `✗` 가 있으면 어느 단계가 실패했는지 다시 점검. 모두 ✓ 면:
 
 ```bash
-./openclaw install     # 부족분만 자동 설치 — 수동으로 다 깔았으면 대부분 [skip]
+# 보안 강화 설치 (샌드박스 활성화 — 강력 권장)
+OPENCLAW_SANDBOX=1 ./openclaw install
+
+# 또는 기본 설치 (샌드박스 나중에 5c단계에서 활성화 가능)
+./openclaw install
+
 ./openclaw start       # OpenClaw 컨테이너 기동
 ./openclaw logs        # 로그 보기 (Ctrl+C 로 빠져나오기)
 ```
 
-브라우저로 **http://localhost:8000** 열기 → OpenClaw UI 등장.
+설치 완료 후 에이전트 파일 확인:
+```bash
+ls ~/DEV/openclawAgent/    # 에이전트가 여기에 파일을 만듭니다
+```
+
+브라우저로 **http://localhost:18789** 열기 → OpenClaw UI 등장.
 
 ---
 

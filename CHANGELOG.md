@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.1 — 2026-04-25
+- **BUGFIX**: `compose.security.yml` + `compose.network.yml` service name fixed from `app` → `openclaw-gateway`/`openclaw-cli` (security overlays were NOT being applied before this fix)
+- `OPENCLAW_WORKSPACE_DIR` default changed to `~/DEV/openclawAgent` (agent files visible in Finder)
+- Added `OPENCLAW_CONFIG_DIR`, `OPENCLAW_WORKSPACE_DIR`, `OPENCLAW_SANDBOX` to `.env.example`
+- New `compose.ollama.yml` — Ollama-in-Docker option (fallback, GPU acceleration not available)
+- Guide: added security principles section, M5 Pro 24GB model recommendations, no-global-install warnings
+- Ollama step: updated with M5 Pro model table, `brew install ollama` warning
+
 ## v0.2.0 — 2026-04-25
 - `openclaw install`: added Step 10 — sandbox setup (`OPENCLAW_SANDBOX=1`)
 - `docs/GUIDE-MANUAL-INSTALL.md`: added Step 5c — Sandbox + Security Hardening (KO + EN)

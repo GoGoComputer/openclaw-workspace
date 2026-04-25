@@ -162,6 +162,13 @@ fi
 
 # ── 5. OpenClaw 저장소 ───────────────────────────────────────────────────────
 OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
+# 에이전트 파일 저장 폴더 (Docker 볼륨 마운트 — 로컬에는 아무것도 설치 안 됨)
+OPENCLAW_WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/DEV/openclawAgent}"
+OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
+# 폴더가 없으면 미리 생성 (Docker 마운트 전 필요)
+mkdir -p "$OPENCLAW_WORKSPACE_DIR"
+mkdir -p "$OPENCLAW_CONFIG_DIR"
+export OPENCLAW_WORKSPACE_DIR OPENCLAW_CONFIG_DIR
 
 step_repo() {
   local repo="${OPENCLAW_REPO:-}"
@@ -243,9 +250,14 @@ step_compose_up() {
   cd "$OPENCLAW_DIR"
   local files="-f docker-compose.yml"
   [ -f compose.yml ] && files="-f compose.yml"
-  # 보안 override 가 우리 디렉터리에 있으면 함께 사용
+  # 보안 override (서비스명 openclaw-gateway/openclaw-cli 에 맞게 수정됨)
   local sec="$OPENCLAW_MGR_DIR/compose.security.yml"
   [ -f "$sec" ] && files="$files -f $sec"
+  # Ollama-in-Docker 모드 (OLLAMA_MODE=docker)
+  if [ "${OLLAMA_MODE:-host}" = "docker" ]; then
+    local ollama_f="$OPENCLAW_MGR_DIR/compose.ollama.yml"
+    [ -f "$ollama_f" ] && files="$files -f $ollama_f" && info "Ollama-in-Docker 모드 활성화"
+  fi
   # 첫 실행 시 컨테이너가 의존성을 받아야 할 수도 있으므로 install 단계에서는
   # online 으로 시작합니다. 끝나고 자동으로 isolated 로 전환합니다.
   bash "$OPENCLAW_MGR_DIR/cmd/network.sh" online >/dev/null
