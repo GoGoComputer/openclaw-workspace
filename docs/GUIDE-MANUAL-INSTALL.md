@@ -223,6 +223,8 @@ EOF
 source ~/.zshrc
 ```
 
+> ⚠️ **이미 열려있는 다른 터미널 창은 자동 반영 X.** 그 창에서도 쓰려면 각각 `source ~/.zshrc` 하거나 새 터미널(`⌘+T`) 을 염세요. 적용 확인: `type dockerstop` 에 `alias dockerstop=...` 가 나와야 정상.
+
 **왜 이런 일이?**
 - Docker Desktop 의 일부 헬퍼는 **부모(`Docker Desktop`)** 가 종료해도 즉시 함께 종료되지 않습니다 (sandbox / build helper / agent). 5~10초 안에는 보통 알아서 정리되지만, 그 안에 새 명령을 치면 헷갈립니다.
 - **AI/Build 기능을 켰을 때** 더 자주 발생: `docker-agent` (Docker AI), `docker-sandbox` (sandbox CLI plugin), `com.docker.build` (Buildx daemon).
@@ -982,6 +984,8 @@ alias dockerstop='osascript -e "quit app \"Docker\"" 2>/dev/null; sleep 3; \
 EOF
 source ~/.zshrc
 ```
+
+> ⚠️ **Other terminal windows already open won't pick this up automatically.** Run `source ~/.zshrc` in each, or open a new terminal (`⌘+T`). Verify: `type dockerstop` should print `alias dockerstop=...`.
 
 **Why does this happen?**
 - Some Docker Desktop helpers don't exit immediately when the parent (`Docker Desktop`) quits (sandbox / build helper / agent). They usually clean up within 5–10 s, but if you run new commands in that window things look broken.
