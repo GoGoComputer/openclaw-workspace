@@ -365,6 +365,158 @@ Disk free             ✓ 60GB
 
 브라우저로 **http://localhost:8000** 열기 → OpenClaw UI 등장.
 
+### 5b단계 — `openclaw install` 없이 모든 것을 수동으로 (각 단계 이해)
+
+> 🎯 `doctor` 끝에 **"⚠ N 개 항목이 미설정입니다 — './openclaw install' 로 자동 해결됩니다"** 가 보일 때, 자동에 의존하지 않고 **무엇이 일어나는지 정확히 알면서 직접 처리**하고 싶다면 이 절을 따라하세요.
+>
+> `./openclaw install` 은 아래 9단계를 멱등(idempotent)하게 수행합니다. 수동으로 깔았으면 대부분 `[skip]` 으로 넘어가지만, **마지막 두 항목 (저장소 clone + 컨테이너 기동)** 이 보통 미설정으로 남습니다. 그것만 손으로 처리하면 됩니다.
+
+#### `openclaw install` 이 하는 9단계 (`openclaw-mgr/cmd/install.sh`)
+
+| # | 단계 | 수동 동치 명령 | 우리가 이미 한 것 |
+|---|---|---|---|
+| 1 | Xcode CLT | `xcode-select --install` | ✓ 1단계 |
+| 2 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | (수동 설치 모드는 brew 없이 OK) |
+| 3 | Docker Desktop | `brew install --cask docker` 또는 docker.com 에서 dmg | ✓ 2단계 |
+| 3b | Docker 데몬 | `open -a Docker` + 90초 대기 | ✓ 2.5단계 |
+| 4 | Ollama + 모델 | `brew install ollama` + `brew services start ollama` + `ollama pull <모델>` | ✓ 3단계 |
+| 5 | OpenClaw 본체 git clone | 아래 **5b-A** 참조 | **여기부터 수동** |
+| 6 | `.env` 머지 | 아래 **5b-B** | **여기부터 수동** |
+| 7 | `docker compose up -d` | 아래 **5b-C** | **여기부터 수동** |
+| 8 | 헬스체크 | 아래 **5b-D** | |
+| 9 | 네트워크 격리 적용 | 아래 **5b-E** | |
+
+> 💡 1\~4 는 이미 이 가이드의 1\~3단계로 완료. **남은 것은 5\~9** — 그래서 보통 doctor 가 "2개 미설정" 으로 표시합니다 (저장소 + 컨테이너).
+
+---
+
+#### 5b-A. OpenClaw 본체 git clone (수동)
+
+> 이 가이드의 4단계는 **이 도구 (`openclaw-workspace`)** 를 받았습니다. 이제 받아야 할 것은 **OpenClaw 본체 (실제 AI 에이전트, 별개 저장소)**.
+
+```bash
+# 1) .env 에서 본체 저장소 URL 확인
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+grep '^OPENCLAW_REPO=' .env || grep '^OPENCLAW_REPO=' .env.example
+# 예: OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
+```
+
+`.env` 가 없으면:
+```bash
+cp .env.example .env
+chmod 600 .env
+$EDITOR .env       # OPENCLAW_REPO 와 OPENCLAW_DIR 만 확인 (둘 다 기본값 OK)
+```
+
+```bash
+# 2) 본체 clone (얕게 — 이력 절약)
+OPENCLAW_DIR="${HOME}/openclaw"          # .env 의 OPENCLAW_DIR 와 동일하게
+git clone --depth 1 \
+  https://github.com/openclaw/openclaw.git \
+  "$OPENCLAW_DIR"
+
+# 3) 받았는지 확인
+ls "$OPENCLAW_DIR"                        # docker-compose.yml, README.md 등이 보이면 OK
+git -C "$OPENCLAW_DIR" log --oneline -5
+```
+
+> 🔐 보안 검사 (선택): `docker.sock` 마운트가 있으면 호스트 장악 위험 — `openclaw install` 은 자동 검사. 수동에서는:
+> ```bash
+> grep -RIn '/var/run/docker.sock' "$OPENCLAW_DIR"/*compose*.y*ml || echo "OK — 위험 마운트 없음"
+> ```
+
+#### 5b-B. `.env` 머지 (선택 — 본체 .env.example 의 누락 키 추가)
+
+```bash
+SRC="$OPENCLAW_DIR/.env.example"          # 본체가 제공하는 예제
+DST="$OPENCLAW_DIR/.env"                  # 실제 사용 파일
+[ -f "$DST" ] || cp "$SRC" "$DST"          # 처음이면 그대로 복사
+
+# 누락 키만 추가 (덮어쓰기 X)
+while IFS= read -r line; do
+  case "$line" in ''|'#'*) continue ;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" "$DST" 2>/dev/null || echo "$line" >> "$DST"
+done < "$SRC"
+
+chmod 600 "$DST"
+```
+
+#### 5b-C. 컨테이너 기동 (`docker compose up -d`)
+
+```bash
+cd "$OPENCLAW_DIR"
+
+# compose 파일 자동 감지 (둘 중 있는 것 사용)
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f compose.yml ] && COMPOSE_FILES="-f compose.yml"
+
+# 이 도구가 제공하는 보안 override 도 같이 적용 (권장)
+SEC="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.security.yml"
+[ -f "$SEC" ] && COMPOSE_FILES="$COMPOSE_FILES -f $SEC"
+
+# (첫 기동은 외부 의존성 받아야 하므로 일단 isolated 가 아닌 상태에서 시작)
+docker compose $COMPOSE_FILES up -d
+
+docker compose $COMPOSE_FILES ps           # State=running 인지 확인
+```
+
+#### 5b-D. 헬스체크 (수동)
+
+```bash
+# 컨테이너가 다 떠있는지
+TOTAL=$(docker compose $COMPOSE_FILES ps -q | wc -l | tr -d ' ')
+RUN=$(docker compose $COMPOSE_FILES ps --status running -q | wc -l | tr -d ' ')
+echo "running: $RUN / $TOTAL"
+
+# Ollama 가 호스트에서 응답하는지 (컨테이너에서 host.docker.internal 로 접근)
+curl -sS --max-time 3 http://127.0.0.1:11434/api/tags | head -c 200; echo
+
+# UI 포트 (기본 8000) 응답 확인
+curl -sS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8000
+```
+
+브라우저로 **http://localhost:8000** → UI 가 보이면 ✓
+
+#### 5b-E. 네트워크 격리 모드 (보안 권장 — 외부 차단)
+
+> `openclaw install` 의 마지막 단계는 컨테이너를 **isolated** (외부 네트워크 차단) 로 재기동합니다. 본체에 보안 격리 override 가 들어가는 것.
+
+```bash
+# 이 도구가 제공하는 격리용 override
+NET="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.network.yml"
+[ -f "$NET" ] && COMPOSE_FILES="$COMPOSE_FILES -f $NET"
+
+cd "$OPENCLAW_DIR"
+docker compose $COMPOSE_FILES up -d        # 격리 모드로 재기동
+
+# 상태 기록 (이 도구가 다음 doctor 에서 인식)
+mkdir -p "$HOME/.openclaw-mgr"
+echo isolated > "$HOME/.openclaw-mgr/network-mode"
+```
+
+> 💡 **나중에 업데이트할 때**는 이 모드를 잠깐 풀어야 인터넷에서 새 이미지를 받을 수 있습니다:
+> ```bash
+> ./openclaw network online --restart        # 격리 해제 + 재기동
+> ./openclaw update                          # 업데이트
+> ./openclaw network isolated --restart      # 다시 격리
+> ```
+> 또는 위 5b-C / 5b-E 의 compose 명령을 직접 다시 실행 (override 파일 포함/제외 토글).
+
+---
+
+#### 끝났는지 최종 확인
+
+```bash
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+```
+
+이제 **"모두 정상입니다 🎉"** 가 보이면 완료. 만약 `자동 업데이트 ⚠ 미설정` 이 남아 있으면 그건 launchd 자동 스케줄(선택 항목) 이라 무시해도 됩니다. 원하면:
+```bash
+./openclaw schedule enable     # 매일 자동 update 등록 (수동 동치는 launchd plist 작성 — 7단계 참조)
+```
+
 ### 6단계 — PATH 등록 (선택, 어디서나 `openclaw` 한 단어로 실행)
 
 ```bash
@@ -847,6 +999,153 @@ If everything is ✓:
 ```
 
 Open **http://localhost:8000** in your browser → OpenClaw UI.
+
+### Step 5b — Skip `openclaw install` and do everything manually (understand each step)
+
+> 🎯 When `doctor` ends with **"⚠ N items unconfigured — './openclaw install' will fix them"**, follow this section if you'd rather **understand exactly what happens** instead of letting the script run.
+>
+> `./openclaw install` performs the 9 idempotent steps below. After manual installation most steps are `[skip]`; usually only the **last two (clone repo + start containers)** remain.
+
+#### What `openclaw install` actually does (`openclaw-mgr/cmd/install.sh`)
+
+| # | Step | Manual equivalent | Already done in this guide? |
+|---|---|---|---|
+| 1 | Xcode CLT | `xcode-select --install` | ✓ Step 1 |
+| 2 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | (manual mode works without brew) |
+| 3 | Docker Desktop | `brew install --cask docker` or download `.dmg` from docker.com | ✓ Step 2 |
+| 3b | Docker daemon | `open -a Docker` + 90 s wait | ✓ Step 2.5 |
+| 4 | Ollama + models | `brew install ollama` + `brew services start ollama` + `ollama pull <model>` | ✓ Step 3 |
+| 5 | git clone OpenClaw upstream | see **5b-A** below | **manual from here** |
+| 6 | Merge `.env` | see **5b-B** | **manual from here** |
+| 7 | `docker compose up -d` | see **5b-C** | **manual from here** |
+| 8 | Health check | see **5b-D** | |
+| 9 | Apply network isolation | see **5b-E** | |
+
+> 💡 Steps 1–4 were already done in this guide's Steps 1–3, so `doctor` typically reports "2 items unconfigured" (repo + containers). Only those remain.
+
+---
+
+#### 5b-A. git clone the OpenClaw upstream (manual)
+
+> Step 4 of this guide fetched **this tool (`openclaw-workspace`)**. Now we need the **OpenClaw upstream (the actual AI agent — a different repo)**.
+
+```bash
+# 1) Find upstream URL in .env
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+grep '^OPENCLAW_REPO=' .env || grep '^OPENCLAW_REPO=' .env.example
+# e.g. OPENCLAW_REPO=https://github.com/openclaw/openclaw.git
+```
+
+If `.env` doesn't exist yet:
+```bash
+cp .env.example .env
+chmod 600 .env
+$EDITOR .env       # check OPENCLAW_REPO and OPENCLAW_DIR (defaults are fine)
+```
+
+```bash
+# 2) Shallow clone of the upstream
+OPENCLAW_DIR="${HOME}/openclaw"          # match .env's OPENCLAW_DIR
+git clone --depth 1 \
+  https://github.com/openclaw/openclaw.git \
+  "$OPENCLAW_DIR"
+
+# 3) Verify
+ls "$OPENCLAW_DIR"                        # docker-compose.yml, README.md, etc.
+git -C "$OPENCLAW_DIR" log --oneline -5
+```
+
+> 🔐 Security check (optional): a `docker.sock` mount in compose = host takeover risk. `openclaw install` checks automatically; manual:
+> ```bash
+> grep -RIn '/var/run/docker.sock' "$OPENCLAW_DIR"/*compose*.y*ml || echo "OK — no risky mount"
+> ```
+
+#### 5b-B. Merge `.env` (optional — fill missing keys from upstream's example)
+
+```bash
+SRC="$OPENCLAW_DIR/.env.example"
+DST="$OPENCLAW_DIR/.env"
+[ -f "$DST" ] || cp "$SRC" "$DST"
+
+while IFS= read -r line; do
+  case "$line" in ''|'#'*) continue ;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" "$DST" 2>/dev/null || echo "$line" >> "$DST"
+done < "$SRC"
+
+chmod 600 "$DST"
+```
+
+#### 5b-C. Start the containers (`docker compose up -d`)
+
+```bash
+cd "$OPENCLAW_DIR"
+
+# Auto-detect compose file
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f compose.yml ] && COMPOSE_FILES="-f compose.yml"
+
+# Layer this tool's security override (recommended)
+SEC="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.security.yml"
+[ -f "$SEC" ] && COMPOSE_FILES="$COMPOSE_FILES -f $SEC"
+
+# First boot needs internet (dependencies); start in non-isolated mode
+docker compose $COMPOSE_FILES up -d
+docker compose $COMPOSE_FILES ps           # State should be "running"
+```
+
+#### 5b-D. Health check (manual)
+
+```bash
+TOTAL=$(docker compose $COMPOSE_FILES ps -q | wc -l | tr -d ' ')
+RUN=$(docker compose $COMPOSE_FILES ps --status running -q | wc -l | tr -d ' ')
+echo "running: $RUN / $TOTAL"
+
+# Ollama reachable from host?
+curl -sS --max-time 3 http://127.0.0.1:11434/api/tags | head -c 200; echo
+
+# UI port 8000?
+curl -sS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8000
+```
+
+Open **http://localhost:8000** → if the UI loads, ✓.
+
+#### 5b-E. Network isolation (recommended for security)
+
+> The final step `openclaw install` does is restart the stack in **isolated** mode — outbound network blocked.
+
+```bash
+NET="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.network.yml"
+[ -f "$NET" ] && COMPOSE_FILES="$COMPOSE_FILES -f $NET"
+
+cd "$OPENCLAW_DIR"
+docker compose $COMPOSE_FILES up -d        # restart in isolated mode
+
+mkdir -p "$HOME/.openclaw-mgr"
+echo isolated > "$HOME/.openclaw-mgr/network-mode"
+```
+
+> 💡 **Updates need a temporary opening:**
+> ```bash
+> ./openclaw network online --restart
+> ./openclaw update
+> ./openclaw network isolated --restart
+> ```
+> Or repeat 5b-C / 5b-E manually, toggling whether the network override is included.
+
+---
+
+#### Final check
+
+```bash
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+```
+
+You should now see **"All good 🎉"**. If `Auto-update ⚠ unconfigured` remains, that's just an optional launchd schedule:
+```bash
+./openclaw schedule enable
+```
 
 ### Step 6 — Add to PATH (optional)
 
