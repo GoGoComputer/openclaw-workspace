@@ -65,8 +65,13 @@ fi
 echo "▸ surf '$query' → $SURF_HOME/out/$out"
 
 # Docker 사용
-command -v docker >/dev/null || { echo "✗ docker 가 필요합니다" >&2; exit 2; }
-docker info >/dev/null 2>&1 || { echo "✗ Docker 가 실행 중이 아닙니다" >&2; exit 2; }
+command -v docker >/dev/null || { echo "✗ docker 가 필요합니다 (먼저 ./scripts/surf-setup.sh 실행)" >&2; exit 2; }
+docker info >/dev/null 2>&1 || { echo "✗ Docker 가 실행 중이 아닙니다 (Docker Desktop 실행 후 다시)" >&2; exit 2; }
+# Playwright 이미지 미존재 시 setup 안내
+if ! docker image inspect mcr.microsoft.com/playwright/python:v1.46.0-jammy >/dev/null 2>&1; then
+  echo "! Playwright 이미지가 없습니다 — 'bash scripts/surf-setup.sh' 를 먼저 실행해 주세요." >&2
+  echo "  (이번 실행은 자동으로 pull 을 시도합니다, 약 700MB)" >&2
+fi
 
 export SURF_HOME SURF_REPO="$REPO_DIR" QUERY="$query" SOURCES="$sources" \
        LANG="$lang" MAX_PAGES="$max" OUT_FILE="$out"

@@ -87,11 +87,36 @@ cd openclaw-workspace/openclaw-mgr
 
 ## 🤖 자동화 3종 — 한눈 카탈로그
 
-| 명령 | 무엇을 하나 | 1회 세팅 | 가이드 |
+> **⚠️ 세팅 먼저, 사용은 그 다음.** 아래 세 명령은 모두 *해당 setup 스크립트를 한 번 실행한 후* 쓸 수 있습니다. 로그인이 필요한 도구(나노바나나 / Figma / 미리캔버스 / CapCut)는 setup 이후 한 번만 `*-login` 명령으로 세션을 잡아두면 됨.
+
+| 명령 | 무엇을 하나 | 1회 세팅 → 로그인 → 사용 | 가이드 |
 |---|---|---|---|
-| 🌐 `surf "..."` | 웹에서 코스피·뉴스·논문 등 검색 → 마크다운 브리프 (1회용 Docker 샌드박스 안에서) | [scripts/surf-setup.sh](scripts/surf-setup.sh) | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
-| 🎨 `creative run "..."` | Pinterest → 나노바나나(4창 병렬) → Figma 디자인 자동 배치 | [scripts/creative-pipeline-setup.sh](scripts/creative-pipeline-setup.sh) | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
-| 🎬 `shorts run "..."` | Pinterest → 미리캔버스(1080×1920) → CapCut(9:16 MP4 export) | [scripts/shorts-setup.sh](scripts/shorts-setup.sh) | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 🌐 `surf "..."` | 웹에서 코스피·뉴스·논문 등 검색 → 마크다운 브리프 (1회용 Docker 샌드박스 안에서) | `bash scripts/surf-setup.sh` → (로그인 불필요) → `surf "..."` | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
+| 🎨 `creative run "..."` | Pinterest → 나노바나나(4창 병렬) → Figma 디자인 자동 배치 | `bash scripts/creative-pipeline-setup.sh` → `creative banana-login` `creative figma-login` → `creative run "..."` | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
+| 🎬 `shorts run "..."` | Pinterest → 미리캔버스(1080×1920) → CapCut(9:16 MP4 export) | `bash scripts/shorts-setup.sh` → `shorts miri-login` `shorts capcut-login` → `shorts run "..."` | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+
+**공통 흐름:**
+
+```bash
+# 1단계 — 세팅 (며등, 따라서 여러 번 실행해도 안전)
+#   brew 의존성 설치, Python venv 생성, Playwright Chromium 다운로드,
+#   ~/openclaw-{surf,creative,shorts}/ 생성, ~/bin/<명령> 심볼링
+bash scripts/surf-setup.sh
+bash scripts/creative-pipeline-setup.sh
+bash scripts/shorts-setup.sh
+
+# 2단계 — 로그인 (계정마다 딱 1번・창 뜨면 사람이 로그인 후 닫기)
+creative banana-login        # Gemini / nano-banana
+creative figma-login         # Figma
+shorts miri-login            # 미리캔버스
+shorts capcut-login          # CapCut Web
+# (surf 는 로그인 불필요 — RSS·공개 페이지만 수집)
+
+# 3단계 — 이제부터는 이 명령만
+surf     "오늘 코스피 종가와 거래대금"
+creative run "동남아시아 풍경 일러스트"
+shorts   run "여행 감성 풍경"
+```
 
 > 모든 자동화는 **호스트 영구 프로필** 방식 — OpenClaw 본 컨테이너는 `isolated` 그대로, 호스트 `~/.ssh`·OpenClaw `.env` 접근 0. 각 가이드의 "샌드박스 경계" 섹션 참조.
 

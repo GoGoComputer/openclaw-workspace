@@ -74,11 +74,34 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 ## 🤖 Automation trio — at a glance
 
-| Command | What it does | One-time setup | Guide |
+> **⚠️ Setup first, then use.** Each command below requires its setup script to be run *once* before first use. Tools that need an account (nano-banana / Figma / Miricanvas / CapCut) also need a one-time `*-login` to capture a session.
+
+| Command | What it does | Setup → login → use | Guide |
 |---|---|---|---|
-| 🌐 `surf "..."` | Web search → Markdown brief inside a throwaway Docker sandbox | [scripts/surf-setup.sh](scripts/surf-setup.sh) | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
-| 🎨 `creative run "..."` | Pinterest → nano-banana (4 parallel windows) → Figma | [scripts/creative-pipeline-setup.sh](scripts/creative-pipeline-setup.sh) | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
-| 🎬 `shorts run "..."` | Pinterest → Miricanvas (1080×1920) → CapCut (9:16 MP4 export) | [scripts/shorts-setup.sh](scripts/shorts-setup.sh) | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 🌐 `surf "..."` | Web search → Markdown brief inside a throwaway Docker sandbox | `bash scripts/surf-setup.sh` → (no login) → `surf "..."` | [GUIDE-WEB-FETCH.md §8](docs/GUIDE-WEB-FETCH.md#8--샌드박스-자동-브리프--surf-명령) |
+| 🎨 `creative run "..."` | Pinterest → nano-banana (4 parallel windows) → Figma | `bash scripts/creative-pipeline-setup.sh` → `creative banana-login` `creative figma-login` → `creative run "..."` | [GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) |
+| 🎬 `shorts run "..."` | Pinterest → Miricanvas (1080×1920) → CapCut (9:16 MP4 export) | `bash scripts/shorts-setup.sh` → `shorts miri-login` `shorts capcut-login` → `shorts run "..."` | [GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) |
+
+**Common flow:**
+
+```bash
+# 1) Setup (idempotent — safe to re-run)
+bash scripts/surf-setup.sh
+bash scripts/creative-pipeline-setup.sh
+bash scripts/shorts-setup.sh
+
+# 2) One-time login per tool (a window opens, you log in, then close it)
+creative banana-login
+creative figma-login
+shorts miri-login
+shorts capcut-login
+# (surf needs no login — RSS / public pages only)
+
+# 3) From now on, just:
+surf     "today's KOSPI close and turnover"
+creative run "southeast asia landscape illustrations"
+shorts   run "moody travel landscapes"
+```
 
 > All automations run on the host with persistent Chromium profiles — the OpenClaw container stays in `isolated` and never touches `~/.ssh` or the OpenClaw `.env`. See each guide's "Sandbox boundary" section.
 
