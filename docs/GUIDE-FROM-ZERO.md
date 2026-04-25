@@ -8,13 +8,113 @@
 ## 📖 목차 / Contents
 
 - [🇰🇷 한국어 — 0단계부터](#-한국어--0단계부터)
+  - [−1단계: 컬퓨터·GUI·CLI 기초 용어 (클릭이 뭐예요?)](#1단계-컬퓨터gui-cli-기초-용어-클릭이-뭐예요)
 - [❓ 자주 막히는 부분 (FAQ)](#-자주-막히는-부분-faq)
 - [🇬🇧 English — From Step Zero](#-english--from-step-zero)
+  - [Step −1: Computer·GUI·CLI vocabulary (what does "click" mean?)](#step-1-computergui-cli-vocabulary-what-does-click-mean)
 - [❓ Where people commonly get stuck](#-where-people-commonly-get-stuck)
 
 ---
 
 ## 🇰🇷 한국어 — 0단계부터
+
+### −1단계: 컬퓨터·GUI·CLI 기초 용어 (클릭이 뭐예요?)
+
+> "마우스는 써봤는데 클릭·더블클릭·우클릭이 뭐가 다른지 모르겠어요" 의 단계. 이미 아시면 다음 섹션으로 건너뛰세요.
+
+#### 클릭 / 더블클릭 / 우클릭 / 드래그
+
+| 용어 | 동작 | 의미 |
+|---|---|---|
+| **클릭 (click)** | 트랙패드/마우스 버튼을 한 번 높뀸 누르고 뗼 | "이거 골랐어" 의 의미. 아이콘이 잠깐 파래짐 |
+| **더블클릭** | 빠르게 두 번 연속 클릭 | "이걸 열어". 앱·폴더·파일이 실제로 실행/열림 |
+| **우클릭** | 마우스 오른쪽 버튼 / 트랙패드에서 두 손가락으로 클릭 | "이 항목 의 메뉴" 표시 (복사/삭제/이름 바꾸기 등) |
+| **드래그 (drag)** | 버튼을 누른 채로 이동 | 아이콘을 집어서 옮김 |
+| **드롭 (drop)** | 드래그 끝에 버튼을 뗼 | 옮긴 자리에 놓음 |
+
+> 💱 맥북 트랙패드 설정: 시스템 설정 > 트랙패드 > "두 손가락으로 탭하여 보조 클릭" 체크 → 그게 **우클릭** 입니다.
+
+#### GUI vs CLI (그래픽 화면 vs 명령줄)
+
+| | **GUI** (Graphical User Interface) | **CLI** (Command Line Interface) |
+|---|---|---|
+| 예 | Finder, Safari, 설정, 메모 | 터미널(Terminal.app) |
+| 입력 | 마우스 클릭 / 터치 | 글자 타이핑 + Enter |
+| 장점 | 직관적, 아이콘으로 따라가면 됨 | 빠르고, 자동화·복사/붙여넣기 가능, 멀리 있는 서버도 제어 |
+| 단점 | 자동화 어려움, 버튼 앤 도달 까지 느림 | 처음에는 명령어를 외워야 함 |
+| 비유 | 식당에서 사진 메뉴 고르기 | 주방장에게 "그 요리, 매운맛, 2인분" 라고 말로 주문 |
+
+**핵심**: 명령줄은 "와, 난 개발자가 아닌데 못 쓰겠지?" 하는 게 아니라 **설치 자동화를 위해 5【6줄 쳤다 끈는 용도** 입니다. 특별한 게 있다면, 의결이 설치 끝난 뒤 다시 켜서 클릭하는 건 GUI 로 돌아가서 하면 됩니다.
+
+#### 창 / 메뉴바 / 독(Dock)
+
+```
+┌─ 메뉴바 (화면 맨 위) ──────────────────────────────────┐
+│  Terminal  세션  편집  보기  창  도움말           🔋 100%  Q  │
+└────────────────────────────────────────────────────────────┘
+┌─ 창 (window) ─────────────────────────────────┐
+│ 🔴 🟡 🟢  제목                                              │
+│     ↑ 닫기 / 최소화 / 최대화                          │
+│                                                          │
+│  yourname@MacBook-Pro ~ %                                │
+└──────────────────────────────────────────────────┘
+┌─ Dock (화면 아래) ───────────────────────────┐
+│  Finder  Safari  메모  Terminal  ...                  │
+└──────────────────────────────────────────────────┘
+```
+
+- **🔴 빨강 동그라미** — 창 닫기 (앱은 종료 안 될 수 있음)
+- **🟡 노랑** — 최소화 (Dock 으로 숨김)
+- **🟢 초록** — 최대화 / 전체 화면 (`option`+클릭 하면 원래 크기)
+- **메뉴바**는 항상 화면 맨 위 — **계속 건드리세요**, 단축키는 여기서 찾아봅니다 (예: 편집 > 붙여넣기 의 `⌘V`).
+
+#### 파일 / 폴더 / 경로 (Path)
+
+- **파일 (file)** = 하나의 문서·그림·아이콘. 아이콘 1개.
+- **폴더 (folder = directory)** = 파일들을 담는 상자. 무한히 중첩 가능.
+- **경로 (path)** = "어느 서랍의 어느 킨의 어느 쪽" 을 주소로 적은 것. 예: `/Users/mo/Documents/매모.txt`
+  - `/` 는 폴더 구분자 (맥/리눅스). 창원도우의 `\` 와 다름.
+  - `/` 하나로 시작하면 = 디스크 맨 위 (루트) 부터의 절대경로.
+  - `~` = 내 홈 폴더 (`/Users/내아이디`).
+  - `.` = 지금 있는 폴더 (현재).
+  - `..` = 한 단계 위 폴더 (부모).
+
+#### Finder vs Terminal: 같은 폴더를 둘 다르게 보고 있을 뿐
+
+```
+Finder 에서          ⇔   Terminal 에서
+  ~ (홈)               =   pwd 결과 /Users/yourname
+  폴더 더블클릭     =   cd 폴더이름
+  상위 폴더 가기   =   cd ..
+  새 폴더 만들기     =   mkdir 이름
+  파일 삭제           =   rm 파일이름    (휴지통 안 감. 증습 삭제)
+  이름 바꾸기/이동    =   mv 이전이름 새이름
+  복사하기           =   cp 원본 사본
+```
+
+> 💡 **Finder 에서 현재 위치의 경로를 보는 법**: Finder > 보기 > "경로 막대 표시". 창 아래에 `💻 맥 > Users > 내이름 > 문서` 가 뜨면 = `/Users/내이름/문서`.
+
+#### 대소문자 / 공백 / 숨김 파일
+
+- macOS 커맨드는 **대소문자 구분** (`Documents` ≠ `documents`).
+- **공백이 들어간 파일명**은 따옷표로 묶거나 역슬래쉬로 보호: `cd "My Folder"` 또는 `cd My\ Folder`.
+- **·으로 시작하는 파일** (예: `.env`, `.gitignore`)은 Finder 에서 숨겨져 있음. 트글: `⌘ + Shift + .` (도트). Terminal 에서는 `ls -a`.
+
+#### 커서 깜빡임·고령 아이콘·키보드
+
+- 터미널에서 비밀번호 칠 때 **그 어떤 표시도 안 떨** (★ 도 • 도 안 뜨는 게 정상). 타이핑이 안 되는 게 아닌가요.
+- 마우스 포인터가 마치컰따를 돌려주는 **프로퍼러(고령)** = 맥이 시간 걸리는 작업 중 (설치/다운로드). 기다릴 것.
+- **커먬드 키 = `⌘`** (Cmd, 스페이스바 양 옥), **옵션 = `⌥`**, **쉬프트 = `⇧`**, **컨트롤 = `⌃`**.
+- 붙이기 단축키는 Finder/대부분 앱 = `⌘V`. **터미널 안에서도 `⌘V`** (Linux 의 `Ctrl+V` 와 다름).
+
+#### 이 가이드가 쓰는 손짓 약속
+
+- ` ` (앞에 공백 있는 줄) → 명령어 결과 설명.
+- `$` 또는 `%` 로 시작하는 줄 → 터미널에 칠 명령 (`$`/`%` 는 치지 않음 — 프롬프트 표시일 뿐).
+- `# 주석` → 설명, 실행에 영향 없음.
+- `<꼬씬논 괄호>` → "여기는 당신 값으로 교체" (예: `<내아이디>` → `mo`).
+
+---
 
 ### 0. 마음의 준비
 
@@ -179,6 +279,104 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ---
 
 ## 🇬🇧 English — From Step Zero
+
+### Step −1: Computer·GUI·CLI vocabulary (what does "click" mean?)
+
+> For people who have used a Mac but never thought about the difference between "click", "double-click", and "right-click". If you know all of this, skip ahead.
+
+#### Click / double-click / right-click / drag
+
+| Term | Action | Meaning |
+|---|---|---|
+| **Click** | Press the trackpad/mouse button once | "I picked this". The icon flashes briefly. |
+| **Double-click** | Two fast clicks in a row | "Open this". The app/folder/file actually launches. |
+| **Right-click** | Right mouse button / two-finger tap on trackpad | Show context menu (Copy / Delete / Rename...). |
+| **Drag** | Hold the button down while moving | You're carrying the icon. |
+| **Drop** | Release the button at the destination | You set it down. |
+
+> 💱 Mac trackpad: System Settings > Trackpad > enable "Secondary click" (two-finger tap) — that **is** right-click.
+
+#### GUI vs CLI (graphical screen vs command line)
+
+| | **GUI** (Graphical User Interface) | **CLI** (Command Line Interface) |
+|---|---|---|
+| Examples | Finder, Safari, Settings, Notes | Terminal.app |
+| Input | Mouse clicks / touches | Typed text + Enter |
+| Pros | Intuitive, follow icons | Fast, scriptable, copy-paste, can drive remote servers |
+| Cons | Hard to automate, slow when there are many steps | You have to learn commands |
+| Analogy | Pointing at pictures on a restaurant menu | Telling the chef "that ingredient, spicy, party of two" in words |
+
+**The point**: the command line is not for showing off — it's the most reliable way to **automate a 5–10-line install**. After install you can go back to the GUI and click as usual.
+
+#### Window / menu bar / Dock
+
+```
+┌─ Menu bar (very top of screen) ──────────────────────┐
+│  Terminal  Shell  Edit  View  Window  Help    🔋 100%  Q  │
+└──────────────────────────────────────────────────────┘
+┌─ Window ───────────────────────────────────┐
+│ 🔴 🟡 🟢  Title                                          │
+│     ↑ close / minimize / zoom                          │
+│                                                          │
+│  yourname@MacBook-Pro ~ %                                │
+└──────────────────────────────────────────────────┘
+┌─ Dock (bottom of screen) ──────────────────┐
+│  Finder  Safari  Notes  Terminal  ...                  │
+└──────────────────────────────────────────────────┘
+```
+
+- **🔴 red** — close window (the app may still keep running).
+- **🟡 yellow** — minimize (hide into the Dock).
+- **🟢 green** — zoom / fullscreen (Option-click for original size).
+- The **menu bar** stays at the top of the screen — keep looking up there for options and shortcuts (e.g. Edit > Paste = `⌘V`).
+
+#### File / folder / path
+
+- **File** = a single document, image, or icon. One icon = one file.
+- **Folder (= directory)** = a box that holds files. Folders can nest infinitely.
+- **Path** = the address "which drawer, which shelf, which side". Example: `/Users/mo/Documents/memo.txt`.
+  - `/` separates folders (Mac/Linux). Windows uses `\`.
+  - A path starting with `/` is **absolute**, from the disk root.
+  - `~` = your home folder (`/Users/yourname`).
+  - `.` = the current folder.
+  - `..` = one folder up (the parent).
+
+#### Finder vs Terminal: same folders, two views
+
+```
+In Finder              ⇔   In Terminal
+  ~ (Home)              =   pwd shows /Users/yourname
+  Double-click folder   =   cd foldername
+  Go to parent          =   cd ..
+  New folder            =   mkdir name
+  Delete file           =   rm filename    (no Trash! permanent)
+  Rename / move         =   mv oldname newname
+  Copy                  =   cp source dest
+```
+
+> 💡 To see the current path in Finder: View > Show Path Bar. The bar at the bottom (`💻 Mac > Users > you > Documents`) = `/Users/you/Documents`.
+
+#### Case sensitivity / spaces / hidden files
+
+- macOS commands are **case-sensitive** (`Documents` ≠ `documents`).
+- **Filenames with spaces** must be quoted or escaped: `cd "My Folder"` or `cd My\ Folder`.
+- Files starting with `.` (e.g. `.env`, `.gitignore`) are hidden in Finder. Toggle: `⌘ + Shift + .` (period). In Terminal: `ls -a`.
+
+#### Cursor / spinner / keyboard
+
+- Terminal hides typed passwords completely — **no dots, no asterisks**. Keep typing; that's normal.
+- A spinning beach ball means the Mac is busy (installing/downloading). Wait it out.
+- **`⌘` = Command** (the keys next to spacebar), **`⌥` = Option**, **`⇧` = Shift**, **`⌃` = Control**.
+- Paste shortcut is `⌘V` everywhere on macOS, **including Terminal** (unlike Linux's `Ctrl+V`).
+
+#### Conventions used in this guide
+
+- Lines starting with whitespace = explanation of the result.
+- Lines starting with `$` or `%` = type into Terminal (don't include the `$`/`%`; that's the prompt).
+- `# comment` = explanation, ignored when run.
+- `<angle brackets>` = replace with your value (e.g. `<your-id>` → `mo`).
+
+---
 
 ### 0. Mindset
 

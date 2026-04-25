@@ -78,7 +78,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 
 | Who you are | Start here | What's inside |
 |---|---|---|
-| 🌱 **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | Open Terminal → 5 essential commands → git clone install. KO+EN |
+| 🌱 **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **Step −1: click vs double-click vs right-click, GUI vs CLI, window·menu bar·Dock, file·folder·path** → open Terminal → 5 essential commands → git clone install. KO+EN |
 | 🦜 **Fully manual install (download from official sites)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | No brew, no install scripts — download Docker / Ollama / source by hand. For corp IT review, GitHub-502 fallback, or hands-on learners. KO+EN |
 | 🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
 | 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |

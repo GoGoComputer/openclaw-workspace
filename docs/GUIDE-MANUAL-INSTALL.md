@@ -16,6 +16,8 @@
 - [⚡ 명령어만 (빠른 복사용) / Commands Only (quick copy)](#-명령어만-빠른-복사용--commands-only-quick-copy)
 - [🔐 이 가이드의 보안 원칙 (읽고 시작하세요)](#-이-가이드의-보안-원칙-읽고-시작하세요)
 - [🇬🇧 English](#-english)
+- [🧰 부록 A: 전문가용 운영 체크리스트 / Production-grade Checklist](#-부록-a-전문가용-운영-체크리스트--production-grade-checklist)
+- [🧰 Appendix A: Production-grade Checklist (English mirror)](#-appendix-a-production-grade-checklist-english-mirror)
 
 > 단계 표제(0단계, 1단계, 2단계 …)는 H3 입니다. 위 H2 섹션 내부에 순서대로 들어 있습니다.
 
@@ -2941,3 +2943,106 @@ rm -rf ~/.ollama       # also remove model files (saves several GB)
 # 5) Remove PATH line
 $EDITOR ~/.zshrc       # delete the openclaw export line
 ```
+
+---
+
+## 🧰 부록 A: 전문가용 운영 체크리스트 / Production-grade Checklist
+
+> 이 섹션은 **이미 모든 단계를 완수한 사람** 을 위한 "운영 단계 굳히기" 안내입니다. 한 번씩 점검하면 회사·소버린 환경에서도 그대로 쓸 수 있습니다.
+
+### A1. 보안 하드닝 / Security hardening
+
+| 항목 | 명령 / 설정 | 왜 |
+|---|---|---|
+| `.env` 파일 권한 | `chmod 600 ~/DEV/openclaw-workspace/openclaw-mgr/.env` | 다른 사용자에게 시크릿 노출 방지 |
+| 백업 디렉터리 권한 | `chmod 700 ~/openclaw-backups` | 스냅샷에 토큰·.env 포함됨 |
+| GPG 백업 암호화 | `OPENCLAW_BACKUP_GPG_RECIPIENT=you@example.com ./openclaw backup` | 백업이 유출돼도 키 없으면 복호화 불가 |
+| 네트워크 격리 기본 | `./openclaw network status` → `isolated` | 컨테이너가 외부 인터넷으로 데이터 누설 X |
+| 컨테이너 read-only FS | `compose.security.yml` `read_only: true` | 컨테이너 안에서 악성 코드가 영속화 X |
+| seccomp/capabilities 제한 | 동 파일 `cap_drop: [ALL]` + 필요한 것만 add | 시스템콜 표면 최소화 |
+| 호스트 포트 바인딩 | `OPENCLAW_PORT` 는 `127.0.0.1:8000` 만 노출 | LAN/외부에서 접근 불가 (기본 그렇게 설정됨) |
+| 자동 업데이트 후 재격리 | `./openclaw update` 가 자동으로 prev_mode 복원 | 업데이트 중에만 online, 끝나면 isolated |
+| 의존성 핀 (재현성) | `.env` 의 `OPENCLAW_PIN_COMMIT=<sha>` | main 자동 추적 OFF, 감사 가능 |
+
+### A2. 성능 튜닝 / Performance tuning (Apple Silicon)
+
+```bash
+# Metal 가속 사용 여부 확인 (반드시 true)
+ollama run --verbose <model> "hi" 2>&1 | grep -i metal
+
+# 모델 메모리에서 즉시 unload
+curl -s http://127.0.0.1:11434/api/generate \
+  -d '{"model":"<name>","keep_alive":0}'
+
+# 동시 요청 수 / 컨텍스트 길이 환경변수 (~/Library/LaunchAgents 또는 launchctl setenv)
+launchctl setenv OLLAMA_NUM_PARALLEL 2
+launchctl setenv OLLAMA_MAX_LOADED_MODELS 1
+launchctl setenv OLLAMA_FLASH_ATTENTION 1   # M3+ 권장
+# 변경 후 Ollama 앱 재시작
+```
+
+| 변수 | 의미 | 권장값 (M5 Pro 24GB) |
+|---|---|---|
+| `OLLAMA_NUM_PARALLEL` | 동시 요청 처리 슬롯 | `1`–`2` |
+| `OLLAMA_MAX_LOADED_MODELS` | 동시에 GPU에 올려둘 모델 수 | `1` |
+| `OLLAMA_KEEP_ALIVE` | 미사용 모델 메모리 유지 시간 | `5m` (기본) |
+| `OLLAMA_FLASH_ATTENTION` | 어텐션 최적화 (M3+) | `1` |
+| `OLLAMA_HOST` | 청취 주소 | `127.0.0.1:11434` (외부 노출 금지) |
+
+### A3. 가시성 / Observability
+
+```bash
+# 컨테이너 리소스 실시간
+docker stats $(docker ps -q --filter name=openclaw)
+
+# Ollama 모델별 메모리·로딩 상태
+curl -s http://127.0.0.1:11434/api/ps | jq
+
+# OpenClaw 로그 + 시크릿 마스킹
+./openclaw logs | tee ~/openclaw-debug.log
+
+# launchd 자동업데이트 마지막 결과
+launchctl list | grep openclaw
+tail -100 ~/.openclaw-mgr/schedule.log 2>/dev/null
+```
+
+### A4. 재현 가능한 배포 / Reproducible deploy
+
+1. 한 머신에서 `./openclaw doctor` 통과 → `./openclaw backup --name golden`
+2. `golden.tar.gz` + `golden.tar.gz.sha256` 를 다른 머신으로 복사 (USB 또는 사설 S3)
+3. 새 머신: 본 가이드대로 0\~6단계 완료 → `./openclaw restore golden.tar.gz`
+4. `.env` 의 `OPENCLAW_PIN_COMMIT` 동일하게 맞추면 코드 트리도 동일
+
+### A5. CI / 사전 커밋 검사 / CI / pre-commit
+
+```bash
+# 매니저 자체 검사 (사용자 머신에서도 한 번씩)
+bash -n $(find ~/DEV/openclaw-workspace -name '*.sh')   # 셸 구문
+brew install shellcheck && shellcheck ~/DEV/openclaw-workspace/openclaw-mgr/cmd/*.sh
+brew install gitleaks   && gitleaks detect --source ~/DEV/openclaw-workspace --no-git
+```
+
+> 사용자 머신에서 `gitleaks detect` 가 통과해야 백업·푸시가 안전합니다.
+
+### A6. 회사·소버린 환경 체크 / Enterprise & sovereign checklist
+
+- [ ] 모든 외부 도메인 접근 = `Docker.app`(이미지 pull) + `Ollama.app`(모델 pull) 둘뿐. 그 외는 컨테이너 isolated 모드에서 차단.
+- [ ] LLM 추론은 100% 호스트(Apple Silicon) 위에서, 외부 API 호출 없음.
+- [ ] 사용된 모델·버전·SHA256 = `./openclaw doctor` 출력 + `~/.ollama/models/manifests` 에 기록.
+- [ ] `.env` / 백업 / 모델 파일이 회사 DLP 정책에 맞는 위치(`~/openclaw-backups`)에만 저장.
+- [ ] 사고 대응: `./openclaw stop` → `./openclaw network isolated --restart` → `./openclaw backup --name incident-$(date +%F)` → 로그 수집.
+
+---
+
+## 🧰 Appendix A: Production-grade Checklist (English mirror)
+
+The Korean checklist above applies as-is. English summary:
+
+- **Permissions**: `chmod 600 .env`, `chmod 700 ~/openclaw-backups`.
+- **Backups**: enable `OPENCLAW_BACKUP_GPG_RECIPIENT` for encrypted snapshots.
+- **Network**: keep `./openclaw network status` = `isolated`; `update` auto-restores after.
+- **Reproducibility**: pin `OPENCLAW_PIN_COMMIT=<sha>` in `.env`; ship `backup --name golden` between machines.
+- **Performance** (Apple Silicon): verify Metal in `ollama run --verbose`; tune `OLLAMA_NUM_PARALLEL=1–2`, `OLLAMA_MAX_LOADED_MODELS=1`, `OLLAMA_FLASH_ATTENTION=1` via `launchctl setenv`.
+- **Observability**: `docker stats`, `curl /api/ps | jq`, `./openclaw logs` (secrets masked).
+- **CI/pre-commit**: `bash -n`, `shellcheck`, `gitleaks detect` before any commit/backup share.
+- **Sovereign/enterprise**: only `Docker.app` and `Ollama.app` reach the public internet; inference is fully on-device; record model digests from `~/.ollama/models/manifests`.

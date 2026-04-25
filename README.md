@@ -91,7 +91,7 @@ cd openclaw-workspace/openclaw-mgr
 
 | 누구 | 어디부터 | 무엇이 있나 |
 |---|---|---|
-| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | 터미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
+| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **−1단계: 클릭/더블클릭/우클릭 차이, GUI vs CLI, 창·메뉴바·Dock, 파일·폴더·경로** 부터 시작 → 터미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
 | 🪜 **완전 수동 설치 (공식 사이트에서 직접 다운)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 Docker·Ollama·소스 직접 다운. 회사 IT 심사·GitHub 502 회피용. KO+EN 병기 |
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
