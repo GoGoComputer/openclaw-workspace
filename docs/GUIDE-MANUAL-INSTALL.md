@@ -712,6 +712,19 @@ mv ~/openclaw-main ~/DEV/openclaw
 
 ### 5단계 — `openclaw` 첫 실행
 
+> 🔀 **경로 선택**: 이 가이드는 두 가지 첫 실행 방법을 제공합니다.
+
+| | **경로 A — 관리 도구 사용** | **경로 B — 수동 직접 실행** |
+|---|---|---|
+| 대상 | openclaw-workspace 도구로 나머지를 자동화 | openclaw 레포에서 직접 기동 |
+| 명령 위치 | `~/DEV/openclaw-workspace/openclaw-mgr/` | `~/DEV/openclaw/` |
+| 첫 명령 | `./openclaw doctor` | `./docker-setup.sh` |
+| 권장 대상 | 처음 설치하는 경우 | 이미 openclaw 레포를 직접 받은 경우 |
+
+---
+
+#### 경로 A — 관리 도구로 기동 (권장)
+
 ```bash
 cd ~/DEV/openclaw-workspace/openclaw-mgr
 ./openclaw doctor
@@ -738,6 +751,43 @@ Disk free             ✓ 60GB
 ./openclaw start       # OpenClaw 컨테이너 기동
 ./openclaw logs        # 로그 보기 (Ctrl+C 로 빠져나오기)
 ```
+
+브라우저로 **http://localhost:8000** 열기 → OpenClaw UI 등장.
+
+---
+
+#### 경로 B — 수동 직접 기동 (openclaw 레포를 직접 받은 경우)
+
+> 이미 `git clone https://github.com/openclaw/openclaw.git ~/DEV/openclaw` 으로 본체를 받아뒀다면, `docker-setup.sh` 한 번으로 이미지 빌드 + 초기 설정 + 컨테이너 기동이 모두 됩니다.
+
+```bash
+cd ~/DEV/openclaw
+
+# ① 초기 설정 스크립트 실행 (인터랙티브 — 처음 한 번만)
+./docker-setup.sh
+```
+
+스크립트가 순서대로:
+1. Docker 이미지를 로컬 빌드 (`DOCKER_BUILDKIT=1 docker build`)
+2. 초기 설정 파일(`.env`) 자동 생성
+3. 온보딩 안내 출력 (채널 연결 선택, 건너뛰어도 됨)
+4. `docker compose up -d openclaw-gateway` 로 컨테이너 기동
+
+완료 후 확인:
+```bash
+docker compose ps                   # State=running 이면 OK
+docker compose logs -f --tail=50    # 로그 실시간 확인 (Ctrl+C 로 종료)
+```
+
+브라우저로 **http://localhost:8000** → UI 등장.
+
+> 💡 이후 일상적인 시작/종료는:
+> ```bash
+> cd ~/DEV/openclaw
+> docker compose up -d      # 시작
+> docker compose down       # 종료
+> docker compose logs -f    # 로그
+> ```
 
 브라우저로 **http://localhost:8000** 열기 → OpenClaw UI 등장.
 
@@ -1494,6 +1544,19 @@ If `~/DEV/openclaw` already exists, `./openclaw install` will skip the clone ste
 
 ### Step 5 — First run of `openclaw`
 
+> 🔀 **Choose your path:**
+
+| | **Path A — Use the management tool** | **Path B — Run directly (manual)** |
+|---|---|---|
+| For | Letting openclaw-workspace automate the rest | You already cloned the openclaw repo directly |
+| Directory | `~/DEV/openclaw-workspace/openclaw-mgr/` | `~/DEV/openclaw/` |
+| First command | `./openclaw doctor` | `./docker-setup.sh` |
+| Best if | First-time install | You've already cloned `openclaw/openclaw` |
+
+---
+
+#### Path A — Start via management tool (recommended)
+
 ```bash
 cd ~/DEV/openclaw-workspace/openclaw-mgr
 ./openclaw doctor
@@ -1520,6 +1583,41 @@ If everything is ✓:
 ```
 
 Open **http://localhost:8000** in your browser → OpenClaw UI.
+
+---
+
+#### Path B — Direct first run (already cloned the openclaw repo)
+
+> If you already ran `git clone https://github.com/openclaw/openclaw.git ~/DEV/openclaw`, one script handles everything: image build, initial config, and container startup.
+
+```bash
+cd ~/DEV/openclaw
+
+# ① Run the setup script (interactive — one-time only)
+./docker-setup.sh
+```
+
+The script will:
+1. Build the Docker image locally (`DOCKER_BUILDKIT=1 docker build`)
+2. Auto-generate the `.env` config file
+3. Print onboarding info (channel connections optional — skip if you want)
+4. Start the container: `docker compose up -d openclaw-gateway`
+
+Verify after completion:
+```bash
+docker compose ps                   # State=running → OK
+docker compose logs -f --tail=50    # Live logs (Ctrl+C to exit)
+```
+
+Open **http://localhost:8000** → UI appears.
+
+> 💡 Day-to-day start/stop after this:
+> ```bash
+> cd ~/DEV/openclaw
+> docker compose up -d      # start
+> docker compose down       # stop
+> docker compose logs -f    # logs
+> ```
 
 ### Step 5b — Skip `openclaw install` and do everything manually (understand each step)
 
