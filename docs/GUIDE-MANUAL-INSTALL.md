@@ -57,8 +57,34 @@ clang --version
    - **Apple Silicon** (`uname -m` 이 `arm64`): "Mac with Apple chip"
    - **Intel**: "Mac with Intel chip"
 3. `Docker.dmg` 파일이 다운로드 폴더에 떨어집니다 (~600MB).
-4. `.dmg` 더블클릭 → **Docker.app** 을 **Applications** 폴더로 드래그.
-5. **Applications → Docker** 더블클릭으로 처음 실행 → 약관 동의 → 권한 다이얼로그(헬퍼 설치) 통과 → 메뉴바 우측 상단에 🐳 고래 아이콘 등장.
+4. **`Docker.dmg` 더블클릭** → 잠시 도쿼니콘·화살표·Applications 폴더가 그려진 츽이 뜨고 세 아이콘이 나란히 떠있습니다.
+
+   #### 🔗 드래그 앤 드롭 처음 해보세요? — 마우스로 이사하는 동작
+
+   ```
+   ┌───────────────────────┐
+   │  🐳      ➜       📁 A     │
+   │ Docker         Applications │
+   └───────────────────────┘
+        ↑                  ↑
+      (이 고래를       (여기로
+      잘·이하·끌고   놓아주세요)
+      떨어뜨리세요)
+   ```
+
+   1. 마우스 커서를 **파란 고래(🐳 Docker)** 아이콘 위로 가져가세요.
+   2. **트랙패드/마우스 왼쪽 버튼을 누른 채** 손가락을 뗼지 마세요.
+   3. 그 상태로 파란 고래를 **염 폴더(📁 Applications)** 위까지 이동.
+   4. 폴더가 **파랙게 하이라이트 되면** 그때 손가락을 뗘니다 (마우스 버튼 놓기).
+   5. 복사 진행률 표시 → 완료되면 Applications 안에 Docker.app 이 들어왔습니다.
+
+   > 💡 **한 손으로 멈추지 않고 생각**: 아이콘 클릭해서 "잡고" → Applications 공간으로 "옮기고" → "놓기". 그냥 마우스 버튼을 눌러 있는 동안에만 들고 다니다고 생각하면 쉽습니다.
+   >
+   > 🖥 **맥북 트랙패드 사용자**: 두 손가락을 그대로 대고 움직이면 잡힌 것이 그대로 따라옵니다. 손가락을 뗼다 = 잡은 것을 놓는다.
+   >
+   > 🖡️ **외장 마우스 사용자**: 단순히 왼쪽 버튼을 꾹 누른 상태로 이동 → 목적지에서 놈기.
+
+5. **Applications 폴더 열기** (Finder 왼쪽 사이드바 → "응용 프로그램" 또는 `Cmd+⇧+A`) → **Docker** 더블클릭으로 첫 실행 → 약관 동의 → 권한 다이얼로그(헬퍼 설치) 통과 → 메뉴바 우측 상단에 🐳 고래 아이콘 등장.
 6. 고래 아이콘이 멈춘 상태(움직이지 않음) = 준비 완료.
 
 확인:
@@ -76,7 +102,7 @@ docker info            # Server: ... 가 보이면 데몬 정상
 
 1. 공식 다운로드 페이지: **https://ollama.com/download**
 2. **Download for macOS** → `Ollama-darwin.zip` 또는 `.dmg` 받기 (~200MB).
-3. zip 이면 더블클릭으로 풀고, **Ollama.app** 을 **Applications** 로 드래그.
+3. zip 이면 더블클릭으로 풀고, **Ollama.app** 을 **Applications** 로 드래그 (위 2단계의 "드래그 앤 드롭" 설명 참조 — 동일한 동작)
 4. **Applications → Ollama** 더블클릭 → 메뉴바에 🦙 라마 아이콘 등장 → 백그라운드로 데몬이 떠 있음.
 
 확인:
@@ -275,8 +301,33 @@ clang --version
    - **Apple Silicon** (if `uname -m` says `arm64`)
    - **Intel** (if `x86_64`)
 3. Downloads `Docker.dmg` (~600 MB).
-4. Double-click `.dmg` → drag **Docker.app** to **Applications**.
-5. Open **Applications → Docker** → accept terms → grant helper permission → 🐳 whale icon appears in the menu bar.
+4. **Double-click `Docker.dmg`** → a small floating window appears showing two icons side by side: the whale (Docker) on the left, the Applications folder on the right.
+
+   #### 🔗 First time using drag-and-drop? — how to "carry" something with the mouse
+
+   ```
+   ┌─────────────────────────┐
+   │  🐳      ➜       📁 A     │
+   │ Docker         Applications │
+   └───────────────────────┘
+        ↑                  ↑
+     (grab here,      (drop here)
+     hold, carry)
+   ```
+
+   1. Move the mouse over the **blue whale (🐳 Docker)** icon.
+   2. **Press and hold** the trackpad / left mouse button — don't let go yet.
+   3. While still holding, **drag** the whale onto the **Applications folder (📁)**.
+   4. When the folder **highlights blue**, release the button ("drop").
+   5. A copy progress bar appears → when it finishes, Docker.app is now inside Applications.
+
+   > 💡 **Mental model**: click to *grab*, move to *carry*, release to *drop*. The mouse button must stay pressed the whole time you're "carrying."
+   >
+   > 🖥 **Trackpad users**: keep two fingers down and the cursor follows; lift them = drop.
+   >
+   > 🖡️ **External-mouse users**: hold the left button down while moving → release at the destination.
+
+5. **Open Applications** (Finder sidebar → "Applications" or `Cmd+⇧+A`) → double-click **Docker** to launch first time → accept terms → grant the helper permission dialog → 🐳 whale icon appears in the menu bar.
 6. Whale stops animating = ready.
 
 Verify:
@@ -294,7 +345,7 @@ docker info
 
 1. Open **https://ollama.com/download**
 2. **Download for macOS** → `Ollama-darwin.zip` or `.dmg` (~200 MB).
-3. If zip: unzip and drag **Ollama.app** to **Applications**.
+3. If zip: unzip and drag **Ollama.app** to **Applications** (same gesture as Step 2 above — see the "drag-and-drop" callout there).
 4. Open **Applications → Ollama** → 🦙 llama icon appears in menu bar; daemon runs in background.
 
 Verify:
