@@ -889,12 +889,13 @@ docker compose logs -f --tail=50    # 로그 실시간 확인 (Ctrl+C 로 종료
 #### `openclaw install` 이 하는 9단계 (`openclaw-mgr/cmd/install.sh`)
 
 | # | 단계 | 수동 동치 명령 | 우리가 이미 한 것 |
-|---|---|---|---|
+|---|---|---|-
 | 1 | Xcode CLT | `xcode-select --install` | ✓ 1단계 |
 | 2 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | (수동 설치 모드는 brew 없이 OK) |
 | 3 | Docker Desktop | `brew install --cask docker` 또는 docker.com 에서 dmg | ✓ 2단계 |
 | 3b | Docker 데몬 | `open -a Docker` + 90초 대기 | ✓ 2.5단계 |
-| 4 | Ollama + 모델 | `brew install ollama` + `brew services start ollama` + `ollama pull <모델>` | ✓ 3단계 |
+| 4 | Ollama 실행 확인 + **기존 모델 표시** | `open -a Ollama` + `ollama list` | ✓ 3단계 |
+| 4b | *(모델은 수동)* | `ollama pull <모델>` — 자동 다운로드 안 함 | 원하는 모델을 직접 pull |
 | 5 | OpenClaw 본체 git clone | 아래 **5b-A** 참조 | **여기부터 수동** |
 | 6 | `.env` 머지 | 아래 **5b-B** | **여기부터 수동** |
 | 7 | `docker compose up -d` | 아래 **5b-C** | **여기부터 수동** |
@@ -902,6 +903,8 @@ docker compose logs -f --tail=50    # 로그 실시간 확인 (Ctrl+C 로 종료
 | 9 | 네트워크 격리 적용 | 아래 **5b-E** | |
 
 > 💡 1\~4 는 이미 이 가이드의 1\~3단계로 완료. **남은 것은 5\~9** — 그래서 보통 doctor 가 "2개 미설정" 으로 표시합니다 (저장소 + 컨테이너).
+> 
+> ⚠ **Ollama 모델은 자동 다운로드하지 않습니다.** `openclaw install` 은 이미 설치된 모델 목록만 표시합니다. 필요한 모델은 직접 pull 하세요 (`ollama pull qwen2.5-coder:7b` 등).
 
 ---
 
@@ -1197,9 +1200,14 @@ openclaw update
   ├── cd ~/DEV/openclaw && git pull --ff-only          ← 본체 코드 갱신
   ├── docker compose pull                            ← 본체 이미지 갱신
   ├── docker compose up -d                           ← 새 이미지로 재기동
-  ├── ollama pull <OLLAMA_MODELS 의 각 모델>        ← 모델 갱신
   └── network isolated (다시 잠금)
 ```
+
+> 💡 **Ollama 모델 갱신은 별도로:** update 는 모델을 자동으로 받지 않습니다.
+> ```bash
+> ollama list              # 현재 설치 목록 확인
+> ollama pull <모델명>     # 개별 갱신 (예: ollama pull qwen2.5-coder:7b)
+> ```
 
 #### 자동화 — 매일 새벽에 본체까지 자동 업데이트
 
@@ -1834,7 +1842,8 @@ Open **http://localhost:8000** → UI appears.
 | 2 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | (manual mode works without brew) |
 | 3 | Docker Desktop | `brew install --cask docker` or download `.dmg` from docker.com | ✓ Step 2 |
 | 3b | Docker daemon | `open -a Docker` + 90 s wait | ✓ Step 2.5 |
-| 4 | Ollama + models | `brew install ollama` + `brew services start ollama` + `ollama pull <model>` | ✓ Step 3 |
+| 4 | Ollama running + **show existing models** | `open -a Ollama` + `ollama list` | ✓ Step 3 |
+| 4b | *(models are manual)* | `ollama pull <model>` — not auto-downloaded | Pull whichever models you need |
 | 5 | git clone OpenClaw upstream | see **5b-A** below | **manual from here** |
 | 6 | Merge `.env` | see **5b-B** | **manual from here** |
 | 7 | `docker compose up -d` | see **5b-C** | **manual from here** |
@@ -1842,6 +1851,8 @@ Open **http://localhost:8000** → UI appears.
 | 9 | Apply network isolation | see **5b-E** | |
 
 > 💡 Steps 1–4 were already done in this guide's Steps 1–3, so `doctor` typically reports "2 items unconfigured" (repo + containers). Only those remain.
+>
+> ⚠ **Ollama models are not auto-downloaded.** `openclaw install` only displays already-installed models. Pull what you need manually (`ollama pull qwen2.5-coder:7b` etc.).
 
 ---
 
@@ -2129,9 +2140,14 @@ openclaw update
   ├── cd ~/DEV/openclaw && git pull --ff-only          ← upstream code
   ├── docker compose pull                            ← upstream images
   ├── docker compose up -d                           ← restart with new images
-  ├── ollama pull <each model in OLLAMA_MODELS>     ← refresh models
   └── network isolated (lock back down)
 ```
+
+> 💡 **Ollama models are refreshed separately:** `update` does not pull models automatically.
+> ```bash
+> ollama list              # see what's installed
+> ollama pull <model>      # e.g. ollama pull qwen2.5-coder:7b
+> ```
 
 #### Automate it — daily upstream update via launchd
 
