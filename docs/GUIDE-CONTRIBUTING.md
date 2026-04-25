@@ -20,9 +20,9 @@
 
 | 종류 | 난이도 | 어떻게 |
 |---|---|---|
-| 🐛 버그 신고 | ⭐ | GitHub 에서 [새 이슈 → 🐛 Bug](../../issues/new/choose) |
-| 💡 기능 아이디어 제안 | ⭐ | GitHub 에서 [새 이슈 → ✨ Feature](../../issues/new/choose) |
-| ❓ 질문하기 | ⭐ | [Discussions](../../discussions) (있으면) 또는 이슈 |
+| 🐛 버그 신고 | ⭐ | GitHub 에서 [새 이슈 → 🐛 Bug](https://github.com/GoGoComputer/openclaw-workspace/issues/new/choose) |
+| 💡 기능 아이디어 제안 | ⭐ | GitHub 에서 [새 이슈 → ✨ Feature](https://github.com/GoGoComputer/openclaw-workspace/issues/new/choose) |
+| ❓ 질문하기 | ⭐ | [Discussions](https://github.com/GoGoComputer/openclaw-workspace/discussions) (있으면) 또는 이슈 |
 | 📝 오타·말투 수정 | ⭐⭐ | README 의 ✏️ 아이콘 → 직접 수정 → "Propose changes" |
 | 📖 문서 번역·보강 | ⭐⭐ | KO ↔ EN 번역, 헷갈렸던 부분 명확화 |
 | 🆘 다른 사람 질문에 답하기 | ⭐⭐ | 이슈/디스커션에서 본인 경험 공유 |
@@ -113,9 +113,9 @@ openclaw install         # 새 환경에서 설치 시도
 
 | Kind | Difficulty | How |
 |---|---|---|
-| 🐛 Report a bug | ⭐ | GitHub → [New issue → 🐛 Bug](../../issues/new/choose) |
-| 💡 Suggest a feature | ⭐ | GitHub → [New issue → ✨ Feature](../../issues/new/choose) |
-| ❓ Ask a question | ⭐ | [Discussions](../../discussions) (if enabled) or an issue |
+| 🐛 Report a bug | ⭐ | GitHub → [New issue → 🐛 Bug](https://github.com/GoGoComputer/openclaw-workspace/issues/new/choose) |
+| 💡 Suggest a feature | ⭐ | GitHub → [New issue → ✨ Feature](https://github.com/GoGoComputer/openclaw-workspace/issues/new/choose) |
+| ❓ Ask a question | ⭐ | [Discussions](https://github.com/GoGoComputer/openclaw-workspace/discussions) (if enabled) or an issue |
 | 📝 Fix a typo / wording | ⭐⭐ | Click ✏️ in any README → edit → "Propose changes" |
 | 📖 Translate / improve docs | ⭐⭐ | KO ↔ EN translation; clarify confusing parts |
 | 🆘 Help others on issues | ⭐⭐ | Share your own experience |

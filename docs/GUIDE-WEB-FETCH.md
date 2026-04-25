@@ -2,9 +2,29 @@
 
 [← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
 
+> **한 줄 요약.** OpenClaw 는 기본적으로 외부 인터넷을 차단(`isolated`)합니다. 필요한 시점에만 잠깐 `online` 으로 열어 실시간 데이터를 가져오고 다시 잠금니다. 더 쉬운 방식은 이 가이드 §8 의 `surf` 명령 — 한 줄로 검색 → 마크다운 브리프를 1회용 Docker 샌드박스 안에서 만듭니다.
 
-> 🇰🇷 OpenClaw 가 인터넷에서 코스피 종가·뉴스 기사·환율 같은 정보를 가져오는 방법.
-> 🇬🇧 How to let OpenClaw fetch live information (KOSPI, news headlines, FX rates...) from the internet.
+<table>
+<tr><td><b>누구에게 좋은가요?</b></td><td>• 매일 코스피 종가·뉴스 요약을 부담 없이 받고 싶은 일반 사용자<br>• 논문·리서치·FX 같은 실시간 데이터를 LLM 입력으로 쓰고 싶은 개발자<br>• 보안이 중요한 환경에서 웹 접근을 명시적 토글로 관리하고자 하는 팀</td></tr>
+<tr><td><b>무엇이 필요한가요?</b></td><td>• OpenClaw 설치 완료 (`./openclaw doctor` 결과 OK)<br>• 인터넷 연결<br>• (`surf` 만) Docker Desktop 실행 중 + `bash scripts/surf-setup.sh` 1회 실행</td></tr>
+<tr><td><b>조심할 점은?</b></td><td>• 웹 페이지는 악의적 프롬프트를 포함할 수 있으므로 (**간접 프롬프트 인젝션**), 작업 직후 다시 `isolated` 로 잠그고 RSS·공식 API 를 우선하세요. 작업하는 동안에도 컨테이너는 read-only + 127.0.0.1 전용 바인딩이라 호스트 파일 시스템과 식별자는 그대로 보호됩니다.</td></tr>
+</table>
+
+## 5분 빠른 시작 (TL;DR)
+
+```bash
+# 더 쉽고 안전한 길: 1회용 샌드박스 컨테이너
+bash scripts/surf-setup.sh                           # 1회
+surf "오늘 코스피 종가와 거래대금"             # 이후 매번
+# → ~/openclaw-surf/out/오늘-코스피-종가...-YYYYMMDD-HHMM.md
+
+# 전통적 길: OpenClaw 컨테이너 자체를 online 으로 잠시 전환
+./openclaw network online --restart
+#  … 원하는 질문을 OpenClaw UI 에서 수행 …
+./openclaw network isolated --restart                # 작업 끝나면 잠그기
+```
+
+---
 
 이 가이드는 [GUIDE-OPENCLAW.md](GUIDE-OPENCLAW.md) 의 짧은 "웹에서 가져오기" 단락을 **실전 예시·안전 패턴·트러블슈팅** 까지 확장합니다.
 

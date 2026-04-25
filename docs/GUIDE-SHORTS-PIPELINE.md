@@ -3,7 +3,26 @@
 [← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
 
 
-> 한 명령(`shorts run "키워드"`)으로 **레퍼런스 수집 → 디자인 편집 → 영상 export** 까지. OpenClaw 보안 모델은 그대로 유지하고, 호스트(맥북)에서 실제 프로그램(미리캔버스 웹, CapCut Web/Desktop)을 사람과 동일하게 GUI 로 조종합니다.
+> **한 줄 요약.** 한 명령(`shorts run "키워드"`)으로 **레퍼런스 수집 → 디자인 편집 → 영상 export** 까지. OpenClaw 보안 모델은 그대로 유지하고, 호스트(맥북)에서 실제 프로그램(미리캔버스 웹, CapCut Web/Desktop)을 사람과 동일하게 GUI 로 조종합니다.
+
+<table>
+<tr><td><b>누구에게 좋은가요?</b></td><td>• 쇼츠·릴스 소재를 주기적으로 올리는 일반 크리에이터<br>• 콘텐츠는 직접 큐레이팅하고 싶지만 반복적인 업로드·배치 작업은 자동화하고 싶은 사람<br>• 단순 슬라이드쇼는 ffmpeg 한 줄로 완전 무인 처리하고 싶은 개발자</td></tr>
+<tr><td><b>무엇이 필요한가요?</b></td><td>• macOS + Homebrew + Docker Desktop (대장은 아니지만 동렬에 포함)<br>• 미리캔버스 계정 (무료 플랜 충분) + CapCut 계정 (TikTok / 구글 / 이메일)<br>• 1회 세팅: `bash scripts/shorts-setup.sh` → `shorts miri-login` `shorts capcut-login`</td></tr>
+<tr><td><b>장점과 솔직한 한계는?</b></td><td>🟢 업로드·미디어 임포트·export는 안정 자동.<br>🟡 미리캔버스·CapCut Web 의 레이아웃 좌표 API 는 비공개 — 정밀한 드래그 배치는 `SHORTS_HEADED=1` 헤드모드로 1분만 손으로.<br>🟢 단순 슬라이드쇼는 아래 ffmpeg 폴백으로 **완전 무인** 가능.</td></tr>
+</table>
+
+## 5분 빠른 시작 (TL;DR)
+
+```bash
+# 1회
+bash scripts/shorts-setup.sh
+shorts miri-login            # 미리캔버스 로그인 → 창 닫기
+shorts capcut-login          # CapCut 로그인 → 창 닫기
+
+# 이후 매번
+shorts run "여행 감성 풍경"
+# → ~/openclaw-shorts/out/여행-감성-풍경/shorts.mp4
+```
 
 ---
 

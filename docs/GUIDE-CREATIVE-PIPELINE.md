@@ -2,10 +2,29 @@
 
 [← README 로 돌아가기](../README.md) · [README (English)](../README.en.md)
 
+> **한 줄 요약.** Pinterest 에서 레퍼런스를 모아 → LLM 이 프롬프트 N개로 확장 → 나노바나나(Gemini) 웹을 **창 4개 병렬**로 돌려 이미지 생성 → Figma 디자인에 그리드로 자동 배치. 단일 명령 `creative run "키워드"` 로 완결.
 
-> Pinterest(레퍼런스) → Claude(프롬프트) → 나노바나나(이미지) → Figma 워크플로우를 **한 명령**으로 묶고, 나노바나나 웹 UI 를 **여러 창 병렬**로 띄워 속도를 올립니다.
+<table>
+<tr><td><b>누구에게 좋은가요?</b></td><td>• 하루에도 몇 번씩 "레퍼런스 높기 → 프롬프트 돌리기 → 피그마 붙이기"를 반복하는 디자이너·마케터<br>• 테스트 시안을 대관 시간 안에 12장씯 붙여보고 싶은 사람<br>• 나노바나나 웹 1창만 쓰면 너무 느려서 답답했던 사람</td></tr>
+<tr><td><b>무엇이 필요한가요?</b></td><td>• macOS + Homebrew + Docker Desktop<br>• 호스트 Ollama (`qwen2.5vl:7b` 비전용 + `qwen2.5-coder:7b` 텍스트용)<br>• Google 계정 (나노바나나 로그인용), Figma 계정 (Editor 권한)<br>• 1회 세팅: `bash scripts/creative-pipeline-setup.sh`</td></tr>
+<tr><td><b>존중해야 할 경계는?</b></td><td>• OpenClaw 메인 컨테이너는 건들지 않고 `isolated` 로 유지 — 디자이너 워크플로우는 호스트의 `~/openclaw-creative/` 안에서만 동작<br>• 나노바나나 웹 자동화는 Google 웹 ToS 의 회색 영역 — 개인 대시보드용으로만 사용, 상업 재배포 금지<br>• 프로필 권한 700, 토큰판 Figma 폴백 때만 `.env` 이용 등 최소 권한 원칙</td></tr>
+</table>
+
+## 5분 빠른 시작 (TL;DR)
+
+```bash
+# 1회
+bash scripts/creative-pipeline-setup.sh
+creative banana-login        # 창 떠서 구글 로그인 → 창 닫기
+creative figma-login         # 창 떠서 Figma 로그인 → 창 닫기
+
+# 이후 매번
+creative run "동남아시아 풍경 일러스트" --variations 12 --windows 4
+# → 이미지 12장 생성 (~1분 5초), Figma 지정 페이지에 4열 그리드 배치
+```
 
 이 가이드는 OpenClaw 의 일부가 아닌 **개인 작업 자동화** 입니다. 별도 디렉터리(`~/openclaw-creative/`) 에서 동작하며, OpenClaw 컨테이너의 isolated 정책과 무관합니다.
+
 
 ## 📖 목차 / Contents
 
