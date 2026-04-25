@@ -1,0 +1,33 @@
+name: ❓ Question / 질문
+description: Usage question or "how do I..." / 사용법 질문
+title: "[question] "
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🇰🇷 먼저 [📚 문서 가이드](../../blob/main/README.md#-문서-가이드)·[FAQ](../../blob/main/README.md#-faq)·[TROUBLESHOOTING](../../blob/main/docs/TROUBLESHOOTING.md) 를 검색해 보세요.
+        🇬🇧 First please skim the [Documentation map](../../blob/main/README.en.md#-documentation-map), [FAQ](../../blob/main/README.en.md), and [TROUBLESHOOTING](../../blob/main/docs/TROUBLESHOOTING.md).
+
+        🚨 보안 취약점 / Security vulnerabilities → [SECURITY.md](../../blob/main/SECURITY.md) (NOT a public issue)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question / 질문
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried? / 무엇을 시도해 봤나요?
+      placeholder: |
+        - openclaw doctor → ...
+        - 검색해 본 키워드: ...
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment / 환경
+      placeholder: "macOS 15.4, Apple M5 Pro, 24GB · openclaw 0.1.5"

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🚨 Security vulnerability / 보안 취약점
+    url: https://github.com/GoGoComputer/openclaw-workspace/blob/main/SECURITY.md
+    about: Please follow the private disclosure process in SECURITY.md — do NOT open a public issue. / 공개 이슈 대신 SECURITY.md 의 비공개 신고 절차를 따라주세요.
+  - name: 📚 Read the docs first / 먼저 문서 보기
+    url: https://github.com/GoGoComputer/openclaw-workspace#-문서-가이드
+    about: Documentation map, FAQ, TROUBLESHOOTING — most questions are answered here. / 대부분의 질문은 문서에서 해결됩니다.
+  - name: 🌱 New to contributing? / 기여가 처음이세요?
+    url: https://github.com/GoGoComputer/openclaw-workspace/blob/main/docs/GUIDE-CONTRIBUTING.md
+    about: Non-developer-friendly guide — typos, translation, beta-testing all count. / 비개발자도 환영 — 오타·번역·베타테스트도 기여입니다.

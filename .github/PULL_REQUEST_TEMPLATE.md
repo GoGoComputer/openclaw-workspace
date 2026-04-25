@@ -1,25 +1,30 @@
-## 변경 요약
+<!-- 🇰🇷 / 🇬🇧 — fill the side you're comfortable with. Bilingual welcome. -->
 
-<!-- 이 PR이 무엇을 바꾸는지 한두 문장 -->
+## Summary / 변경 요약
 
-## 동기 / 관련 이슈
+<!-- One or two sentences. / 한두 문장 -->
+
+## Motivation / Related issue · 동기 / 관련 이슈
 
 Closes #
 
-## 체크리스트
+## Checklist / 체크리스트
 
-- [ ] `bash -n` 통과 (`find openclaw-mgr -name '*.sh' -exec bash -n {} \;`)
-- [ ] `shellcheck -S style` 새 경고 없음
-- [ ] `shfmt -d -i 2 openclaw-mgr` 차이 없음
-- [ ] 새 명령/옵션이 있다면 README 표 업데이트
-- [ ] 사용자 입력을 받는 경로는 `lib/sec.sh` 검증 함수 통과
-- [ ] 시크릿/환경 파일을 커밋에 포함하지 않음
-- [ ] Bash 3.2 호환 (associative array, `mapfile`, `${var,,}` 사용 안 함)
+- [ ] `bash -n` passes / 통과 (`find openclaw-mgr -name '*.sh' -exec bash -n {} \;`)
+- [ ] No new `shellcheck -S style` warnings / 새 경고 없음
+- [ ] `shfmt -d -i 2 openclaw-mgr` shows no diff / 차이 없음
+- [ ] README command table updated if a new command/option was added / 명령 표 업데이트
+- [ ] User input paths go through `lib/sec.sh` validators / 사용자 입력은 검증 통과
+- [ ] No secrets / `.env` committed / 시크릿 미포함
+- [ ] Bash 3.2 compatible (no associative arrays, `mapfile`, `${var,,}`) / Bash 3.2 호환
 
-## 테스트 방법
+## How to test / 테스트 방법
 
 ```bash
-# 어떻게 검증했는지 명령으로
+# the exact commands you ran to verify / 검증한 명령
 ```
 
-## 스크린샷 / 로그 (있으면)
+## Screenshots / Logs (if any) · 스크린샷 / 로그 (있으면)
+
+> 🌱 First time contributing? See [docs/GUIDE-CONTRIBUTING.md](../blob/main/docs/GUIDE-CONTRIBUTING.md) — non-developers welcome.
+> 🌱 처음이세요? [docs/GUIDE-CONTRIBUTING.md](../blob/main/docs/GUIDE-CONTRIBUTING.md) 참조 — 비개발자도 환영입니다.

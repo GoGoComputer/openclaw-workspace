@@ -91,7 +91,8 @@ cd openclaw-workspace/openclaw-mgr
 | 🛡 **보안이 궁금한 사람** | [SECURITY.md](SECURITY.md) · 본문 [🔒 보안 주의](#-보안-주의-꼭-읽으세요) · [🔒 네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) | 위협 모델·취약점 신고 절차 |
 | 🧠 **내부 동작 알고 싶음** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 디스패처·멱등 설계·compose override (KO+EN 병기) |
 | 🚑 **문제가 생겼을 때** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 흔한 오류·해결 명령 (KO+EN 병기) |
-| 🤝 **기여하고 싶음** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | 코드 스타일·PR 절차 (KO+EN 병기) |
+| 🤝 **기여하고 싶음 (처음)** | [docs/GUIDE-CONTRIBUTING.md](docs/GUIDE-CONTRIBUTING.md) | 비개발자도 환영 — 오타·번역·베타테스트도 기여 |
+| 🐙 **기여하고 싶음 (코드)** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | 코드 스타일·PR 절차 (KO+EN 병기) |
 | 📦 **릴리스 내역** | [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | 변경 사항 (KO+EN 병기) |
 | 🍺 **Homebrew tap** | [github.com/GoGoComputer/homebrew-openclaw](https://github.com/GoGoComputer/homebrew-openclaw) | brew formula 저장소 |
 

@@ -91,7 +91,8 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 | 🛡 **Security-minded** | [SECURITY.md](SECURITY.md) · [🔒 Security section](#-security-please-read) · [🔒 Network isolation](#-network-isolation-modes-explicit-outbound-kill-switch) | Threat model, vulnerability reporting |
 | 🧠 **Want to know how it works** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Dispatcher, idempotent design, compose overrides (bilingual) |
 | 🚑 **When things break** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common errors and fixes (bilingual) |
-| 🤝 **Want to contribute** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Code style, PR process (bilingual) |
+| 🤝 **Want to contribute (first time)** | [docs/GUIDE-CONTRIBUTING.md](docs/GUIDE-CONTRIBUTING.md) | Non-developers welcome — typos, translation, beta-testing |
+| 🐙 **Want to contribute (code)** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Code style, PR process (bilingual) |
 | 📦 **Release notes** | [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | What changed (bilingual) |
 | 🍺 **Homebrew tap** | [github.com/GoGoComputer/homebrew-openclaw](https://github.com/GoGoComputer/homebrew-openclaw) | brew formula repo |
 

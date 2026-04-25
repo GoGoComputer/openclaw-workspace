@@ -1,0 +1,36 @@
+name: 📝 Documentation issue / 문서 관련
+description: Typos, unclear wording, missing translation, broken link / 오타·헷갈리는 표현·번역 누락·깨진 링크
+title: "[docs] "
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🇰🇷 비개발자 환영 — 한 줄만 적어도 OK. 자세한 가이드: [GUIDE-CONTRIBUTING.md](../../blob/main/docs/GUIDE-CONTRIBUTING.md)
+        🇬🇧 Non-developers welcome — a single line is fine. See [GUIDE-CONTRIBUTING.md](../../blob/main/docs/GUIDE-CONTRIBUTING.md).
+
+  - type: input
+    id: file
+    attributes:
+      label: Which file? / 어떤 파일인가요?
+      placeholder: "README.md  /  docs/QUICKSTART-ko.md  /  docs/GUIDE-OLLAMA.md"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's wrong or confusing? / 무엇이 틀렸거나 헷갈리나요?
+      placeholder: |
+        예 / Example:
+        - "이 단어가 무슨 뜻인지 모르겠어요"
+        - "Step 4 의 명령이 동작 안 함"
+        - "EN README 에는 있는데 KO 에는 없음"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix (optional) / 제안 수정안 (선택)
+      placeholder: "이렇게 바꾸면 좋겠어요…"

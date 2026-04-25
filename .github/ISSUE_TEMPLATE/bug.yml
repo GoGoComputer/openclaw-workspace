@@ -1,31 +1,34 @@
-name: 🐛 Bug 리포트
-description: 동작이 이상하거나 오류가 납니다
+name: 🐛 Bug report / 버그 리포트
+description: Something broken or unexpected / 동작이 이상하거나 오류가 납니다
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        🚨 **보안 취약점은 공개 이슈 대신 [SECURITY.md](../../blob/main/SECURITY.md) 절차를 따라주세요.**
+        🚨 보안 취약점은 공개 이슈 대신 [SECURITY.md](../../blob/main/SECURITY.md) 절차를 따라주세요.
+        🚨 Security vulnerabilities: please use the private process in [SECURITY.md](../../blob/main/SECURITY.md), not a public issue.
+
+        🌱 처음이세요? 괜찮아요 — 빈 칸 둘어도 됩니다. / First time? It's fine — leave fields blank if unsure.
 
   - type: input
     id: version
     attributes:
-      label: 버전 / 커밋
-      placeholder: "0.1.0 또는 commit hash"
+      label: Version / commit · 버전 / 커밋
+      placeholder: "0.1.5 or commit hash"
     validations:
       required: true
 
   - type: input
     id: macos
     attributes:
-      label: macOS 버전 / 칩
+      label: macOS version / chip · macOS 버전 / 칩
       placeholder: "macOS 15.4, Apple M5 Pro / 24GB"
 
   - type: textarea
     id: doctor
     attributes:
-      label: ./openclaw doctor 출력
-      description: 시크릿은 자동 마스킹되지만 한 번 더 검토해 주세요.
+      label: Output of `./openclaw doctor` / `./openclaw doctor` 출력
+      description: Secrets are auto-masked, but please double-check before pasting. / 시크릿은 자동 마스킹되지만 한 번 더 검토해 주세요.
       render: text
     validations:
       required: true
@@ -33,7 +36,7 @@ body:
   - type: textarea
     id: repro
     attributes:
-      label: 재현 단계
+      label: Steps to reproduce / 재현 단계
       placeholder: |
         1. ./openclaw install
         2. ...
@@ -43,13 +46,13 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: 기대 동작
+      label: Expected behaviour / 기대 동작
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: 실제 동작 (오류 메시지)
+      label: Actual behaviour (error message) / 실제 동작 (오류 메시지)
     validations:
       required: true
