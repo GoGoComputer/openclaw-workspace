@@ -177,11 +177,61 @@ docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
 osascript -e 'quit app "Docker"'                # 정상 종료 (Quit)
 # 또는: 메뉴바 🐳 → Quit Docker Desktop
 
-# 끝났는지 확인
-pgrep -lf "Docker Desktop|com.docker" || echo "✓ Docker 모두 종료됨"
+# 끝났는지 확인 (모든 Docker 관련 프로세스)
+pgrep -lf "Docker|com.docker|vpnkit|docker-agent|docker-sandbox" \
+  || echo "✓ Docker 모두 종료됨"
 ```
 
 > 💡 OpenClaw 컨테이너는 **자동 정지** 됩니다. 다음에 Docker 를 다시 켜면 자동으로 복귀 (`restart: unless-stopped` 정책). 데이터·세션·다운받은 모델 **모두 그대로**.
+
+##### ⚠️ "Quit 했는데도 프로세스가 살아있다"
+
+Docker Desktop 4.70+ 에서 흔한 현상 — 메인 GUI 는 종료됐는데 **헬퍼·서브프로세스가 좀비처럼 남음**:
+- `com.docker.build`, `docker-sandbox daemon start`, `docker-agent serve api`
+- `Docker Desktop Helper` (GPU / Renderer / Network)
+- `vpnkit`, `qemu` (Apple Silicon VM)
+
+확인:
+```bash
+ps -ef | grep -i 'docker\|vpnkit' | grep -v grep
+# 또는 한 줄 카운트
+pgrep -lf "Docker|com.docker|vpnkit|docker-agent|docker-sandbox" | wc -l
+# 0 이 아니면 잔존 있음
+```
+
+**완전한 한 줄 정리 (안전 — TERM 신호 먼저, 그래도 살아있으면 KILL):**
+```bash
+osascript -e 'quit app "Docker"' 2>/dev/null; sleep 3; \
+pkill -TERM -f 'Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system' 2>/dev/null; \
+sleep 2; \
+pkill -KILL -f 'Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system' 2>/dev/null; \
+sleep 1; \
+pgrep -lf 'Docker|com.docker|vpnkit' || echo "✓ 잔존 프로세스 없음"
+```
+
+**같은 동작을 alias 로** (`~/.zshrc` 에 추가하면 `dockerstop` 한 단어로 끝):
+```bash
+cat >> ~/.zshrc <<'EOF'
+
+# OpenClaw: Docker 완전 정상 종료 (잔존 프로세스까지 청소)
+alias dockerstop='osascript -e "quit app \"Docker\"" 2>/dev/null; sleep 3; \
+  pkill -TERM -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  sleep 2; \
+  pkill -KILL -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ Docker 완전 종료"'
+EOF
+source ~/.zshrc
+```
+
+**왜 이런 일이?**
+- Docker Desktop 의 일부 헬퍼는 **부모(`Docker Desktop`)** 가 종료해도 즉시 함께 종료되지 않습니다 (sandbox / build helper / agent). 5~10초 안에는 보통 알아서 정리되지만, 그 안에 새 명령을 치면 헷갈립니다.
+- **AI/Build 기능을 켰을 때** 더 자주 발생: `docker-agent` (Docker AI), `docker-sandbox` (sandbox CLI plugin), `com.docker.build` (Buildx daemon).
+- 위 한 줄은 TERM(정상신호) → 2초 대기 → KILL 순서라 **데이터 손상 위험은 없음**. 단지 좀비 청소.
+
+**예방 (애초에 잔존을 줄이기):**
+- Docker Desktop **Settings → Beta features** 에서 **"Docker AI" 와 "Sandbox" 를 사용 안 하면 끄기** → 좀비 헬퍼 자체가 안 떠짐.
+- Settings → General → **"Open Docker Dashboard at startup"** 끄기 → GPU/Renderer 헬퍼가 백그라운드에 안 남음.
+- `dockerstop` (위 alias) 을 종료 시 항상 사용 → 부분 종료 상황 자체를 없앰.
 
 #### 🔁 재시작 (충돌 / 응답 없을 때)
 
@@ -888,10 +938,60 @@ docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
 osascript -e 'quit app "Docker"'
 # or: Menu-bar 🐳 → Quit Docker Desktop
 
-pgrep -lf "Docker Desktop|com.docker" || echo "✓ Docker fully stopped"
+# Verify (covers all helpers, not just main app)
+pgrep -lf "Docker|com.docker|vpnkit|docker-agent|docker-sandbox" \
+  || echo "✓ Docker fully stopped"
 ```
 
 > 💡 OpenClaw containers **stop automatically**; with `restart: unless-stopped` they come back when Docker is started again. Data, sessions, downloaded models are preserved.
+
+##### ⚠️ "I Quit, but processes are still alive"
+
+Common on Docker Desktop 4.70+: the main GUI exits but **helpers / sub-processes linger like zombies**:
+- `com.docker.build`, `docker-sandbox daemon start`, `docker-agent serve api`
+- `Docker Desktop Helper` (GPU / Renderer / Network)
+- `vpnkit`, `qemu` (Apple Silicon VM)
+
+Check:
+```bash
+ps -ef | grep -i 'docker\|vpnkit' | grep -v grep
+pgrep -lf "Docker|com.docker|vpnkit|docker-agent|docker-sandbox" | wc -l
+# anything > 0 means leftovers
+```
+
+**Full clean stop one-liner (safe — TERM first, then KILL):**
+```bash
+osascript -e 'quit app "Docker"' 2>/dev/null; sleep 3; \
+pkill -TERM -f 'Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system' 2>/dev/null; \
+sleep 2; \
+pkill -KILL -f 'Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system' 2>/dev/null; \
+sleep 1; \
+pgrep -lf 'Docker|com.docker|vpnkit' || echo "✓ no leftovers"
+```
+
+**Same as a shell alias** (add to `~/.zshrc`, then `dockerstop` quits cleanly every time):
+```bash
+cat >> ~/.zshrc <<'EOF'
+
+# OpenClaw: clean Docker shutdown (also reaps leftover helpers)
+alias dockerstop='osascript -e "quit app \"Docker\"" 2>/dev/null; sleep 3; \
+  pkill -TERM -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  sleep 2; \
+  pkill -KILL -f "Docker Desktop|com.docker|docker-agent|docker-sandbox|vpnkit|qemu-system" 2>/dev/null; \
+  pgrep -lf "Docker|com.docker|vpnkit" || echo "✓ Docker fully stopped"'
+EOF
+source ~/.zshrc
+```
+
+**Why does this happen?**
+- Some Docker Desktop helpers don't exit immediately when the parent (`Docker Desktop`) quits (sandbox / build helper / agent). They usually clean up within 5–10 s, but if you run new commands in that window things look broken.
+- It's worse with **AI / Build features enabled**: `docker-agent` (Docker AI), `docker-sandbox` (CLI plugin), `com.docker.build` (Buildx daemon).
+- The one-liner sends TERM (graceful) → 2 s wait → KILL — **no risk of data corruption**, just zombie cleanup.
+
+**Prevent it (reduce leftovers in the first place):**
+- Docker Desktop **Settings → Beta features** — disable **"Docker AI" and "Sandbox"** if you don't use them. The zombie helpers stop spawning at all.
+- Settings → General → uncheck **"Open Docker Dashboard at startup"** — keeps GPU/Renderer helpers out of the background.
+- Use `dockerstop` (alias above) every time you quit — eliminates the "partial shutdown" state entirely.
 
 #### 🔁 Restart (crash / unresponsive)
 
