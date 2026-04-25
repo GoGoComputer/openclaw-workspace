@@ -125,16 +125,25 @@ docker info            # Server: ... 가 보이면 데몬 정상
 |---|---|
 | 🖱 **앱으로 켜기** (가장 쉬움) | Applications → **Docker.app** 더블클릭, 또는 Spotlight (`⌘ Space` → "docker") |
 | ⌨ **터미널에서 켜기** | `open -a Docker` |
-| 🔄 **부팅 시 자동 켜기** (기본 ON) | Docker Desktop 설정 → General → "Start Docker Desktop when you sign in" |
+| 🔄 **부팅 시 자동 켜기** (기본 ON) | GUI: Docker Desktop 설정 → General → "Start Docker Desktop when you sign in" — CLI 는 아래 섬션 참고 |
 
 켜진 후 **메뉴바의 🐳 고래 아이콘이 움직임을 멈출 때까지** 30~60초 대기 → 그제서야 `docker` 명령이 동작합니다.
 
 #### 데몬(서버) 켜졌는지 확인
 
 ```bash
-docker info | head -5     # "Server: Docker Engine - Community ..." 보이면 OK
-docker ps                  # 표 헤더가 나오면 OK (CONTAINER ID  IMAGE  ...)
+# 가장 확실한 한 줄
+if docker info >/dev/null 2>&1; then echo "✓ daemon up"; else echo "✗ daemon down"; fi
+
+# 버전만 짧게
+docker info --format '{{.ServerVersion}}'   # 예: 29.4.0
+
+# 전체 정보 보기
+docker info | head -30                       # "Server:" 섬션이 아래쪽에 나와야 OK
+docker ps                                    # 표 헤더 (CONTAINER ID  IMAGE ...) 나오면 OK
 ```
+
+> ⚠️ `docker info | head -5` 는 **Client 섹션만** 출력해서 데몬이 껌져 있어도 동일하게 보입니다. **`Server:` 줄을 확인**하거나 위의 한 줄짜리 방법을 쓰세요.
 
 `Cannot connect to the Docker daemon` 가 나오면 → 아직 시동 중. 잠시 기다리거나 메뉴바 고래 아이콘을 클릭해 상태 확인.
 
@@ -147,6 +156,40 @@ docker ps                  # 표 헤더가 나오면 OK (CONTAINER ID  IMAGE  ..
 | ⌨ **터미널에서 끄기** | `osascript -e 'quit app "Docker"'` |
 
 > 💡 데몬을 끄면 **실행 중이던 OpenClaw 컨테이너도 자동으로 정지** 됩니다 (데이터는 보존, 다시 켜면 그대로 복귀).
+
+#### 자동시작(로그인 시 켜기) — CLI 로 토글 / 확인
+
+> macOS 의 "로그인 항목 (Login Items)" 으로 등록되는 동작입니다. CLI 로도 완전히 제어할 수 있어요.
+
+**현재 등록 상태 확인:**
+```bash
+osascript -e 'tell application "System Events" to get the name of every login item' \
+  | tr ',' '\n' | grep -i docker || echo "(Docker 자동시작 OFF)"
+```
+
+**자동시작 켜기 (로그인 항목에 추가):**
+```bash
+osascript -e 'tell application "System Events" to make login item at end \
+  with properties {path:"/Applications/Docker.app", hidden:true, name:"Docker"}'
+```
+
+**자동시작 끄기 (로그인 항목에서 제거):**
+```bash
+osascript -e 'tell application "System Events" to delete login item "Docker"'
+```
+
+> 🔐 처음 실행 시 **"시스템 이벤트가 제어를 요청합니다"** 권한 다이얼로그가 뜨면 **확인**. 이후엔 묻지 않습니다.
+
+**Docker Desktop 내부 설정 파일도 함께 확인 (참고용):**
+```bash
+SET=~/Library/Group\ Containers/group.com.docker/settings-store.json
+[ -f "$SET" ] && python3 -c "import json,sys; d=json.load(open('$SET'.replace('\\\\ ',' '))); print('AutoStart =', d.get('AutoStart', d.get('autoStart','(키 없음)')))" || echo "(설정 파일 없음 — Docker Desktop 미실행 상태일 수 있음)"
+```
+
+**전체 macOS Login Items 목록 (어떤 앱들이 자동시작되는지 한눈에):**
+```bash
+osascript -e 'tell application "System Events" to get the name of every login item'
+```
 
 #### Docker Desktop 창 — 무엇을 볼 수 있나?
 
@@ -543,16 +586,25 @@ docker info
 |---|---|
 | 🖱 **Open the app** (easiest) | Applications → **Docker.app**, or Spotlight (`⌘ Space` → "docker") |
 | ⌨ **Terminal** | `open -a Docker` |
-| 🔄 **Auto-start on login** (default ON) | Docker Desktop Settings → General → "Start Docker Desktop when you sign in" |
+| 🔄 **Auto-start on login** (default ON) | GUI: Docker Desktop Settings → General → "Start Docker Desktop when you sign in" — see CLI section below |
 
 After starting, **wait 30–60 s for the menu-bar 🐳 whale to stop animating** — only then are `docker` commands ready.
 
 #### Check the daemon is up
 
 ```bash
-docker info | head -5     # "Server: Docker Engine ..." line means OK
-docker ps                  # Header (CONTAINER ID  IMAGE  ...) means OK
+# One-liner status check
+if docker info >/dev/null 2>&1; then echo "✓ daemon up"; else echo "✗ daemon down"; fi
+
+# Just the version
+docker info --format '{{.ServerVersion}}'   # e.g. 29.4.0
+
+# Full output
+docker info | head -30                       # "Server:" section must appear
+docker ps                                    # Header (CONTAINER ID  IMAGE ...) means OK
 ```
+
+> ⚠️ `docker info | head -5` only shows the **Client** section — the daemon could be either up or down and you'd see the same thing. **Look for the `Server:` line**, or use the one-liner above.
 
 If you see `Cannot connect to the Docker daemon` it's still booting — wait a bit, or click the menu-bar whale to see status.
 
@@ -565,6 +617,59 @@ If you see `Cannot connect to the Docker daemon` it's still booting — wait a b
 | ⌨ **Quit from terminal** | `osascript -e 'quit app "Docker"'` |
 
 > 💡 Stopping the daemon **also stops any running OpenClaw containers** (data is preserved; restart and they come back).
+
+#### Auto-start on login — toggle / check via CLI
+
+> Two places hold this setting — on modern macOS, **Docker Desktop's own setting (`AutoStart` in `settings-store.json`)** is primary; the system-level **Login Items** list is used additionally on some macOS versions.
+
+**① Check Docker Desktop's own auto-start key (most reliable):**
+```bash
+F="$HOME/Library/Group Containers/group.com.docker/settings-store.json"
+python3 -c "import json; d=json.load(open(r'''$F''')); print('AutoStart =', d.get('AutoStart','(key absent)'))"
+# AutoStart = True → ON / AutoStart = False → OFF
+```
+
+**② Check macOS Login Items list (informational):**
+```bash
+osascript -e 'tell application "System Events" to get the name of every login item' \
+  | tr ',' '\n' | grep -i docker || echo "(Docker not in Login Items)"
+```
+> 💡 On modern macOS, Docker registers via SMAppService and may **not appear** in this list. In that case ① 's `AutoStart` is the real source of truth.
+
+**Toggle auto-start — most reliable: GUI**
+
+```bash
+open -a Docker        # opens Docker Desktop
+# Settings → General → "Start Docker Desktop when you sign in" → toggle → Apply & restart
+```
+
+Fully via CLI (advanced — quit Docker Desktop first):
+
+```bash
+osascript -e 'quit app "Docker"'; sleep 3
+F="$HOME/Library/Group Containers/group.com.docker/settings-store.json"
+python3 -c "import json,sys; p=r'''$F'''; d=json.load(open(p)); d['AutoStart']=True; json.dump(d, open(p,'w'), indent=2)"
+# Use False to disable
+open -a Docker
+```
+
+> ⚠️ Editing settings-store.json directly is an undocumented internal format. Prefer the GUI toggle for everyday use.
+
+**Add / remove a system Login Item directly (only needed on some setups):**
+```bash
+# Add
+osascript -e 'tell application "System Events" to make login item at end \
+  with properties {path:"/Applications/Docker.app", hidden:true, name:"Docker"}'
+
+# Remove
+osascript -e 'tell application "System Events" to delete login item "Docker"'
+```
+> 🔐 First run prompts "System Events wants control..." → click **OK**.
+
+**List all macOS Login Items:**
+```bash
+osascript -e 'tell application "System Events" to get the name of every login item'
+```
 
 #### What's in the Docker Desktop window?
 
