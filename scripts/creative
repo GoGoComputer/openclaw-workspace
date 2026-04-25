@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# =============================================================================
+# scripts/creative — Creative pipeline 통합 CLI
+# -----------------------------------------------------------------------------
+# 사용:
+#   creative refs <검색어 또는 핀터레스트 URL> [--count N]
+#   creative prompts <slug> [--variations N] [--model NAME]
+#   creative banana --jobs <jsonl> [--windows N] [--rate-limit S] [--headed]
+#   creative banana-login
+#   creative figma --slug <slug> [--page NAME]
+#   creative run <키워드> [--refs N] [--variations N] [--windows N] [--figma-page NAME]
+#   creative doctor
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+CREATIVE_HOME="${CREATIVE_HOME:-$HOME/openclaw-creative}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPTS="$REPO_DIR/scripts/creative-lib"
+
+[ -d "$CREATIVE_HOME" ] || { echo "✗ $CREATIVE_HOME 없음 — scripts/creative-pipeline-setup.sh 먼저 실행" >&2; exit 1; }
+
+# .env 로드
+# shellcheck disable=SC1091
+[ -f "$CREATIVE_HOME/.env" ] && { set -a; . "$CREATIVE_HOME/.env"; set +a; }
+
+# venv 활성화
+# shellcheck disable=SC1091
+. "$CREATIVE_HOME/.venv/bin/activate"
+
+slugify() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9가-힣]+/-/g; s/^-+|-+$//g'
+}
+
+usage() {
+  sed -n '4,15p' "$0" | sed 's/^# //; s/^#//'
+  exit "${1:-0}"
+}
+
+cmd="${1:-}"; shift || usage 1
+
+case "$cmd" in
+  -h|--help|help) usage 0 ;;
+
+  refs)
+    target="${1:-}"; shift || true
+    [ -n "$target" ] || { echo "검색어 또는 URL 필요" >&2; exit 2; }
+    count=8
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --count) count="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    slug="$(slugify "$target")"
+    out="$CREATIVE_HOME/refs/$slug"
+    mkdir -p "$out"
+    echo "▸ Pinterest → $out (목표 $count장)"
+    if [[ "$target" == http*pinterest* ]]; then
+      gallery-dl --range "1-$count" -d "$CREATIVE_HOME/refs" -D "$slug" "$target"
+    else
+      # 검색어를 Pinterest 검색 URL 로
+      enc="$(python -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))' "$target")"
+      gallery-dl --range "1-$count" -d "$CREATIVE_HOME/refs" -D "$slug" \
+        "https://www.pinterest.com/search/pins/?q=$enc"
+    fi
+    # 1024px 단변 리사이즈 (LLM 토큰 절약)
+    for f in "$out"/*.{jpg,jpeg,png,webp}; do
+      [ -f "$f" ] || continue
+      mogrify -resize '1024x1024>' "$f" 2>/dev/null || true
+    done
+    echo "✔ refs: $(ls "$out" | wc -l | tr -d ' ')장"
+    ;;
+
+  prompts)
+    target="${1:-}"; shift || true
+    [ -n "$target" ] || { echo "키워드 또는 slug 필요" >&2; exit 2; }
+    variations=12
+    model_text="${OLLAMA_TEXT_MODEL:-qwen2.5-coder:7b}"
+    model_vlm="${OLLAMA_VLM_MODEL:-qwen2.5vl:7b}"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --variations) variations="$2"; shift 2 ;;
+        --model) model_text="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    slug="$(slugify "$target")"
+    python "$SCRIPTS/prompts.py" \
+      --slug "$slug" \
+      --keyword "$target" \
+      --variations "$variations" \
+      --vlm-model "$model_vlm" \
+      --text-model "$model_text" \
+      --refs-dir "$CREATIVE_HOME/refs/$slug" \
+      --out "$CREATIVE_HOME/prompts/$slug.jsonl"
+    ;;
+
+  banana-login)
+    python "$SCRIPTS/banana.py" login \
+      --profiles-dir "$CREATIVE_HOME/profiles" \
+      --url "${BANANA_URL:-https://gemini.google.com/app}"
+    ;;
+
+  banana)
+    jobs=""; windows=4; rate="${BANANA_RATE_LIMIT_SEC:-25}"; headed=""; retries=2; timeout="${BANANA_TIMEOUT_SEC:-90}"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --jobs) jobs="$2"; shift 2 ;;
+        --windows) windows="$2"; shift 2 ;;
+        --rate-limit) rate="${2%s}"; shift 2 ;;
+        --retries) retries="$2"; shift 2 ;;
+        --timeout) timeout="$2"; shift 2 ;;
+        --headed) headed="--headed"; shift ;;
+        *) shift ;;
+      esac
+    done
+    [ -f "$jobs" ] || { echo "✗ --jobs <jsonl> 가 없음 ($jobs)" >&2; exit 2; }
+    slug="$(basename "$jobs" .jsonl)"
+    out="$CREATIVE_HOME/out/$slug"
+    mkdir -p "$out"
+    python "$SCRIPTS/banana.py" run \
+      --jobs "$jobs" --out "$out" \
+      --profiles-dir "$CREATIVE_HOME/profiles" \
+      --url "${BANANA_URL:-https://gemini.google.com/app}" \
+      --windows "$windows" --rate-limit "$rate" \
+      --retries "$retries" --timeout "$timeout" \
+      $headed
+    ;;
+
+  figma)
+    slug=""; page="Mood-$(date +%Y-%m)"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --slug) slug="$2"; shift 2 ;;
+        --page) page="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    [ -n "$slug" ] || { echo "--slug 필요" >&2; exit 2; }
+    : "${FIGMA_TOKEN:?FIGMA_TOKEN 미설정 — ~/openclaw-creative/.env}"
+    : "${FIGMA_FILE_KEY:?FIGMA_FILE_KEY 미설정}"
+    python "$SCRIPTS/figma.py" \
+      --src "$CREATIVE_HOME/out/$slug" \
+      --page "$page" \
+      --token "$FIGMA_TOKEN" \
+      --file "$FIGMA_FILE_KEY"
+    ;;
+
+  run)
+    keyword="${1:-}"; shift || true
+    [ -n "$keyword" ] || { echo "키워드 필요" >&2; exit 2; }
+    refs=8; variations=12; windows=4; figma_page="Mood-$(date +%Y-%m)"
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --refs) refs="$2"; shift 2 ;;
+        --variations) variations="$2"; shift 2 ;;
+        --windows) windows="$2"; shift 2 ;;
+        --figma-page) figma_page="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    "$0" refs    "$keyword" --count "$refs"
+    "$0" prompts "$keyword" --variations "$variations"
+    slug="$(slugify "$keyword")"
+    "$0" banana  --jobs "$CREATIVE_HOME/prompts/$slug.jsonl" --windows "$windows"
+    if [ -n "${FIGMA_TOKEN:-}" ] && [ -n "${FIGMA_FILE_KEY:-}" ]; then
+      "$0" figma --slug "$slug" --page "$figma_page"
+    else
+      echo "ℹ Figma 토큰 미설정 — 업로드 건너뜀 (~/openclaw-creative/out/$slug/ 에 저장됨)"
+    fi
+    ;;
+
+  doctor)
+    python "$SCRIPTS/doctor.py" --home "$CREATIVE_HOME"
+    ;;
+
+  *)
+    echo "알 수 없는 명령: $cmd" >&2
+    usage 2
+    ;;
+esac

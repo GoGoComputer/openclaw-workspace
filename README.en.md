@@ -84,6 +84,7 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 | 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |
 | 📖 **Unfamiliar with the terms (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | Three 3-minute primers (concepts, vocabulary, philosophy) — KO+EN |
 | 🌐 **Pulling stocks · news · FX from the web** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | Network toggle cycle, real-world prompts, official APIs, automation, troubleshooting. KO+EN |
+| 🎨 **Designer workflow automation (Pinterest → nano-banana → Figma)** | [docs/GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) | 4-step manual → one command. 4 parallel nano-banana windows for ~3.7× speedup. KO+EN |
 | 👤 **General user** | [README.en.md](README.en.md) (this file) | Command catalog · `.env` · network isolation · FAQ |
 | 🇰🇷 **일반 사용자 (KO)** | [README.md](README.md) | Korean main README |
 | 🛡 **Security-minded** | [SECURITY.md](SECURITY.md) · [🔒 Security section](#-security-please-read) · [🔒 Network isolation](#-network-isolation-modes-explicit-outbound-kill-switch) | Threat model, vulnerability reporting |
