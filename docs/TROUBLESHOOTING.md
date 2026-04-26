@@ -32,6 +32,21 @@
 
 ---
 
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **`./openclaw doctor` 출력 → 정확한 복구 명령** 매핑집입니다. 4부 구성:
+
+| 부 | 내용 | 언제 보나 |
+|---|---|---|
+| 1 | [PATH 등록](#openclaw-명령-위치--path-등록) | `./openclaw: command not found` 가 나올 때 |
+| 2 | [doctor 출력별 대응](#openclaw-doctor-출력별-대응--recovery-by-doctor-output) + [항목별 상세](#doctor-항목별-상세-가이드) | 진단표에 ✗ 가 나온 항목 클릭 |
+| 3 | [install 단계별 실패](#openclaw-install-단계별-실패-가이드) | `./openclaw install` 이 중간에 멈췄을 때 |
+| 4 | [흔한 오류](#흔한-오류) · [보안 경고](#보안-경고가-떴어요) · [도움 요청](#도움-요청-시-첨부할-정보) | 위 어디에도 안 나오는 메시지일 때 |
+
+> 🎯 **권장 흐름**: ❶ `./openclaw doctor` 먼저 실행 → ❷ ✗ 가 나온 항목명을 위 TOC 에서 클릭 → ❸ 해당 절의 명령을 한 줄씩 복사. 어느 단계에서 막혔는지 모를 때는 `./openclaw install` 단계별 실패 가이드부터.
+
+---
+
 ## `./openclaw` 명령 위치 / PATH 등록
 
 이 가이드의 **모든 `./openclaw <verb>` 예시는 `openclaw-workspace/` 또는 그 아래 `openclaw-mgr/` 디렉터리에서 실행하는 것을 가정**합니다. 다른 곳에서 치면:

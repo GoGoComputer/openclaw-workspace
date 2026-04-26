@@ -5,8 +5,18 @@
 
 ## 📖 목차 / Contents
 
-- [🇰🇷 한국어](#-한국어)
-- [🇬🇧 English](#-english)
+- 🇰🇷 [한국어](#-한국어)
+  - [Ollama 가 뭐예요?](#ollama-가-뭐예요) · [왜 OpenClaw 가 Ollama 를 쓰나요?](#왜-openclaw-가-ollama-를-쓰나요) · [어떻게 설치되나요?](#어떻게-설치되나요) · [모델(Model) 이란?](#모델-model-이란) · [자주 쓰는 명령](#자주-쓰는-명령) · [모델은 어디 저장되나요?](#모델은-어디-저장되나요) · ["Ollama 서버" 라는 건?](#ollama-서버-라는-건) · [더 알아보기](#더-알아보기)
+- 🇬🇧 [English](#-english)
+  - [What is Ollama?](#what-is-ollama) · [Why does OpenClaw use Ollama?](#why-does-openclaw-use-ollama) · [How is it installed?](#how-is-it-installed) · [What is a "model"?](#what-is-a-model) · [Common commands](#common-commands) · [Where do models live?](#where-do-models-live) · [What's the "Ollama server"?](#whats-the-ollama-server) · [Learn more](#learn-more)
+
+---
+
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **Ollama 입문** 가이드입니다 (3분 내). "로컬 LLM 이 뭐라고?" 부터 "모델은 어디 저장되고 서버는 언제 돌고 OpenClaw 가 왜 이걸 골랐는지"까지.
+
+> 🎯 **권장 흐름**: 위 TOC 의 처음 4항목 (Ollama 란 → 왜 → 설치 → 모델) 만 읽으면 개념 완료. 자주 쓰는 명령 치트시트가 필요하면 "자주 쓰는 명령" 절로 점프. 포트 11434 충돌로 에러나면 [GUIDE-MANUAL-INSTALL.md §0.5.2-A](GUIDE-MANUAL-INSTALL.md#052-a--11434-가-ollama-가-아닌-프로세스에-잡혀-있을-때--자세히).
 
 ---
 

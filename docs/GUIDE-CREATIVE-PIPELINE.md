@@ -42,6 +42,19 @@ creative run "동남아시아 풍경 일러스트" --variations 12 --windows 4
 
 ---
 
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **Pinterest → 나노바나나(4창 병렬) → Figma 자동 배치** 파이프라인을 다룹니다. 한국어/영어 거울 구조:
+
+| 부 | 내용 |
+|---|---|
+| 🇰🇷 [한국어](#-한국어) | 전체 그림 → ⚠️ 약관 → ① 1회 세팅 → ② Pinterest → ③ LLM 프롬프트 → ④ 나노바나나 4창 → ⑤ Figma 업로드 → ⑥ `creative run` 한 줄 → ⑦ 트러블슈팅 |
+| 🇬🇧 [English](#-english) | Same content, mirror |
+
+> 🎯 **첫 방문 권장**: 위 5분 빠른 시작 (TL;DR) 의 3줄만 돌려보세요. 그래도 안 되면 ② → ③ → ④ → ⑤ 를 단계별로. **OpenClaw 본체는 건드리지 않고 호스트 `~/openclaw-creative/` 안에서만 동작** — isolated 정책과 무관합니다.
+
+---
+
 ## 🇰🇷 한국어
 
 ### 전체 그림

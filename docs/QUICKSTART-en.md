@@ -19,6 +19,22 @@
 
 ---
 
+## 🗺 If This Is Your First Time / Document Map
+
+This is a **linear 9-step recipe**. Just go top-to-bottom. Each step has a single command to copy-paste:
+
+| Step | What |
+|---|---|
+| 1–4 | Open Terminal · clone · `cd` · auto-create `.env` |
+| 5 | `./openclaw doctor` — see what's missing |
+| 6 | `./openclaw install` — auto-fill the missing pieces |
+| 7 | Verify everything is ✓ |
+| 8–9 | Daily auto-update + safe backup |
+
+> 🎯 **Recommended**: read top-to-bottom in one sitting (~10 minutes). If anything breaks, jump to [When something goes wrong](#when-something-goes-wrong) at the bottom or [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+---
+
 ## Prerequisites
 
 - A **MacBook** (Apple Silicon M1 or later — reference: MacBook Pro 16" M5 Pro / 24GB RAM)

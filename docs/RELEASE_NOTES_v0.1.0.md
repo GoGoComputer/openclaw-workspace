@@ -10,6 +10,20 @@
 
 ---
 
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+**v0.1.0 — OpenClaw 셀프호스트 자동화 도구의 첫 공개 릴리스 노트**입니다. 한국어/영어 거울 구조:
+
+| 부 | 내용 |
+|---|---|
+| 🇰🇷 [한국어](#-한국어) | ✨ 새 기능 · 🛡 보안 · 📦 패키지·설치 · 📚 문서 |
+| 🇺🇸 [English](#-english) | Same content, mirror |
+| 🙏 [License](#-license) | MIT |
+
+> 🎯 **빠르게 핵심만**: 위 두 'Highlights' 첫 단락만 보면 됩니다. 전체 변경 이력은 [CHANGELOG.md](../CHANGELOG.md).
+
+---
+
 ## 🇰🇷 한국어
 
 OpenClaw 셀프호스트 자동화 도구의 첫 공개 릴리스입니다.

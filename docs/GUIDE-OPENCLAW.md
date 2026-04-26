@@ -5,8 +5,27 @@
 
 ## 📖 목차 / Contents
 
-- [🇰🇷 한국어](#-한국어)
-- [🇬🇧 English](#-english)
+- 🇰🇷 [한국어](#-한국어)
+  - [OpenClaw 가 뭐예요?](#openclaw-가-뭐예요)
+  - ["OpenClaw" vs "openclaw-workspace" — 뭐가 달라요?](#openclaw-vs-openclaw-workspace--뭐가-달라요)
+  - [처음 5분 동안 할 일](#처음-5분-동안-할-일)
+  - [OpenClaw 는 내 컴퓨터에 뭐를 남기나요?](#openclaw-는-내-컴퓨터에-뭐를-남기나요)
+  - [모드 정리 — "내가 어떤 모드에서 쓰고 있지?"](#모드-정리--내가-어떤-모드에서-쓰고-있지)
+  - ["OpenClaw 가 내 파일을 망가뜨리지 않나요?"](#openclaw-가-내-파일을-망가뜨리지-않나요)
+  - [일상 사용 명령 5개](#일상-사용-명령-5개)
+  - [설치 끝났습니다 — 이제 어떻게 대화하죠?](#설치-끝났습니다--이제-어떻게-대화하죠)
+  - [🌐 웹에서 뉴스·코스피 정보 가져오기 — 가능한가요?](#-웹에서-뉴스코스피-정보-가져오기--가능한가요)
+  - [다음에 읽을 것](#다음에-읽을-것)
+- 🇬🇧 [English](#-english)
+  - [What is OpenClaw?](#what-is-openclaw) · [vs openclaw-workspace](#openclaw-vs-openclaw-workspace--whats-the-difference) · [Your first 5 minutes](#your-first-5-minutes) · [What does OpenClaw leave on my computer?](#what-does-openclaw-leave-on-my-computer) · [Which mode am I in?](#which-mode-am-i-in) · [Will OpenClaw mess up my files?](#will-openclaw-mess-up-my-files) · [Five everyday commands](#five-everyday-commands) · [🌐 Browsing the web](#-browsing-the-web-for-news--stock-prices--does-it-work) · [What to read next](#what-to-read-next)
+
+---
+
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **OpenClaw 입문** 가이드입니다 (3분 내 이해). "본체(OpenClaw) vs 워크스페이스(이 레포)" 구분을 먼저 잡고, 설치 후 "이제 뭐를 치면 되죠?" 까지 안내합니다.
+
+> 🎯 **권장 흐름**: 위 TOC 의 처음 3개 항목 (정체 → 구분 → 첫 5분) 만 읽으면 개념 파악 완료. 설치는 [QUICKSTART-ko.md](QUICKSTART-ko.md) / 수동 설치는 [GUIDE-MANUAL-INSTALL.md](GUIDE-MANUAL-INSTALL.md) / 웹에서 데이터 가져오기는 [GUIDE-WEB-FETCH.md](GUIDE-WEB-FETCH.md) 클릭.
 
 ---
 

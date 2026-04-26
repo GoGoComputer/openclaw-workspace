@@ -16,6 +16,21 @@
 
 ---
 
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **터미널을 한 번도 써본 적 없는** 분을 가정합니다. 한국어/영어 거울 구조:
+
+| 부 | 내용 |
+|---|---|
+| 🇰🇷 [한국어 — 0단계부터](#-한국어--0단계부터) | −1단계 (클릭/더블클릭/우클릭) → 0단계 (터미널 열기) → 1~5단계 (필수 명령 5개) → git clone 설치 |
+| ❓ [한국어 FAQ](#-자주-막히는-부분-faq) | "엔터를 쳤는데 아무 반응이 없어요" 등 자주 막히는 곳 |
+| 🇬🇧 [English — From Step Zero](#-english--from-step-zero) | 같은 내용의 영문 거울 |
+| ❓ [English FAQ](#-where-people-commonly-get-stuck) | English version of common pitfalls |
+
+> 🎯 **첫 방문 권장**: 한국어 또는 영어 중 한 쪽만 끝까지 → 다음으로 [QUICKSTART-ko.md](QUICKSTART-ko.md) / [QUICKSTART-en.md](QUICKSTART-en.md).
+
+---
+
 ## 🇰🇷 한국어 — 0단계부터
 
 ### −1단계: 컬퓨터·GUI·CLI 기초 용어 (클릭이 뭐예요?)

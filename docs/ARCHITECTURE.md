@@ -14,6 +14,22 @@
 
 ---
 
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **OpenClaw 의 내부 구조**를 다룹니다. 사용자가 아닌 **기여자·운영자·보안 검토자**용:
+
+| 부 | 내용 | 누구에게 |
+|---|---|---|
+| [모듈 구조](#모듈-구조--module-structure) | `openclaw` CLI → `lib/` · `cmd/` · compose overlay 의존 관계 (mermaid) | 코드 기여자 |
+| [install 상태 머신](#install-상태-머신) | `~/.openclaw-mgr/state` 마커 · 단계별 idempotency | install 디버깅 |
+| [백업 포맷](#백업-포맷) | `./openclaw backup` 의 tarball 구조 | 운영 / 복원 |
+| [보안 컨테이너 옵션](#보안-컨테이너-옵션-composesecurityyml) | cap_drop · no-new-privileges · 127.0.0.1 바인딩 | 보안 검토자 |
+| [데이터 흐름](#데이터-흐름) | 호스트↔컨테이너 마운트 / 네트워크 경계 | 보안·아키텍처 검토 |
+
+> 🎯 **읽는 순서**: 모듈 구조 → 데이터 흐름 → 나머지는 필요할 때 점프. 일반 사용 가이드는 [GUIDE-OPENCLAW.md](GUIDE-OPENCLAW.md) / [GUIDE-MANUAL-INSTALL.md](GUIDE-MANUAL-INSTALL.md).
+
+---
+
 ## 모듈 구조 / Module structure
 
 ```mermaid

@@ -7,8 +7,18 @@
 
 ## 📖 목차 / Contents
 
-- [🇰🇷 한국어](#-한국어)
-- [🇬🇧 English](#-english)
+- 🇰🇷 [한국어](#-한국어)
+  - [어떤 일이 "기여" 인가요?](#어떤-일이-기여-인가요) · [1️⃣ 버그 신고](#1️⃣-가장-쉬운-시작--버그-신고) · [2️⃣ 오타·문서 수정](#2️⃣-두-번째로-쉬운-시작--오타문서-수정) · [3️⃣ 번역](#3️⃣-번역-기여) · [4️⃣ 다른 사람 도와주기](#4️⃣-다른-사람-도와주기) · [5️⃣ 베타 테스트](#5️⃣-새-버전-테스트-베타-테스터) · [🚨 절대 하지 말아야 할 것](#-절대-하지-말아야-할-것) · [행동 강령](#행동-강령) · [더 깊이](#더-깊이)
+- 🇬🇧 [English](#-english)
+  - [What counts as a "contribution"?](#what-counts-as-a-contribution) · [1️⃣ File a bug](#1️⃣-easiest-start--file-a-bug) · [2️⃣ Fix a typo](#2️⃣-second-easiest--fix-a-typo-or-doc) · [3️⃣ Translation](#3️⃣-translation-contributions) · [4️⃣ Help others](#4️⃣-help-others) · [5️⃣ Beta-test](#5️⃣-beta-test-new-releases) · [🚨 Things to never do](#-things-to-never-do) · [Code of conduct](#code-of-conduct) · [Going deeper](#going-deeper)
+
+---
+
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **코드 한 줄 못 짜도 기여할 수 있는 5가지 방법**을 다룹니다 (버그·오타·번역·도움·베타테스트). 개발자용 자세한 기여 절차는 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+> 🎯 **권장**: 5가지 중 하나 골라서 그 절만 읽으세요. 다 독립적이라 순서 상관 없습니다.
 
 ---
 

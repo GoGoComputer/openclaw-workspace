@@ -5,8 +5,18 @@
 
 ## 📖 목차 / Contents
 
-- [🇰🇷 한국어](#-한국어)
-- [🇬🇧 English](#-english)
+- 🇰🇷 [한국어](#-한국어)
+  - [Docker 가 뭐예요?](#docker-가-뭐예요) · [왜 OpenClaw 를 컨테이너에 넣나요?](#왜-openclaw-를-컨테이너에-넣나요) · [Docker Desktop 이란?](#docker-desktop-이란) · [핵심 용어 4개만](#핵심-용어-4개만) · [자주 쓰는 명령](#자주-쓰는-명령) · ["포트(Port)" 는 뭐예요?](#포트-port-는-뭐예요) · [보안 하드닝](#보안-하드닝-이-프로젝트가-추가로-하는-것) · [디스크가 부족할 때](#디스크가-부족할-때) · [더 알아보기](#더-알아보기)
+- 🇬🇧 [English](#-english)
+  - [What is Docker?](#what-is-docker) · [Why run OpenClaw in a container?](#why-run-openclaw-in-a-container) · [What is Docker Desktop?](#what-is-docker-desktop) · [Four terms to know](#four-terms-to-know) · [Common commands](#common-commands) · [What is a "port"?](#what-is-a-port) · [Security hardening](#security-hardening-this-project-adds) · [When disk gets full](#when-disk-gets-full) · [Learn more](#learn-more)
+
+---
+
+## 🗺 이 문서를 처음 보신다면 / Document Map
+
+이 문서는 **Docker 입문** 가이드입니다 (3분 내). "컨테이너가 뭐고 왜 OpenClaw 를 이 안에 넣는지, 무엇까지 호스트 파일에 접근할 수 있는지".
+
+> 🎯 **권장 흐름**: 위 TOC 의 처음 4항목 (Docker 란 → 왜 쓰나 → Desktop 이란 → 용어 4개) 만 읽으면 개념 완료. 실제 데몬 켬고 끄고 하는 자세한 방법은 [GUIDE-MANUAL-INSTALL.md §2.5단계](GUIDE-MANUAL-INSTALL.md#25단계--docker-사용법-기초-데몬--서버-켜고-끌기) 에 더 깊이 있습니다.
 
 ---
 
