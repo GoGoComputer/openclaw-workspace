@@ -718,6 +718,60 @@ docker compose up -d --force-recreate <서비스명>
 
 ---
 
+### Gateway 가 `starting...` 에서 멈춰 18789 가 응답 없음 (2026-04 회귀)
+
+**증상**
+- `docker ps` 에 gateway 가 `Restarting (78)` 로 1분마다 재시작
+- `docker logs openclaw-openclaw-gateway-1` 에 다음 중 하나가 반복:
+  ```
+  Missing config. Run `openclaw setup` ... (or pass --allow-unconfigured).
+  Gateway start blocked: existing config is missing gateway.mode.
+  ```
+- 브라우저에서 `http://127.0.0.1:18789` → "Safari can't connect" 또는 `Empty reply from server`
+- `lsof -nP -iTCP:18789 -sTCP:LISTEN` → 아무것도 안 보임
+
+**원인** — 2026-04 무렵의 OpenClaw 본체(`openclaw/openclaw` main) 는 첫 부팅 시 토큰만 쓰고 `gateway.mode` 를 안 채워서, 두 번째 부팅부터 자기 자신의 컨피그를 "변조됐을 수도" 로 의심해 거부합니다.
+
+**자동 복구 (v0.2.5+)** — `./openclaw start` 가 끝나면 컨피그를 검사해서 `gateway.mode` 가 비어 있으면 자동으로 `local` 을 채워줍니다. 워크스페이스를 최신으로 끌어오면 다음 `start` 부터 자동 적용됩니다:
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace
+./openclaw self-update
+./openclaw stop && ./openclaw start
+```
+
+**수동 복구 (위 자동 복구가 안 닿는 옛 버전)**
+```bash
+# 컨피그에 한 줄 추가
+python3 - <<'PY'
+import json, pathlib
+p = pathlib.Path.home() / ".openclaw" / "openclaw.json"
+cfg = json.loads(p.read_text())
+cfg.setdefault("gateway", {})["mode"] = "local"
+p.write_text(json.dumps(cfg, indent=2))
+print("✓ gateway.mode=local 추가")
+PY
+docker restart openclaw-openclaw-gateway-1
+sleep 30
+curl -sS -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:18789/healthz
+```
+
+**그래도 `starting...` 에서 멈추면** — 본체 자체의 회귀입니다. 임시 회피:
+```bash
+# (a) 본체 다운그레이드 — 며칠 전 커밋으로 되돌리기
+cd ~/DEV/openclaw
+git log --oneline -10                # 적당한 커밋 골라 SHA 복사
+git checkout <SHA>
+docker build -t openclaw:local .     # 이미지 재빌드 (5~10분)
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+
+# (b) 또는 .env 의 OPENCLAW_PIN_COMMIT 에 그 SHA 를 적어 두면 다음 install/update 도 그 커밋에 고정됩니다
+```
+
+**근본 해결** — 업스트림 이슈로 보고: `https://github.com/openclaw/openclaw/issues` (재현 메시지: "Gateway start blocked: existing config is missing gateway.mode" + "starting..." hang)
+
+---
+
 ### lockdown 실패 — `mutually exclusive network_mode and networks`
 
 ```

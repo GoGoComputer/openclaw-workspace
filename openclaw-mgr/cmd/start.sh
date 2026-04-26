@@ -52,3 +52,30 @@ args=(-f docker-compose.yml)
 [ -f "$net" ] && args+=(-f "$net")
 docker compose "${args[@]}" up -d
 ok "컨테이너 시작 완료"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 게이트웨이 자동 복구 (회귀 방어)
+# 2026-04 무렵의 OpenClaw 본체는 첫 부팅에서 토큰만 쓰고 `gateway.mode` 를
+# 안 채워, 두 번째 부팅부터 "Gateway start blocked: existing config is
+# missing gateway.mode" 로 무한 재시작 루프에 빠진다. 사용자 입장에선
+# `open http://127.0.0.1:18789` 가 항상 "can't connect" 가 된다.
+# 우리가 할 수 있는 가장 안전한 회복은: 컨피그가 있는데 `gateway.mode` 만
+# 비어 있을 때 `local` 로 채워주는 것 (= 메시지가 권하는 수동 조치와 동일).
+# ─────────────────────────────────────────────────────────────────────────────
+cfg_dir="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
+cfg_file="$cfg_dir/openclaw.json"
+if [ -f "$cfg_file" ] && command -v python3 >/dev/null 2>&1; then
+  python3 - "$cfg_file" <<'PY' || true
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+try:
+    cfg = json.loads(p.read_text())
+except Exception:
+    sys.exit(0)
+gw = cfg.setdefault("gateway", {})
+if "mode" not in gw:
+    gw["mode"] = "local"
+    p.write_text(json.dumps(cfg, indent=2))
+    print("✓ gateway.mode 자동 설정 (local) — 회귀 회복")
+PY
+fi
