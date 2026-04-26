@@ -139,7 +139,21 @@ openclaw doctor                 # cd 없이 바로 실행
 | openclaw-workspace | `git clone …` 또는 GitHub Releases tarball |
 | OpenClaw 본체 | `git clone https://github.com/openclaw/openclaw.git` |
 
-전체 단계·명령·예시 출력은 → **[docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md)**
+**가이드가 다루는 8단계** (각 단계마다 명령 + 예상 출력 + 실패 시 복구):
+
+| 단계 | 내용 |
+|---|---|
+| 0 | 준비물 진단 (이미 깔린 것 확인 — 중복 설치 방지) |
+| 0.5 | 기존 Docker/Ollama 가 있을 때의 재사용·정리 판단 |
+| 1 | Xcode Command Line Tools |
+| 2 | Docker Desktop 직접 다운로드 |
+| 3 | Ollama 설치 + 모델 (선택) |
+| 4 | `openclaw-workspace` + OpenClaw 본체 git clone |
+| 5 | `./openclaw install` (`5b` 완전 수작업, `5c` 샌드박스) |
+| 6 | PATH 등록 / 6.5 start·stop·port 충돌 치트시트 |
+| 7 | 업데이트 — `git pull` 후 무엇을 다시 돌릴지 (변경 종류별 표) |
+
+전체 가이드 → **[docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md)** (한국어 + English mirror)
 
 수동 설치 후에도 마지막에는 동일한 명령으로 검증·운영합니다:
 
