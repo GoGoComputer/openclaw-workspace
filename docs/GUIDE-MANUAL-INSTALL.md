@@ -15,11 +15,54 @@
 
 - [⚡ 명령어만 (빠른 복사용) / Commands Only (quick copy)](#-명령어만-빠른-복사용--commands-only-quick-copy)
 - [🔐 이 가이드의 보안 원칙 (읽고 시작하세요)](#-이-가이드의-보안-원칙-읽고-시작하세요)
-- [🇬🇧 English](#-english)
-- [🧰 부록 A: 전문가용 운영 체크리스트 / Production-grade Checklist](#-부록-a-전문가용-운영-체크리스트--production-grade-checklist)
-- [🧰 Appendix A: Production-grade Checklist (English mirror)](#-appendix-a-production-grade-checklist-english-mirror)
+  - [❌ 이 가이드에서 절대 하지 않는 것](#-이-가이드에서-절대-하지-않는-것)
+  - [✅ 이 레포의 역할 (연결·설정·자동화 전담)](#-이-레포의-역할-연결설정자동화-전담)
+  - [🗂 설치 후 폴더 구조](#-설치-후-폴더-구조)
+  - [🛡 M5 Pro 24GB 권장 보안 설정](#-m5-pro-24gb-권장-보안-설정)
 
-> 단계 표제(0단계, 1단계, 2단계 …)는 H3 입니다. 위 H2 섹션 내부에 순서대로 들어 있습니다.
+**🇰🇷 한국어 — 단계별**
+
+| 단계 | 내용 |
+|---|---|
+| [0단계](#0단계--준비물-확인) | 준비물 확인 (이미 깔린 것 진단) |
+| [0.5단계](#05단계--기존-환경-진단-이미-쓰던-mac-이라면-먼저) | 기존 Docker/Ollama 가 있을 때 재사용·정리 판단 |
+| [1단계](#1단계--xcode-command-line-tools-git-등-기본-도구) | Xcode Command Line Tools (Git 등 기본 도구) |
+| [2단계](#2단계--docker-desktop-직접-다운로드) | Docker Desktop 직접 다운로드 |
+| [2.5단계](#25단계--docker-사용법-기초-데몬--서버-켜고-끄기) | Docker 사용법 기초 (데몬 = 서버 켜고 끄기) |
+| [3단계](#3단계--ollama-설치-로컬-llm--m5-pro-gpu-가속-활용) | Ollama 설치 (로컬 LLM, M5 Pro GPU 가속) |
+| [4단계](#4단계--openclaw-workspace-소스-직접-받기) | `openclaw-workspace` 소스 직접 받기 |
+| [5단계](#5단계--openclaw-첫-실행) | `openclaw` 첫 실행 |
+| [5b단계](#5b단계--openclaw-install-없이-모든-것을-수동으로-각-단계-이해) | `openclaw install` 없이 모든 것을 수동으로 |
+| [5c단계](#5c단계--샌드박스-sandbox--보안-강화-설치) | 샌드박스 (Sandbox) + 보안 강화 설치 |
+| [6단계](#6단계--path-등록-선택-어디서나-openclaw-한-단어로-실행) | PATH 등록 (어디서나 `openclaw` 한 단어로) |
+| [6.5단계](#65단계--일반-실행--종료--데몬-자동시작--포트-충돌-자유롭게-다루기) | 실행 / 종료 / 데몬 자동시작 / 포트 충돌 |
+| [7단계](#7단계--업데이트는-어떻게) | 업데이트 — `git pull` 후 무엇을 다시 돌릴지 |
+| [❓ FAQ](#-자주-막히는-부분) | 자주 막히는 부분 |
+| [🗑 완전 제거](#-완전-제거-수동-설치한-경우) | 수동 설치한 경우의 클린 언인스톨 |
+
+**🇬🇧 [English — step by step](#-english)**
+
+| Step | What |
+|---|---|
+| [Step 0](#step-0--prerequisites) | Prerequisites |
+| [Step 1](#step-1--xcode-command-line-tools-git-etc) | Xcode Command Line Tools |
+| [Step 2](#step-2--download-docker-desktop-directly) | Download Docker Desktop directly |
+| [Step 2.5](#step-25--docker-basics-turning-the-daemon--server-onoff) | Docker basics (daemon on/off) |
+| [Step 3](#step-3--download-ollama-directly-optional--for-local-llms) | Download Ollama directly (optional) |
+| [Step 4](#step-4--get-openclaw-workspace-source) | Get `openclaw-workspace` source |
+| [Step 5](#step-5--first-run-of-openclaw) | First run of `openclaw` |
+| [Step 5b](#step-5b--skip-openclaw-install-and-do-everything-manually-understand-each-step) | Skip `openclaw install`, do every step by hand |
+| [Step 5c](#step-5c--sandbox--security-hardening) | Sandbox + Security Hardening |
+| [Step 6](#step-6--add-to-path-optional) | Add to PATH (optional) |
+| [Step 7](#step-7--updating) | Updating |
+| [Common pitfalls](#-common-pitfalls) | Where people get stuck |
+| [Full uninstall](#-full-uninstall-manual-mode) | Clean uninstall |
+
+**🧰 부록 / Appendix — Production-grade Checklist**
+
+- 한국어: [부록 A](#-부록-a-전문가용-운영-체크리스트--production-grade-checklist) — [A1 보안](#a1-보안-하드닝--security-hardening) · [A2 성능](#a2-성능-튜닝--performance-tuning-apple-silicon) · [A3 가시성](#a3-가시성--observability) · [A4 재현가능 배포](#a4-재현-가능한-배포--reproducible-deploy) · [A5 CI](#a5-ci--사전-커밋-검사--ci--pre-commit) · [A6 사내·소버린](#a6-회사소버린-환경-체크--enterprise--sovereign-checklist)
+- English mirror: [Appendix A](#-appendix-a-production-grade-checklist-english-mirror)
+
 
 ---
 
