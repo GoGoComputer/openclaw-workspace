@@ -66,20 +66,35 @@ sec_validate_workdir() {
 
 # ── compose 파일에서 위험 마운트 검출 ────────────────────────────────────────
 # /var/run/docker.sock 마운트는 컨테이너 탈출의 지름길.
-# 단, 샌드박스 overlay (docker-compose.sandbox.yml) 는 의도적 마운트이므로 제외.
+# 단, 다음은 의도적으로 제외:
+#   - docker-compose.sandbox.yml (샌드박스 overlay)
+#   - 주석 처리된 라인 (#, ##, 들여쓰기된 주석 포함)
+#   - 문서 설명·예시 안내 라인
+# 즉, "실제로 활성화된 volumes 마운트 항목"만 위험으로 간주한다.
 # 발견 시 비-0 반환, 파일명 출력.
 sec_scan_compose() {
   local dir="${1:-.}"
-  local files
+  local files file
   files="$(find "$dir" -maxdepth 3 -type f \
     \( -name 'docker-compose*.y*ml' -o -name 'compose*.y*ml' \) \
     ! -name 'docker-compose.sandbox.yml' \
     2>/dev/null)"
   [ -z "$files" ] && return 0
-  if printf '%s\n' "$files" | xargs grep -l -E '/var/run/docker\.sock|docker\.sock:/var/run/docker\.sock' 2>/dev/null; then
-    return 1
-  fi
-  return 0
+  local found=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    # 주석(#, ##, 앞공백+#) 라인을 제거한 뒤에 docker.sock 마운트 패턴을 검사한다.
+    # YAML 의 활성 volumes 항목은 보통 "- /var/run/docker.sock:/var/run/docker.sock"
+    # 형태로 적힌다. 따옴표를 두른 변형도 같이 잡는다.
+    if sed -E 's/[[:space:]]*#.*$//' "$file" \
+        | grep -Eq '(^|[[:space:]])-[[:space:]]+["'"'"']?/var/run/docker\.sock'; then
+      printf '%s\n' "$file"
+      found=1
+    fi
+  done <<EOF
+$files
+EOF
+  [ "$found" -eq 0 ]
 }
 
 # ── 시크릿 마스킹 ─────────────────────────────────────────────────────────────
