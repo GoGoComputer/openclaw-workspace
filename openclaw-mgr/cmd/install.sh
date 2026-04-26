@@ -347,13 +347,28 @@ run_step compose_up "OpenClaw 컨테이너 시작" -- step_compose_up
 # ── 8. 헬스체크 ──────────────────────────────────────────────────────────────
 step_health() {
   cd "$OPENCLAW_DIR"
-  local i
+  info "컨테이너 기동 대기 (최대 120초) — 처음 실행은 의존성 초기화로 1~2분 걸립니다"
+  local i n_total n_running prev_running=-1
   for i in $(seq 1 60); do
-    local n_total n_running
-    n_total="$(docker compose ps -q | wc -l | tr -d ' ')"
-    n_running="$(docker compose ps --status running -q | wc -l | tr -d ' ')"
+    n_total="$(docker compose ps -q 2>/dev/null | wc -l | tr -d ' ')"
+    n_running="$(docker compose ps --status running -q 2>/dev/null | wc -l | tr -d ' ')"
+    # 진행 변화가 있을 때마다 한 줄 출력 (멈춰 보이지 않게)
+    if [ "$n_running" != "$prev_running" ]; then
+      info "  [${i}/60]  실행 ${n_running}/${n_total}"
+      prev_running="$n_running"
+    fi
     if [ "$n_total" -gt 0 ] && [ "$n_running" -ge "$n_total" ]; then
       ok "모든 컨테이너 실행 중 ($n_running/$n_total)"
+      # gateway healthz 응답 확인 (실제 서비스 ready 신호)
+      local j
+      for j in $(seq 1 30); do
+        if curl -sS --max-time 2 http://127.0.0.1:18789/healthz >/dev/null 2>&1; then
+          ok "Gateway healthz 응답 OK (http://127.0.0.1:18789)"
+          break
+        fi
+        [ "$j" -eq 1 ] && info "  Gateway healthz 응답 대기 (최대 60초)..."
+        sleep 2
+      done
       # Ollama 연결 확인 (옵션)
       if [ "${ENABLE_OLLAMA:-1}" = "1" ]; then
         if curl -sS --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
@@ -366,7 +381,10 @@ step_health() {
     fi
     sleep 2
   done
-  warn "헬스체크 타임아웃 — './openclaw logs' 로 확인하세요"
+  warn "헬스체크 타임아웃 (120초)"
+  warn "  진단: ./openclaw logs           (실시간 로그)"
+  warn "  진단: docker compose ps         (각 컨테이너 상태)"
+  warn "  컨테이너 자체는 떠 있을 수 있습니다 — './openclaw doctor' 로 재확인"
   return 0
 }
 run_step health "헬스체크" -- step_health

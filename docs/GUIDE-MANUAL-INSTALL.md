@@ -327,6 +327,98 @@ uname -m
 # x86_64 → Intel
 ```
 
+### 0.5단계 — 기존 환경 진단 (이미 쓰던 Mac 이라면 먼저!)
+
+> 💡 **이미 Docker / Ollama / Git 등을 설치해서 쓰고 있던 컴퓨터** 라면, 새로 설치하기 전에 **이미 있는 것은 그대로 재사용** 하는 게 안전합니다 (모델 데이터·포트 점유·익숙한 버전 보존). 아래 한 번에 진단해서 **어떤 단계는 건너뛰고 어떤 단계는 다시 해야 하는지** 결정하세요.
+
+새 컴퓨터(아무것도 안 깔린 상태)라면 이 섹션은 건너뛰고 1단계부터 진행하면 됩니다.
+
+#### 0.5.1 한 번에 진단 (복붙 1회)
+
+```bash
+echo "=== 기본 ==="
+sw_vers | grep ProductVersion
+uname -m
+echo ""
+echo "=== Xcode CLT ==="
+xcode-select -p 2>/dev/null && echo "✓ 설치됨" || echo "✗ 없음 → 1단계 필요"
+echo ""
+echo "=== Homebrew ==="
+command -v brew >/dev/null && { brew --prefix; echo "✓ 설치됨"; } || echo "✗ 없음 (선택)"
+echo ""
+echo "=== Docker ==="
+command -v docker >/dev/null && docker --version && \
+  (docker info >/dev/null 2>&1 && echo "✓ 데몬 ON" || echo "⚠ 설치는 됨, 데몬 OFF — open -a Docker") \
+  || echo "✗ 없음 → 2단계 필요"
+echo ""
+echo "=== Ollama ==="
+command -v ollama >/dev/null && ollama --version 2>/dev/null && \
+  (curl -sS --max-time 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1 \
+    && echo "✓ 데몬 ON, 모델:" && ollama list 2>/dev/null | tail -n +2 | awk '{print "    "$1}' \
+    || echo "⚠ 설치는 됨, 데몬 OFF — open -a Ollama") \
+  || echo "✗ 없음 → 3단계 필요"
+echo ""
+echo "=== 포트 점유 (OpenClaw 가 쓸 포트들) ==="
+for p in 18789 18790 11434; do
+  pid="$(lsof -nP -iTCP:$p -sTCP:LISTEN -t 2>/dev/null | head -1)"
+  if [ -n "$pid" ]; then
+    proc="$(ps -p "$pid" -o comm= 2>/dev/null)"
+    echo "  포트 $p ⚠ 점유 중 (pid=$pid, $proc)"
+  else
+    echo "  포트 $p ✓ 비어 있음"
+  fi
+done
+echo ""
+echo "=== 디스크 여유 ==="
+df -h / | tail -1 | awk '{print "  " $4 " 남음 (" $5 " 사용)"}'
+```
+
+#### 0.5.2 결과 해석 — 어디로 가야 하나
+
+| 진단 결과 | 의미 | 다음 행동 |
+|---|---|---|
+| Xcode CLT ✓ | 이미 깔림 | 1단계 건너뜀 |
+| Homebrew ✓ | brew 가 있음 | 2단계에서 .dmg 대신 `brew install --cask docker` 도 가능 (선택) |
+| Docker ✓ 데몬 ON | 바로 사용 가능 | **2단계 전체 스킵** — 4단계로 직행 |
+| Docker ✓ 데몬 OFF | 설치만 됨 | `open -a Docker` 한 번 → ✓ daemon up 확인 → 4단계 |
+| Docker ✗ | 미설치 | 2단계 진행 |
+| Ollama ✓ 데몬 ON, 모델 있음 | **그대로 쓰면 됨!** | 3단계 스킵. 모델도 그대로 사용 (재다운로드 X) |
+| Ollama ✓ 데몬 OFF | 설치만 됨 | `open -a Ollama` (또는 `brew services start ollama`) 한 번 |
+| Ollama ✗ | 미설치 | 3단계 진행 (또는 `ENABLE_OLLAMA=0` 으로 외부 API 모드) |
+| 포트 18789/18790 점유 | 다른 앱이 사용 중 | (a) 그 앱 종료, 또는 (b) `.env` 의 `OPENCLAW_GATEWAY_PORT` / `OPENCLAW_BRIDGE_PORT` 변경 |
+| 포트 11434 점유 (Ollama 자기 자신) | 정상 | 그대로 OK |
+| 포트 11434 점유 (Ollama 가 아님) | LM Studio 등 다른 LLM 서버일 가능성 | 충돌 회피: 그 앱 종료 또는 `.env` 의 `OLLAMA_HOST` 변경 |
+| 디스크 여유 < 20GB | 위험 | 1단계 전에 정리 (`./openclaw clean` 도 가능) |
+
+#### 0.5.3 기존 환경을 살리면서 진행 — 권장 흐름
+
+```bash
+# 1) 위 진단 한 번 더 — 출력 보관 (필요시 첨부)
+{진단 명령 다시 실행} | tee ~/openclaw-precheck.log
+
+# 2) Docker / Ollama 가 이미 ✓ 라면 — 데몬만 켠 상태로 4단계로 점프
+open -a Docker            # 데몬 OFF 였다면
+open -a Ollama            # 데몬 OFF 였다면
+# 30~60초 대기 후 ✓ daemon up 확인
+
+# 3) 4단계 (저장소 받기) → 5단계 (실행) 순서로 진행
+#    이 단계의 ./openclaw doctor 가 같은 진단을 다시 한 번 합니다.
+```
+
+**기존에 쓰던 Ollama 모델 그대로 사용** — OpenClaw 컨테이너는 호스트 Ollama 를 `host.docker.internal:11434` 로 공유하므로, **이미 받아 둔 모델은 재다운로드 불필요**. `ollama list` 결과가 그대로 컨테이너 안에서 보입니다.
+
+> ❌ **하지 말 것**: 진단 없이 "어차피 새로 깔자" 하면서 `brew uninstall ollama && rm -rf ~/.ollama` 같은 명령으로 기존 모델을 날리는 행위. 모델 한 개당 수 GB 입니다.
+
+#### 0.5.4 스크립트 한 줄로도 가능 (자동 도구가 같은 진단)
+
+`./openclaw doctor` 가 위 진단을 자동으로 합니다 — 단, 4단계(저장소 clone)까지는 직접 해야 합니다:
+```bash
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace
+./openclaw doctor          # ← 0.5.1 의 진단을 자동 출력 + 권장 행동 표시
+```
+출력의 ✗/⚠ 항목만 수동으로 처리하고, 나머지는 그대로 두면 됩니다.
+
 ### 1단계 — Xcode Command Line Tools (Git 등 기본 도구)
 
 터미널에서:

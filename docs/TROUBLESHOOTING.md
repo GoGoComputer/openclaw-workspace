@@ -678,14 +678,16 @@ sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state
 
 ### 헬스체크 실패
 
-**무엇** — 컨테이너는 떴는데(`docker compose ps` 가 Up 표시) 헬스체크 엔드포인트(`http://127.0.0.1:8000/...`)가 응답 안 함.
+**무엇** — 컨테이너는 떴는데(`docker compose ps` 가 Up 표시) 헬스체크 엔드포인트(`http://127.0.0.1:18789/healthz`)가 응답 안 함.
+
+> 💡 **"» 헬스체크" 에서 멈춰 보인다고 실패는 아닙니다.** 첫 기동은 의존성 초기화로 1~2분 걸리는 게 정상이고, 스크립트는 최대 120초 + Gateway 응답 60초 추가 대기합니다. v0.1.11+ 는 `[i/60] 실행 N/M` 진행 표시를 출력해서 멈춘 게 아니라는 걸 보여줍니다. 멈춘 것 같으면 **다른 터미널 창에서** `./openclaw logs` 로 실제 진행을 확인하세요.
 
 **진단**
 ```bash
 docker compose ps                          # health 컬럼 확인 (starting/healthy/unhealthy)
 ./openclaw logs                            # 전체 서비스 로그
 ./openclaw logs <서비스이름> -f            # 특정 서비스 follow
-curl -fsS http://127.0.0.1:8000/healthz    # 직접 호출 (엔드포인트는 OpenClaw 버전마다 다름)
+curl -fsS http://127.0.0.1:18789/healthz   # 직접 호출 (gateway healthz)
 ```
 
 **일반적 처방**
