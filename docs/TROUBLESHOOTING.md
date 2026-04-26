@@ -474,7 +474,35 @@ cp ~/.openclaw-mgr/.env.bak.<timestamp> ~/.openclaw-mgr/.env
 
 ### compose up 실패
 
-**무엇** — `docker compose up -d` 가 0이 아닌 종료 코드로 실패. 가장 흔한 4가지 원인:
+**무엇** — `docker compose up -d` 가 0이 아닌 종료 코드로 실패. 가장 흔한 5가지 원인:
+
+**원인 0 — `services.openclaw-cli.security_opt items at 0 and 1 are equal`**
+
+```
+validating .../compose.security.yml: services.openclaw-cli.security_opt items at 0 and 1 are equal
+✗ 단계 실패: compose_up (rc=1)
+```
+
+`compose.security.yml` 이 베이스 `docker-compose.yml` 과 머지될 때, Compose v2 는 시퀀스(예: `security_opt`, `cap_drop`, `ports`)를 **concat** 합니다. 양쪽이 같은 항목 (`no-new-privileges:true`) 을 갖고 있으면 머지 결과에 같은 값이 두 번 들어가고 최신 Compose 가 이를 거부합니다.
+
+해결 — `openclaw-mgr/compose.security.yml` 의 `openclaw-cli` 블록에서 `security_opt` 를 **삭제** 합니다 (베이스가 이미 갖고 있으므로 중복 선언만 제거하면 됨):
+
+```yaml
+  openclaw-cli:
+    cap_drop: [ALL]
+    # security_opt 는 베이스가 이미 가짐 — 중복 선언 금지
+    pids_limit: 256
+```
+
+본 레포의 v0.1.7 이상은 이 수정이 반영되어 있습니다. 이전 버전을 쓰고 있다면 `./openclaw self-update` 후 재시도하세요.
+
+검증:
+```bash
+docker compose -f "$OPENCLAW_DIR"/docker-compose.yml -f openclaw-mgr/compose.security.yml config | grep -A2 security_opt
+# 각 서비스마다 - no-new-privileges:true 가 1개씩만 나와야 함
+```
+
+---
 
 **원인 A — 호스트 포트 점유**
 ```

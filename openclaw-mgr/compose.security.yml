@@ -23,8 +23,11 @@ services:
 
   openclaw-cli:
     cap_drop: [ALL]
-    security_opt:
-      - no-new-privileges:true
+    # 주의: 베이스 docker-compose.yml 의 openclaw-cli 가 이미
+    #   security_opt: [no-new-privileges:true]
+    # 를 갖고 있다. compose v2 는 시퀀스를 concat 하므로 여기서 같은 항목을
+    # 다시 적으면 "items at 0 and 1 are equal" 검증 오류가 난다. 이미
+    # no-new-privileges 가 적용되므로 override 에서는 다시 선언하지 않는다.
     pids_limit: 256
     mem_limit: ${OPENCLAW_MEM_LIMIT:-8g}
     memswap_limit: ${OPENCLAW_MEM_LIMIT:-8g}
