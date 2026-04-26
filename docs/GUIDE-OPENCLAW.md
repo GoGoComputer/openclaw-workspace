@@ -104,6 +104,43 @@ Docker Volumes               # OpenClaw 의 세션·DB (영구 데이터)
 | 컨테이너 정지 | `openclaw stop` |
 | 다시 켜기 | `openclaw start` |
 | 디스크가 꽉 참 | `openclaw clean` |
+
+### 설치 끝났습니다 — 이제 어떻게 대화하죠?
+
+`./openclaw install` 이 끝나면 두 컨테이너가 떠 있습니다:
+
+| 컨테이너 | 역할 | 접속 |
+|---|---|---|
+| `openclaw-gateway` | HTTP API · 웹소켓 · 헬스 | `http://127.0.0.1:18789` (UI 가 있으면 여기) / `http://127.0.0.1:18790` (브리지) |
+| `openclaw-cli` | 대화형 에이전트 (TTY) | `docker exec -it openclaw-openclaw-cli-1 bash` 또는 `claude` |
+
+**3가지 사용 방식**
+
+```bash
+# 1) 헬스 체크 (가장 먼저)
+curl -s http://127.0.0.1:18789/healthz   # OK 나오면 살아 있음
+
+# 2) 컨테이너에 들어가서 CLI 로 대화 (가장 흔한 사용)
+cd ~/DEV/openclaw
+docker compose exec openclaw-cli bash
+# 컨테이너 안에서:
+#   claude                          # OpenClaw/Claude CLI
+#   exit                            # 빠져나옴 (컨테이너는 계속 실행)
+
+# 3) 로그 보기 (디버그·요청 추적)
+cd ~/DEV/openclawAgent/openclaw-workspace
+./openclaw logs                     # Ctrl+C 로 종료
+```
+
+> 컨테이너 이름은 `docker compose ps` 로 확인하세요. 보통 `openclaw-openclaw-cli-1` / `openclaw-openclaw-gateway-1` 입니다.
+
+**작업 파일은 어디?**
+- 컨테이너 안 `/home/node/.openclaw/workspace` ↔ 호스트 `~/DEV/openclawAgent` 가 양방향 마운트.
+- 에이전트가 만든 파일은 Finder 에서 `~/DEV/openclawAgent` 로 바로 열림.
+- 토큰·세션은 `~/.openclaw` (숨김) 에 저장.
+
+**OpenClaw UI/API 자세한 사용법**은 본체 저장소 [github.com/openclaw/openclaw](https://github.com/openclaw/openclaw) 의 README 를 참조하세요. 본 워크스페이스는 *컨테이너 기동·격리·백업·업데이트* 만 책임집니다.
+
 ### 🌐 웹에서 뉴스·코스피 정보 가져오기 — 가능한가요?
 
 **네, 됩니다. 단 기본 `isolated` 모드에서는 차단되므로 잠깐 열어야 합니다.**

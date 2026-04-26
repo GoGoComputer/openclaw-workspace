@@ -55,7 +55,7 @@
 |---|---|---|---|
 | 1 | **설치** (Install) | `git clone … && ./openclaw install` | [표준 설치](#표준--스크립트-설치-권장) · [완전 수동](docs/GUIDE-MANUAL-INSTALL.md) · [처음부터](docs/GUIDE-FROM-ZERO.md) |
 | 2 | **진단** (Doctor) | `./openclaw doctor` | [진단 항목별 가이드](#-진단--doctor-항목별-가이드) · [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) |
-| 3 | **사용** (Use) | `./openclaw start` · `surf "…"` · `creative run "…"` · `shorts run "…"` | [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 3 | **사용** (Use) | `./openclaw start` · `docker compose exec openclaw-cli bash` · `surf "…"` · `creative run "…"` · `shorts run "…"` | [설치 끝났습니다 — 어떻게 대화하죠?](docs/GUIDE-OPENCLAW.md#설치-끝났습니다--이제-어떻게-대화하죠) · [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
 | 4 | **유지보수** (Maintain) | `./openclaw logs` · `./openclaw clean` · `./openclaw backup` · `./openclaw restore` | [명령 카탈로그](#-명령-카탈로그) · [정리](#-메모리디스크-정리-비개발자용) |
 | 5 | **설정 변경** (Configure) | `.env` 편집 · `./openclaw models …` · `./openclaw network …` | [.env 설정](#️-설정-env) · [모델 관리](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기) · [네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) |
 | 6 | **업데이트** (Update) | `./openclaw update` · `./openclaw self-update` · `./openclaw schedule enable` | [업데이트 흐름](#-업데이트-흐름) |
