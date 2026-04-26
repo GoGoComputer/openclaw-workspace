@@ -405,10 +405,11 @@ step_lockdown() {
 }
 run_step lockdown "네트워크 격리(isolated) 적용" -- step_lockdown
 
-# ── 10. 샌드박스 설정 (OPENCLAW_SANDBOX=1 일 때만) ───────────────────────────
+# ── 10. 샌드박스 설정 (기본 ON, OPENCLAW_SANDBOX=0 으로만 끌 수 있음) ────────────────────────
 step_sandbox() {
-  if [ "${OPENCLAW_SANDBOX:-0}" != "1" ]; then
-    info "샌드박스 비활성 (OPENCLAW_SANDBOX=1 로 활성화)"
+  if [ "${OPENCLAW_SANDBOX:-1}" != "1" ]; then
+    info "샌드박스 명시적 비활성 (.env 의 OPENCLAW_SANDBOX=0)"
+    info "  ⚠ 보안 하락 — 개인 일상용이 아닌 경우 1 로 되돌리고 './openclaw install' 재실행 권장"
     return 0
   fi
 
@@ -433,8 +434,9 @@ step_sandbox() {
   # 10-C. docker.sock GID 감지 + compose overlay 생성
   local sock="/var/run/docker.sock"
   if [ ! -S "$sock" ]; then
-    err "docker.sock 이 없습니다 ($sock). Docker Desktop 이 실행 중인지 확인하세요."
-    return 1
+    warn "docker.sock 이 없습니다 ($sock) — 샌드박스 건너뛰기."
+    warn "  Docker Desktop 이 켜진 뒤 './openclaw install' 재실행하면 샌드박스가 설정됩니다."
+    return 0
   fi
   local gid
   gid=$(stat -f '%g' "$sock" 2>/dev/null || stat -c '%g' "$sock" 2>/dev/null || echo "")
@@ -468,10 +470,10 @@ step_sandbox() {
     info "자세한 내용: https://docs.openclaw.ai/gateway/sandboxing"
   else
     warn "샌드박스 설정 일부 실패 — 'openclaw doctor' 로 상태 확인 후 수동으로 재설정하세요."
-    warn "수동 명령: OPENCLAW_SANDBOX=1 ./docker-setup.sh  (~/DEV/openclaw 에서)"
+    warn "수동 명령:  cd ~/DEV/openclaw && OPENCLAW_SANDBOX=1 ./docker-setup.sh"
   fi
 }
-run_step sandbox "샌드박스 설정 (선택)" -- step_sandbox
+run_step sandbox "샌드박스 설정 (기본 ON)" -- step_sandbox
 
 
 ok "설치 완료! 다음 단계:"
@@ -488,7 +490,14 @@ printf '  업데이트가 필요할 때만 잠깐 켜세요:\n'
 printf '    %s./openclaw network online --restart%s\n' "$C_BOLD" "$C_RESET"
 printf '    %s./openclaw update%s\n' "$C_BOLD" "$C_RESET"
 printf '    %s./openclaw network isolated --restart%s\n' "$C_BOLD" "$C_RESET"
-printf '\n%s🛡 샌드박스 (보안 강화) 를 활성화하려면:%s\n' "$C_BOLD" "$C_RESET"
-printf '    %sOPENCLAW_SANDBOX=1 ./openclaw install%s\n' "$C_BOLD" "$C_RESET"
-printf '  또는 ~/DEV/openclaw 에서:\n'
-printf '    %sOPENCLAW_SANDBOX=1 ./docker-setup.sh%s\n' "$C_BOLD" "$C_RESET"
+
+# 샌드박스 상태에 따른 안내 — 기본 ON, 명시 또는 docker.sock 부재 시만 OFF
+if [ "${OPENCLAW_SANDBOX:-1}" = "1" ] && [ -f "$OPENCLAW_DIR/docker-compose.sandbox.yml" ]; then
+  printf '\n%s🛡 샌드박스 활성 (기본) — 에이전트 코드 실행이 별도 격리 컨테이너에서 돌아갑니다.%s\n' "$C_BOLD" "$C_RESET"
+elif [ "${OPENCLAW_SANDBOX:-1}" != "1" ]; then
+  printf '\n%s⚠ 샌드박스 OFF (.env 에서 OPENCLAW_SANDBOX=0 으로 명시적 비활성화)%s\n' "$C_BOLD" "$C_RESET"
+  printf '  켜려면:  %sOPENCLAW_SANDBOX=1 ./openclaw install%s  (또는 사용자 .env 에서 1 로 수정)\n' "$C_BOLD" "$C_RESET"
+else
+  printf '\n%s⚠ 샌드박스 미설정 — docker.sock 부재로 건너뜀. Docker Desktop 실행 후 재실행하면 자동 설정.%s\n' "$C_BOLD" "$C_RESET"
+  printf '    %s./openclaw install%s   ← 다시 실행\n' "$C_BOLD" "$C_RESET"
+fi

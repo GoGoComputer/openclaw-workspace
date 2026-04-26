@@ -1510,11 +1510,11 @@ Disk free             ✓ 60GB
 `✗` 가 있으면 어느 단계가 실패했는지 다시 점검. 모두 ✓ 면:
 
 ```bash
-# 보안 강화 설치 (샌드박스 활성화 — 강력 권장)
-OPENCLAW_SANDBOX=1 ./openclaw install
-
-# 또는 기본 설치 (샌드박스 나중에 5c단계에서 활성화 가능)
+# 기본 설치 (샌드박스 자동 ON — 이 프로젝트의 기본 보안 자세)
 ./openclaw install
+
+# 샌드박스를 끄고 싶을 때만 (개인 일상용·디버그용 — 비권장)
+OPENCLAW_SANDBOX=0 ./openclaw install
 
 ./openclaw start       # OpenClaw 컨테이너 기동
 ./openclaw logs        # 로그 보기 (Ctrl+C 로 빠져나오기)
