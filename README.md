@@ -99,6 +99,34 @@ cd openclaw-workspace/openclaw-mgr
 
 > ℹ️ **OpenClaw 본체 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동 생성**됩니다(`cp` 불필요). `./openclaw install` 만으로 바로 띄울 수 있습니다.
 
+### 📍 `./openclaw` 명령은 어디서 실행하나요?
+
+> 이 README/가이드의 **모든 `./openclaw <verb>` 예시는 `openclaw-workspace/` 또는 `openclaw-workspace/openclaw-mgr/` 디렉터리에서 실행하는 것을 가정**합니다. 다른 곳에서 치면 `zsh: no such file or directory: ./openclaw` 가 납니다.
+
+세 가지 호출 방식 중 편한 걸 쓰세요:
+
+```bash
+# 방식 A — 워크스페이스 루트에서 (권장: 가장 짧음)
+cd ~/DEV/openclawAgent/openclaw-workspace
+./openclaw doctor
+
+# 방식 B — 매니저 디렉터리에서 (원본 위치)
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+
+# 방식 C — 어디서나 (PATH 등록·1회 설정)
+echo 'export PATH="$HOME/DEV/openclawAgent/openclaw-workspace:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+openclaw doctor                 # cd 없이 바로 실행
+```
+
+> 첫 설치 시 `git clone` 위치가 달랐다면 그에 맞춰 경로만 바꾸세요. 어디에 깔렸는지 모르겠으면:
+> ```bash
+> find ~ -type f -name openclaw -path '*/openclaw-mgr/*' 2>/dev/null
+> ```
+
+자세한 PATH 등록·alias 사용법은 [TROUBLESHOOTING — `./openclaw` 명령 위치 / PATH 등록](docs/TROUBLESHOOTING.md#openclaw-명령-위치--path-등록) 참조.
+
 ### 완전 수동 설치 (회사 정책·오프라인용)
 
 `curl | bash` 형태의 자동 설치를 못 쓰는 환경 — 사내 보안 정책, GitHub codeload 502 장기 장애, 또는 "내 손으로 한 단계씩 확인하고 깔고 싶다" 는 분들을 위해 **완전 수동 설치 가이드**가 따로 있습니다.

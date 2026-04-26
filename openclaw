@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# =============================================================================
+# openclaw — 워크스페이스 루트 wrapper
+# -----------------------------------------------------------------------------
+# 워크스페이스 루트(openclaw-workspace/)에서도 './openclaw <verb>' 가 동작하도록
+# 실제 디스패처(openclaw-mgr/openclaw)에 그대로 위임한다.
+# Copyright 2026 박성모 Park Sungmo — MIT License
+# =============================================================================
+set -euo pipefail
+
+WS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$WS_DIR/openclaw-mgr/openclaw" "$@"

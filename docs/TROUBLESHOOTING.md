@@ -7,6 +7,7 @@
 
 ## 📖 목차 / Contents
 
+- [`./openclaw` 명령 위치 / PATH 등록](#openclaw-명령-위치--path-등록)
 - [`./openclaw doctor` 출력별 대응 / Recovery by `doctor` output](#openclaw-doctor-출력별-대응--recovery-by-doctor-output)
 - [`doctor` 항목별 상세 가이드](#doctor-항목별-상세-가이드)
   - [OS / CPU / RAM / 디스크](#os--cpu--ram--디스크)
@@ -28,6 +29,70 @@
 - [흔한 오류](#흔한-오류)
 - [보안 경고가 떴어요](#보안-경고가-떴어요)
 - [도움 요청 시 첨부할 정보](#도움-요청-시-첨부할-정보)
+
+---
+
+## `./openclaw` 명령 위치 / PATH 등록
+
+이 가이드의 **모든 `./openclaw <verb>` 예시는 `openclaw-workspace/` 또는 그 아래 `openclaw-mgr/` 디렉터리에서 실행하는 것을 가정**합니다. 다른 곳에서 치면:
+
+```
+zsh: no such file or directory: ./openclaw
+```
+
+세 가지 호출 방식:
+
+**방식 A — 워크스페이스 루트** (권장)
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace
+./openclaw doctor
+```
+이 위치에는 wrapper 스크립트가 있어 `openclaw-mgr/openclaw` 로 자동 위임됩니다.
+
+**방식 B — 매니저 디렉터리** (원본 위치)
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+```
+
+**방식 C — PATH 등록 (어디서나 실행, 1회 설정)**
+```bash
+# .zshrc 에 한 번만 추가
+echo 'export PATH="$HOME/DEV/openclawAgent/openclaw-workspace:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 이제 어떤 디렉터리에서도 가능
+openclaw doctor
+openclaw install
+```
+
+또는 alias 로:
+```bash
+echo 'alias openclaw="$HOME/DEV/openclawAgent/openclaw-workspace/openclaw"' >> ~/.zshrc
+source ~/.zshrc
+openclaw doctor
+```
+
+**위치를 모를 때 — 찾기**
+```bash
+find ~ -type f -name openclaw -path '*/openclaw-mgr/*' 2>/dev/null
+```
+
+이 명령이 출력하는 경로의 부모 디렉터리(예: `~/DEV/openclawAgent/openclaw-workspace`)가 워크스페이스 루트입니다. PATH 에 그 경로를 등록하세요.
+
+**잘못된 위치에서 친 경우 (실제 사례)**
+```
+mo@mos-MacBook-Pro DEV % cd openclawAgent
+mo@mos-MacBook-Pro openclawAgent % ls
+openclaw-workspace
+mo@mos-MacBook-Pro openclawAgent % ./openclaw doctor
+zsh: no such file or directory: ./openclaw           # ← openclawAgent 가 아니라 openclaw-workspace 안으로
+```
+정답:
+```bash
+cd openclaw-workspace
+./openclaw doctor
+```
 
 ---
 
