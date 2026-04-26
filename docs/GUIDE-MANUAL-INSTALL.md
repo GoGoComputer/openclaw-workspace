@@ -439,8 +439,79 @@ df -h / | tail -1 | awk '{print "  " $4 " 남음 (" $5 " 사용)"}'
 | Ollama ✗ | 미설치 | 3단계 진행 (또는 `ENABLE_OLLAMA=0` 으로 외부 API 모드) |
 | 포트 18789/18790 점유 | 다른 앱이 사용 중 | (a) 그 앱 종료, 또는 (b) `.env` 의 `OPENCLAW_GATEWAY_PORT` / `OPENCLAW_BRIDGE_PORT` 변경 |
 | 포트 11434 점유 (Ollama 자기 자신) | 정상 | 그대로 OK |
-| 포트 11434 점유 (Ollama 가 아님) | LM Studio 등 다른 LLM 서버일 가능성 | 충돌 회피: 그 앱 종료 또는 `.env` 의 `OLLAMA_HOST` 변경 |
+| 포트 11434 점유 (Ollama 가 **아님**) | LM Studio·llama.cpp·Jan·OpenAI-호환 프록시 등 **다른 LLM 서버**가 같은 포트를 잡고 있을 가능성 | ⬇ **아래 0.5.2-A "11434 가 Ollama 가 아닌 다른 프로세스에 잡혀 있을 때" 참조** — 그냥 끄면 안 됨 |
 | 디스크 여유 < 20GB | 위험 | 1단계 전에 정리 (`./openclaw clean` 도 가능) |
+
+##### 0.5.2-A · 11434 가 Ollama 가 아닌 프로세스에 잡혀 있을 때 — 자세히
+
+> ⚠ **그냥 그 앱을 끄지 마세요.** 11434 는 *Ollama 의 정식 포트* 일 뿐, 다른 LLM 서버 (LM Studio · llama.cpp · Jan · KoboldCpp · OpenAI 호환 프록시 등) 도 호환을 위해 같은 포트를 쓰는 경우가 흔합니다. 그 앱이 **여러분이 평소 쓰는 LLM 도구** 일 수 있습니다.
+
+**1단계 — 누가 잡고 있는지 정확히 확인**
+
+```bash
+pid="$(lsof -nP -iTCP:11434 -sTCP:LISTEN -t | head -1)"
+ps -p "$pid" -o pid=,comm=,args=
+# 예시 출력:
+#  868   ollama          /Applications/Ollama.app/.../ollama serve
+#  9123  lms             /Applications/LM Studio.app/.../lms server start
+#  4521  llama-server    /opt/homebrew/bin/llama-server -p 11434 ...
+#  7777  python3.11      .../jan/server.py --port 11434
+```
+
+**2단계 — 잡고 있는 게 무엇인지에 따라 결정**
+
+| 잡고 있는 프로세스 | 의미 | 권장 조치 |
+|---|---|---|
+| `ollama` | 정상 — 그냥 OpenClaw 가 그대로 씀 | 아무것도 안 해도 됨 (이 행은 사실 `0.5.2-A` 가 아님) |
+| `lms` / `LM Studio Helper` | LM Studio 가 OpenAI 호환 서버를 11434 로 띄움 | **선택지 A** (권장) — LM Studio Settings → Local Server → Port 를 `11435` 로 변경 후 LM Studio 재시작. 그러면 11434 가 비고 Ollama 를 켤 수 있음. **선택지 B** — Ollama 를 안 쓰고 *LM Studio 의 OpenAI 호환 엔드포인트* 를 OpenClaw 가 쓰게 함 (아래 0.5.2-B 참조) |
+| `llama-server` (llama.cpp 직접) | 본인이 수동으로 띄운 추론 서버 | 위 LM Studio 와 동일 — `--port 11435` 로 옮기거나, OpenAI 호환 모드면 0.5.2-B 로 OpenClaw 가 직접 쓰게 |
+| `jan` / `koboldcpp` / 기타 | 마찬가지로 OpenAI 호환 서버일 확률 높음 | 위와 동일 |
+| 모르는 프로세스 / 회사 정책 LLM 프록시 | 정체 불명 | 끄지 말고 IT 팀에 문의. 우회는 0.5.2-B |
+
+**선택지 A — 다른 LLM 서버를 다른 포트로 옮기기 (가장 안전)**
+
+각 앱 GUI 에서 포트만 11435 (또는 사용 안 하는 아무 포트) 로 변경. Ollama 는 11434 그대로 두고 OpenClaw 도 손대지 않음. 평소 쓰던 LM Studio 등이 깨지지 않습니다.
+
+**선택지 B — Ollama 를 안 쓰고 그 다른 서버를 OpenClaw 가 직접 쓰게 하기**
+
+LM Studio 등 대부분이 *OpenAI 호환 API* 라 OpenClaw 가 그대로 사용할 수 있습니다. 단, **Ollama API 와 OpenAI API 는 형식이 다르므로** OpenClaw 의 `OLLAMA_HOST` 가 아니라 OpenAI 호환 변수를 써야 합니다.
+
+```bash
+# ~/.openclaw-mgr/.env 에 추가 (Ollama 를 끄고 외부 API 모드로)
+ENABLE_OLLAMA=0
+OPENAI_BASE_URL="http://host.docker.internal:11434/v1"   # LM Studio 등의 OpenAI 호환 엔드포인트
+OPENAI_API_KEY="lm-studio"                                # 형식만 맞으면 됨 (대부분 검증 안 함)
+```
+
+만약 그 서버가 **Ollama 호환 API (예: LiteLLM 의 `/api/generate`)** 를 노출한다면, 반대로 `OLLAMA_HOST` 만 그쪽을 가리키면 됩니다:
+
+```bash
+# ~/.openclaw-mgr/.env
+OLLAMA_HOST="http://host.docker.internal:11434"   # 호환만 되면 그대로 사용
+```
+
+**선택지 C — Ollama 를 다른 포트로 옮기기 (드물게 필요)**
+
+평소 쓰던 LM Studio 가 절대 11434 를 양보 못 하는 환경이면 Ollama 쪽을 옮길 수도 있습니다:
+
+```bash
+# Ollama 데몬을 11500 으로 띄우기
+launchctl setenv OLLAMA_HOST 0.0.0.0:11500     # macOS 전역 환경 변수
+osascript -e 'quit app "Ollama"'; open -a Ollama
+
+# 그리고 OpenClaw 가 그쪽을 보게:
+echo 'OLLAMA_HOST=http://host.docker.internal:11500' >> ~/.openclaw-mgr/.env
+```
+
+> 💡 **추천 순서**: A (다른 앱을 옮긴다) → B (다른 앱을 그대로 쓴다) → C (Ollama 를 옮긴다). C 는 평소 `ollama` CLI 를 쓰는 모든 도구가 `OLLAMA_HOST` 를 같이 봐야 해서 부수효과가 큽니다.
+
+**3단계 — 변경 후 재진단**
+
+```bash
+lsof -nP -iTCP:11434 -sTCP:LISTEN | head -2     # 누가 잡고 있는지 다시 확인
+curl -sS http://127.0.0.1:11434/api/tags | head -c 200; echo   # Ollama 가 응답하는지
+# (선택지 B 를 골랐다면 OpenClaw 가 응답을 받는지로 검증)
+```
 
 #### 0.5.3 기존 환경을 살리면서 진행 — 권장 흐름
 
