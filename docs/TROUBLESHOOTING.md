@@ -703,6 +703,43 @@ docker compose up -d --force-recreate <서비스명>
 
 ---
 
+### lockdown 실패 — `mutually exclusive network_mode and networks`
+
+```
+service openclaw-cli declares mutually exclusive `network_mode` and `networks`:
+invalid compose project
+✗ 단계 실패: lockdown (rc=1)
+```
+
+베이스 `docker-compose.yml` 의 `openclaw-cli` 는 `network_mode: "service:openclaw-gateway"` 로 gateway 의 네트워크 namespace 를 공유합니다. 이 서비스에 `networks:` 를 같이 선언하면 Compose v2 가 거부합니다.
+
+v0.1.12 이전 버전의 `cmd/network.sh` 가 isolated 모드 override 에서 `openclaw-cli` 에도 `networks:` 를 추가해 충돌이 발생했습니다. 수정 버전은 `openclaw-gateway` 에만 networks 를 적용하고, cli 는 `network_mode` 를 통해 자동으로 같은 격리 네트워크를 따라갑니다.
+
+**해결**
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace
+git pull origin main                              # v0.1.12+ 끌어오기
+
+# 잘못 생성된 override 를 강제로 재생성
+rm -f openclaw-mgr/compose.network.yml
+./openclaw network isolated                       # (또는 online)
+
+# 마커 리셋 후 재시도
+sed -i '' '/^lockdown=done$/d' ~/.openclaw-mgr/state
+cd openclaw-mgr && ./openclaw install
+```
+
+**검증**
+```bash
+docker compose -f "$OPENCLAW_DIR"/docker-compose.yml \
+  -f openclaw-mgr/compose.security.yml \
+  -f openclaw-mgr/compose.network.yml \
+  config | grep -A2 -E 'network_mode|networks:'
+# openclaw-gateway 만 networks: 가 있고, openclaw-cli 는 network_mode: 만 있어야 함
+```
+
+---
+
 ## 흔한 오류
 
 ### `Error: Cannot connect to the Docker daemon`

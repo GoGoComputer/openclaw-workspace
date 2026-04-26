@@ -29,6 +29,12 @@ write_override() {
       cat >"$OVERRIDE" <<'YAML'
 # 자동 생성 — ./openclaw network isolated 로 토글됩니다. 직접 수정 금지.
 # isolated: 인터넷 완전 차단 (pip/git/Ollama 모두 불가). 인바운드 웹UI 만 동작.
+#
+# ⚠ openclaw-cli 는 베이스 compose 에서 'network_mode: service:openclaw-gateway'
+#   로 gateway 의 네트워크 namespace 를 공유한다. 그 서비스에 'networks:' 를
+#   같이 적으면 compose v2 가 거부한다 ("mutually exclusive network_mode and
+#   networks"). 따라서 이 override 는 openclaw-gateway 에만 networks 를
+#   적용하고, cli 는 자동으로 같은 격리 네트워크를 따라간다.
 networks:
   openclaw_isolated:
     driver: bridge
@@ -38,10 +44,6 @@ services:
     networks:
       - openclaw_isolated
     # DNS 조차 차단해 도메인 해석을 막습니다.
-    dns: ["127.0.0.1"]
-  openclaw-cli:
-    networks:
-      - openclaw_isolated
     dns: ["127.0.0.1"]
 YAML
       ;;
