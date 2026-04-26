@@ -333,13 +333,15 @@ launchd 스케줄이 안 돌 때의 진단은 [TROUBLESHOOTING — 자동 업데
 
 ```bash
 cd ~/DEV/openclawAgent/openclaw-workspace        # 첫 설치 시 사용한 경로
-git pull origin main                              # 또는 ./openclaw-mgr/openclaw self-update
+git pull --ff-only origin main                    # 또는 ./openclaw-mgr/openclaw self-update
 sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state   # 막힌 단계 마커만 리셋
 cd openclaw-mgr && ./openclaw install             # 끝난 단계는 자동 스킵
 ./openclaw doctor                                 # 정상 동작 확인
 ```
 
-처음부터 다시 깨끗이 하려면 `rm ~/.openclaw-mgr/state` 후 `./openclaw install`. 단계별 실패 가이드는 [TROUBLESHOOTING — 다른 컴퓨터에서 최신 받고 재설치](docs/TROUBLESHOOTING.md#다른-컴퓨터에서-최신-받고-재설치-한-번에) 참조.
+처음부터 다시 깨끗이 하려면 `rm ~/.openclaw-mgr/state` 후 `./openclaw install`.
+
+**`git pull` 후 무엇을 다시 돌릴지** 변경 종류별 가이드와 14개 단계 마커 전체 목록은 [GUIDE-MANUAL-INSTALL — 7.2 git pull 후 무엇을 다시 해야 하나](docs/GUIDE-MANUAL-INSTALL.md#72-git-pull-후-무엇을-다시-해야-하나-변경-종류별) 참조. 자주 쓰는 마커 리셋 한 줄 모음은 [7.4 절](docs/GUIDE-MANUAL-INSTALL.md#74-자주-쓰는-마커-리셋-한-줄-모음).
 
 ---
 

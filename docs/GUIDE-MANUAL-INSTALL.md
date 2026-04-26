@@ -1771,12 +1771,13 @@ lsof -nP -iTCP:11434 -sTCP:LISTEN            # Ollama
 >
 > 즉 **내 도구만 최신 ≠ 본체도 최신**. 둘 다 최신으로 두고 싶으면 두 명령을 차례로 돌리세요.
 
-#### 매번 하는 표준 절차 (수동 설치 모드)
+#### 7.1 매번 하는 표준 절차 (수동 설치 모드)
 
 ```bash
 # 1) 내 도구(workspace) 갱신
-cd ~/DEV/openclaw-workspace
-git pull --ff-only
+cd ~/DEV/openclawAgent/openclaw-workspace
+git pull --ff-only origin main
+#   또는 동일 효과: ./openclaw-mgr/openclaw self-update
 
 # 2) 본체(OpenClaw) + 컨테이너 이미지 + 모델 갱신 (한 명령)
 ./openclaw-mgr/openclaw update
@@ -1785,14 +1786,101 @@ git pull --ff-only
 ./openclaw-mgr/openclaw doctor
 ```
 
-#### `openclaw update` 가 내부적으로 하는 일
+#### 7.2 `git pull` 후 무엇을 다시 해야 하나? (변경 종류별)
+
+`git pull` 만으로는 **이미 끝난 단계** 가 자동으로 다시 돌지 않습니다 (`~/.openclaw-mgr/state` 마커 때문). 변경된 파일에 따라 어떤 단계 마커를 지우고 `./openclaw install` 을 다시 실행해야 하는지:
+
+| 변경된 파일 | 영향 | 다시 돌릴 단계 | 명령 |
+|---|---|---|---|
+| `cmd/install.sh` 만 (스크립트 자체 개선) | 다음 install 실행에 자동 반영 | 없음 | (필요 시 해당 단계만) |
+| `cmd/network.sh` (격리 모드 정의) | 네트워크 override 재생성 필요 | `lockdown` | `rm -f openclaw-mgr/compose.network.yml && ./openclaw network isolated && sed -i '' '/^lockdown=done$/d' ~/.openclaw-mgr/state && ./openclaw install` |
+| `compose.security.yml` (보안 override) | compose 재구성 필요 | `compose_up` + `lockdown` | `sed -i '' '/^compose_up=done$/d;/^lockdown=done$/d' ~/.openclaw-mgr/state && ./openclaw install` |
+| `lib/sec.sh` (compose_scan 로직) | 다음 install 시 자동 반영 | `compose_scan` | `sed -i '' '/^compose_scan=done$/d' ~/.openclaw-mgr/state && ./openclaw install` |
+| `Dockerfile` (본체) | 이미지 다시 빌드 필요 | (이미지 삭제 후) `compose_up` | `docker rmi openclaw:local; sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state && ./openclaw install` |
+| 문서·README 만 | 영향 없음 | 없음 | (재실행 불필요) |
+| 잘 모르겠음 / 안전하게 | 전부 다시 | (모두) | `rm ~/.openclaw-mgr/state && ./openclaw install` (끝난 단계는 어차피 자동 스킵) |
+
+> 💡 **항상 안전한 패턴**: `rm ~/.openclaw-mgr/state && ./openclaw install` — 각 단계가 자체적으로 "이미 됨"을 감지하므로 마커가 비어 있어도 두 번째 install 은 빠르게 통과합니다.
+
+#### 7.3 다른 컴퓨터에서 최신 받고 재설치 (한 번에)
+
+집/회사/노트북 등 **이미 한 번 설치한 두 번째 머신** 의 동기화 표준 절차:
+
+```bash
+# 1) 워크스페이스로 이동 (첫 설치 시 사용한 경로 그대로)
+cd ~/DEV/openclawAgent/openclaw-workspace
+
+# 2) 최신 코드 받기
+git pull --ff-only origin main
+
+# 3) 막힌 단계만 마커 리셋 (예: compose_up 에서 죽었으면 그 줄만)
+sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state
+
+# 4) 재설치 — 끝난 단계 자동 스킵, 막힌 단계부터 재개
+cd openclaw-mgr
+./openclaw install
+
+# 5) 정상 동작 확인
+./openclaw doctor
+```
+
+처음부터 깨끗이 다시 하려면:
+```bash
+rm ~/.openclaw-mgr/state
+./openclaw install              # 각 단계가 invariant 검증 → 빠르게 통과
+```
+
+새 컴퓨터(아무것도 없는 상태)는 [⚡ 명령어만 (빠른 복사용)](#-명령어만-빠른-복사용--commands-only-quick-copy) 의 처음부터 따라가세요.
+
+#### 7.4 자주 쓰는 마커 리셋 한 줄 모음
+
+```bash
+# Docker Desktop 을 직접 끈 뒤 다시 install 할 때
+sed -i '' '/^docker_start=done$/d' ~/.openclaw-mgr/state
+
+# OpenClaw 본체 저장소를 갈아엎었을 때
+rm -rf ~/DEV/openclaw && sed -i '' '/^repo_clone=done$/d' ~/.openclaw-mgr/state
+
+# compose 보안 검사 결과 무시하고 재시도 (사유 확인 후에만!)
+sed -i '' '/^compose_scan=done$/d' ~/.openclaw-mgr/state
+
+# 컨테이너만 다시 띄우기 (이미지 빌드는 유지)
+sed -i '' '/^compose_up=done$/d;/^lockdown=done$/d' ~/.openclaw-mgr/state
+
+# 헬스체크만 다시 (컨테이너는 그대로)
+sed -i '' '/^health=done$/d' ~/.openclaw-mgr/state
+
+# 전체 처음부터 (가장 안전한 nuke)
+rm ~/.openclaw-mgr/state
+```
+
+설치 단계 전체 목록 (`~/.openclaw-mgr/state` 가 갖는 키들):
+
+```
+xcode_clt        Xcode CLT 설치 확인
+brew             Homebrew 확인 (선택)
+docker_install   Docker Desktop 설치 확인
+docker_start     Docker 데몬 시작
+ollama_install   Ollama 설치 확인
+ollama_start     Ollama 데몬 시작
+ollama_check     설치된 Ollama 모델 확인
+repo_clone       OpenClaw 저장소 준비
+compose_scan     compose 보안 검사 (docker.sock 등)
+env_merge        .env 머지
+compose_up       OpenClaw 컨테이너 시작 (이미지 빌드 포함)
+health           헬스체크
+lockdown         네트워크 격리(isolated) 적용
+sandbox          (선택) 샌드박스 설정
+```
+
+#### 7.5 `openclaw update` 가 내부적으로 하는 일
 
 ```
 openclaw update
   ├── network online (잠깐 외부 허용)
   ├── cd ~/DEV/openclaw && git pull --ff-only          ← 본체 코드 갱신
-  ├── docker compose pull                            ← 본체 이미지 갱신
-  ├── docker compose up -d                           ← 새 이미지로 재기동
+  ├── docker compose pull                              ← 본체 이미지 갱신
+  ├── docker compose up -d                             ← 새 이미지로 재기동
   └── network isolated (다시 잠금)
 ```
 
@@ -1802,7 +1890,7 @@ openclaw update
 > ollama pull <모델명>     # 개별 갱신 (예: ollama pull qwen2.5-coder:7b)
 > ```
 
-#### 자동화 — 매일 새벽에 본체까지 자동 업데이트
+#### 7.6 자동화 — 매일 새벽에 본체까지 자동 업데이트
 
 ```bash
 ./openclaw-mgr/openclaw schedule enable    # 매일 03:00 (기본) 에 launchd 가 `openclaw update` 자동 실행
@@ -1812,11 +1900,11 @@ openclaw update
 
 > ⚠ `schedule` 은 **본체 update** 만 자동 실행합니다. 내 도구(workspace) 의 `git pull` 은 자동화하지 않습니다 — 도구가 깨져 있으면 자동복구가 위험하므로. 내 도구는 가끔 직접 `git pull` 권장.
 
-#### 특정 버전에 고정 (Pin to a stable tag)
+#### 7.7 특정 버전에 고정 (Pin to a stable tag)
 
 내 도구를 특정 안정 버전으로:
 ```bash
-cd ~/DEV/openclaw-workspace
+cd ~/DEV/openclawAgent/openclaw-workspace
 git fetch --tags
 git checkout v0.1.6
 ```
