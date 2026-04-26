@@ -375,6 +375,40 @@ sed -i '' '/^docker_start=done$/d' ~/.openclaw-mgr/state
 ./openclaw install
 ```
 
+### 다른 컴퓨터에서 최신 받고 재설치 (한 번에)
+
+집/회사 컴퓨터 등 **이미 한 번 설치된 머신** 에서 워크스페이스 코드를 최신화한 뒤 재설치하는 표준 절차:
+
+```bash
+# 1) 워크스페이스로 이동 (이전 설치 시 사용한 경로 그대로)
+cd ~/DEV/openclawAgent/openclaw-workspace
+
+# 2) 최신 코드 받기 (둘 중 하나)
+git pull origin main
+#   또는
+./openclaw-mgr/openclaw self-update
+
+# 3) 실패한 단계만 다시 돌리도록 마커 리셋
+#    (예: compose_up 에서 죽었으면 compose_up 만 지움)
+sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state
+
+# 4) 재설치 — 끝난 단계는 자동 스킵, 실패 단계부터 재개
+cd openclaw-mgr
+./openclaw install
+
+# 5) 정상 동작 확인
+./openclaw doctor
+```
+
+처음부터 다시 깨끗이 하려면 마커 전체를 지워도 안전합니다 (각 단계가 자체적으로 "이미 됨" 을 감지):
+
+```bash
+rm ~/.openclaw-mgr/state
+./openclaw install
+```
+
+저장소 자체를 처음 받는 새 컴퓨터의 경우는 [docs/QUICKSTART-ko.md](QUICKSTART-ko.md) 참조.
+
 각 단계 실패의 일반적 원인은 [README — 설치 중 멈춘 시](../README.md#설치-중-멈춘-시--단계별-장애-가이드) 표 참조. 아래는 **자동 해결이 안 되는 단계**를 자세히 다룹니다.
 
 ### compose 보안 경고 — `/var/run/docker.sock`
