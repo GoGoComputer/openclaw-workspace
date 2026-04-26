@@ -368,7 +368,13 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 
 ---
 
+## 🇰🇷 한국어 — 단계별 설치 / Korean — Step-by-step
 
+> **읽는 법**: 0단계부터 7단계까지 *순서대로* 진행하세요.
+> 각 단계는 **독립적**이며, 이미 끝낸 단계는 ✓ 확인 후 건너뛰어도 됩니다.
+> 막히면 단계 마지막의 *"여기서 막히면"* 박스 → 그래도 안 되면 [❓ 자주 막히는 부분](#-자주-막히는-부분).
+>
+> **흐름 한눈에**: `0 진단` → `0.5 기존 환경 정리` → `1~3 기본 도구 (Xcode/Docker/Ollama)` → `4 소스` → `5 첫 실행` → `5b/5c 수동·보안` → `6 PATH` → `6.5 일상 운영` → `7 업데이트`
 
 ### 0단계 — 준비물 확인
 
@@ -2168,6 +2174,14 @@ $EDITOR ~/.zshrc       # openclaw 관련 줄 삭제
 ---
 
 ## 🇬🇧 English
+
+> **How to read**: Run steps 0 → 7 *in order*. Each step is **self-contained**;
+> if you've already done one, verify the ✓ check and skip ahead.
+> Stuck? See the *"If you get stuck here"* box at the end of each step,
+> then [Common pitfalls](#-common-pitfalls).
+>
+> **Flow at a glance**: `0 doctor` → `1–3 base tools (Xcode/Docker/Ollama)` →
+> `4 source` → `5 first run` → `5b/5c manual + sandbox` → `6 PATH` → `7 updating`.
 
 ### Step 0 — Prerequisites
 
