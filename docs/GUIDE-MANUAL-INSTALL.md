@@ -660,30 +660,45 @@ if docker info >/dev/null 2>&1; then echo "✓ daemon up"; else echo "✗ daemon
 | `✓ daemon up` | 데몬 기동 완료, 명령 다 됨 | 그대로 진행 |
 | `✗ daemon down` | 앱 자체가 꺼져 있거나 시동 중 | `open -a Docker` 후 30~60초 대기, 다시 확인 |
 
-##### 🥈 자세히 보기
+##### 🥈 자세히 보기 — 명령별 결과 해석
+
+각 명령은 따로 복사해서 하나씩 실행해 보세요. 같은 컴퓨터에서도 시점에 따라 다른 출력이 나옵니다.
+
+**(1) 서버 버전만 짧게**
 
 ```bash
-# 1) 서버 버전만 짧게
 docker info --format '{{.ServerVersion}}'
-# ── 결과 해석 ────────────────────────────
-#   29.4.0                         → ✓ 데몬 ON
-#   (빈 줄)                         → 표시할 게 없음 (드물지만 에러)
-#   "Cannot connect to..." 등 에러 → ✗ 데몬 OFF
-
-# 2) 컨테이너 목록 (살아 있는 것만)
-docker ps
-# ── 결과 해석 ────────────────────────────
-#   CONTAINER ID  IMAGE  COMMAND ...        → ✓ 데몬 ON, 표 헤더만 = 컨테이너 0개
-#   (헤더 + 행)                              → ✓ 데몬 ON, OpenClaw 등 실행 중
-#   "Cannot connect to the Docker daemon"   → ✗ 데몬 OFF
-#   "permission denied while trying ..."     → 데몬 ON 인데 권한 문제 (드뭄, macOS Desktop 에선 거의 안 봄)
-
-# 3) 전체 시스템 정보
-docker info | head -30
-# ── 결과 해석 ────────────────────────────
-#   "Client:" 섹션 다음 "Server:" 섹션이 같이 나옴   → ✓ 데몬 ON
-#   "Client:" 섹션만 + 끝에 "ERROR: Cannot connect"  → ✗ 데몬 OFF
 ```
+
+| 출력 예시 | 상태 |
+|---|---|
+| `29.4.0` (또는 비슷한 숫자) | ✓ 데몬 ON |
+| (빈 줄) | 드뭄 — 데몬 응답 이상, Restart 권장 |
+| `Cannot connect to the Docker daemon ...` | ✗ 데몬 OFF |
+
+**(2) 컨테이너 목록 (살아 있는 것만)**
+
+```bash
+docker ps
+```
+
+| 출력 예시 | 상태 |
+|---|---|
+| `CONTAINER ID  IMAGE  COMMAND ...` (헤더만) | ✓ 데몬 ON, 컨테이너 0개 |
+| 헤더 + 1개 이상의 행 | ✓ 데몬 ON, OpenClaw 등 실행 중 |
+| `Cannot connect to the Docker daemon` | ✗ 데몬 OFF |
+| `permission denied while trying ...` | 데몬 ON 인데 권한 문제 (macOS Desktop 에선 거의 X) |
+
+**(3) 전체 시스템 정보**
+
+```bash
+docker info | head -30
+```
+
+| 출력 특징 | 상태 |
+|---|---|
+| `Client:` 섹션 + `Server:` 섹션 둘 다 나옴 | ✓ 데몬 ON |
+| `Client:` 만 있고 끝에 `ERROR: Cannot connect` | ✗ 데몬 OFF |
 
 > ⚠️ `docker info | head -5` 만 보지 마세요 — **Client 섹션만** 잘려서 데몬이 꺼져 있어도 정상처럼 보입니다. **`Server:` 줄이 보여야** 진짜 켜진 것입니다.
 
@@ -699,19 +714,28 @@ docker info | head -30
 
 ##### ✗ daemon down 이 나왔을 때 — 단계별 복구
 
+**❶ 앱이 깔려 있는지 확인**
+
 ```bash
-# ❶ 앱이 깔려 있는지 확인
 ls /Applications/Docker.app >/dev/null 2>&1 && echo "✓ 앱 설치됨" || echo "✗ 앱 미설치 → 2단계 진행"
+```
 
-# ❷ 앱 켜기
+**❷ 앱 켜기**
+
+```bash
 open -a Docker
+```
 
-# ❸ 메뉴바 🐳 고래가 움직임을 멈출 때까지 대기 (30~60초)
-#    움직이는 동안은 시동 중 — 명령 쳐도 'Cannot connect' 가 정상
+**❸ 메뉴바 🐳 고래가 멈출 때까지 30~60초 대기**
 
-# ❹ 다시 확인
+움직이는 동안은 시동 중 — 이 시점에 명령을 쳐서 `Cannot connect` 가 나오는 건 정상입니다.
+
+**❹ 다시 확인**
+
+```bash
 docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "아직 시동 중 — 30초 더 기다려보세요"
 ```
+
 
 #### Docker 켜기 / 끄기 / 항상 켜기 / 완전 죽이기 — 한눈에
 
