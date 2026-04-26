@@ -612,13 +612,24 @@ docker compose -f "$OPENCLAW_DIR"/docker-compose.yml -f openclaw-mgr/compose.sec
 
 **원인 A — 호스트 포트 점유**
 ```
-Error: bind: address already in use
+Error response from daemon: failed to bind host port 127.0.0.1:18789/tcp: address already in use
 ```
-충돌하는 포트를 찾고 점유 프로세스를 처리:
+
+**케이스 A-1 — 이전 실패 실행의 잔여 openclaw 컨테이너**
+설치를 재시도했는데 이전 실패 실행에서 반쯤 기동된 컨테이너가 포트를 잡고 있는 경우입니다. v0.1.10 이상은 `compose_up` 전에 `docker compose down --remove-orphans` 로 자동 정리합니다. 이전 버전:
 ```bash
-# OpenClaw 가 쓰는 포트(.env 의 OPENCLAW_PORT, 기본 8000) 점유 확인
-lsof -nP -iTCP:8000 -sTCP:LISTEN
-# 다른 앱이라면 종료하거나, .env 의 OPENCLAW_PORT 를 8001 등 다른 번호로 변경
+cd "$OPENCLAW_DIR"
+docker compose down --remove-orphans
+# 마커 리셋 후 재시도
+sed -i '' '/^compose_up=done$/d' ~/.openclaw-mgr/state
+./openclaw install
+```
+
+**케이스 A-2 — 다른 앱이 포트 18789 사용 중**
+```bash
+lsof -nP -iTCP:18789 -sTCP:LISTEN    # 점유 프로세스 확인
+# 다른 앱이면 종료하거나 .env 의 OPENCLAW_GATEWAY_PORT 를 변경:
+# OPENCLAW_GATEWAY_PORT=18800
 ```
 
 **원인 B — 이미지 pull 실패**

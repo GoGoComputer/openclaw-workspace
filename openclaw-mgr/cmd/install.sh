@@ -328,6 +328,16 @@ step_compose_up() {
   bash "$OPENCLAW_MGR_DIR/cmd/network.sh" online >/dev/null
   local net="$OPENCLAW_MGR_DIR/compose.network.yml"
   [ -f "$net" ] && files="$files -f $net"
+
+  # ── 이전 실패 실행의 잔여 컨테이너 정리 ─────────────────────────────────
+  # 설치 재시도 시 이전 실행에서 반쯤 기동된 컨테이너가 남아 포트를 점유하면
+  #   "failed to bind host port: address already in use"
+  # 오류가 난다. compose down --remove-orphans 로 이 프로젝트의 컨테이너를
+  # 먼저 정리하고 새로 띄운다. 볼륨(데이터)은 보존된다.
+  info "이전 컨테이너 잔재 정리 (포트 충돌 방지)..."
+  # shellcheck disable=SC2086
+  docker compose $files down --remove-orphans 2>/dev/null || true
+
   # shellcheck disable=SC2086
   # --pull missing: 이미 받은 이미지는 재다운로드 안 함
   docker compose $files up -d --pull missing
