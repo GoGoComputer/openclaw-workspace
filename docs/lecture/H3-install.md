@@ -5,6 +5,135 @@
 
 ---
 
+## 🔧 강사용 명령어 한눈에 (수동 설치 — 화면에 띄워두기)
+
+> 본문 대본의 **1단계~8단계** 와 1:1 매칭되는 **수동 설치** 명령 묶음입니다.
+> `./openclaw install` 한 줄 안에서 어떤 일이 일어나는지를 *눈으로 보여주려고* 일부러 풀어놓은 것입니다 — 강의 중에는 별도 창(또는 노트북 옆 모니터)에 이 섹션을 띄워두고, 대본이 해당 단계에 닿을 때마다 한 묶음씩 시연하세요.
+>
+> 출처: [docs/GUIDE-MANUAL-INSTALL.md](../GUIDE-MANUAL-INSTALL.md) — `⚡ 명령어만 (빠른 복사용)` 섹션과 동일.
+>
+> 💡 **시연 팁**: 명령을 치기 전에 **"이 한 줄이 본문 N단계의 그 부분이에요"** 라고 한 번 짚어주면 비개발자가 본문과 명령을 연결하기 좋습니다.
+
+### 1단계 — 자기소개 + Mac 신분증 확인 (대본: "첫 번째로 하는 일이 뭐냐면, 손님맞이 준비예요")
+
+```bash
+uname -m            # arm64 = Apple Silicon / x86_64 = Intel
+sw_vers             # macOS 버전
+```
+
+### 2단계 — 맥 기본 도구함 (Xcode Command Line Tools)
+
+```bash
+xcode-select --install      # 다이얼로그 → "설치" 클릭 → 5~10분
+# 이미 깔려 있으면: "command line tools are already installed" (정상)
+git --version               # git version 2.x = OK
+```
+
+### 3단계 — Docker Desktop 설치 + 데몬 띄우기
+
+> 시연 시: GUI 다운로드는 사전에 해두고, **`open -a Docker`** 한 줄만 시연하면 시간 절약.
+
+```bash
+# (사전) https://www.docker.com/products/docker-desktop/ 에서 .dmg 다운로드
+#        → 더블클릭 → Docker.app 을 Applications 폴더로 드래그
+
+open -a Docker              # Docker Desktop 실행
+# 메뉴바 🐳 고래가 움직임 멈출 때까지 30~60초 대기
+
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "✗ daemon down"
+docker --version
+docker compose version
+```
+
+### 4단계 — Ollama 설치 (도서관 건물만)
+
+```bash
+# (사전) https://ollama.com/download → .dmg → Applications 로 드래그 → 실행
+
+ollama --version
+ollama list                                       # 처음엔 비어 있음 (책장 텅)
+curl -s http://localhost:11434/api/version        # {"version":"0.x.x"}
+```
+
+### 5단계 — `openclaw-workspace` 조립도 받기
+
+```bash
+mkdir -p ~/DEV
+cd ~/DEV
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace
+ls                                                # README.md, openclaw-mgr/, docs/ 보이면 OK
+```
+
+### 6단계 — `.env` 비밀번호장 만들기
+
+```bash
+cd openclaw-mgr
+cp .env.example .env
+chmod 600 .env
+# (필요 시) 편집:  open -e .env   또는  nano .env
+# 최소 확인:       OPENCLAW_REPO, OPENCLAW_DIR
+```
+
+### 7단계 — 컨테이너 방 만들고 깨우기 (OpenClaw 본체 clone + compose up)
+
+```bash
+# 7-a) OpenClaw 본체(공식 저장소) clone
+OPENCLAW_DIR="${HOME}/openclaw"
+OPENCLAW_REPO="$(grep '^OPENCLAW_REPO=' .env | cut -d= -f2-)"
+[ -z "$OPENCLAW_REPO" ] && OPENCLAW_REPO="https://github.com/openclaw/openclaw.git"
+git clone --depth 1 "$OPENCLAW_REPO" "$OPENCLAW_DIR"
+
+# 7-b) 본체 .env 머지 (사용자 키 보존, 새 키만 추가)
+SRC="$OPENCLAW_DIR/.env.example"; DST="$OPENCLAW_DIR/.env"
+[ -f "$DST" ] || cp "$SRC" "$DST"
+while IFS= read -r line; do
+  case "$line" in ''|'#'*) continue;; esac
+  key="${line%%=*}"
+  grep -qE "^${key}=" "$DST" 2>/dev/null || echo "$line" >> "$DST"
+done < "$SRC"
+chmod 600 "$DST"
+
+# 7-c) 컨테이너 기동 (보안 오버레이 포함)
+cd "$OPENCLAW_DIR"
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f compose.yml ] && COMPOSE_FILES="-f compose.yml"
+SEC="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.security.yml"
+[ -f "$SEC" ] && COMPOSE_FILES="$COMPOSE_FILES -f $SEC"
+docker compose $COMPOSE_FILES up -d
+docker compose $COMPOSE_FILES ps    # State=running 확인
+
+# 7-d) 네트워크 격리 적용 (기본 isolated)
+NET="$HOME/DEV/openclaw-workspace/openclaw-mgr/compose.network.yml"
+[ -f "$NET" ] && COMPOSE_FILES="$COMPOSE_FILES -f $NET"
+docker compose $COMPOSE_FILES up -d
+mkdir -p "$HOME/.openclaw-mgr" && echo isolated > "$HOME/.openclaw-mgr/network-mode"
+```
+
+### 8단계 — 건강검진 (`doctor` + 헬스체크)
+
+```bash
+# 8-a) 워크스페이스 doctor — 깐 것 전체 진단
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw doctor                          # 모두 ✓ 면 OK
+
+# 8-b) gateway HTTP 헬스 — 컨테이너가 응답하는지
+curl -sS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8000
+# HTTP 200 = UI 준비 완료 → 브라우저: http://localhost:8000
+```
+
+### 🎁 보너스 — 강의 끝난 후 학생이 집에서 이걸 한 줄로 다시 하고 싶다면
+
+```bash
+cd ~/DEV/openclaw-workspace/openclaw-mgr
+./openclaw install        # 위 1~8 단계가 한 번에 — 멱등이라 중간에 끊겨도 안전
+./openclaw doctor         # 다시 확인
+```
+
+> 📖 더 깊이: 각 단계의 옵션·트러블슈팅·왜 그런 순서인지 → [GUIDE-MANUAL-INSTALL.md](../GUIDE-MANUAL-INSTALL.md)
+
+---
+
 자, 3교시입니다. 다들 잠깐 숨 한 번 쉬시고요. 1교시에서 우리가 왜 자동화를 배우는지 이야기했고, 2교시에서는 터미널, 도커, 올라마, AI 에이전트 이 네 단어를 정리했습니다. 이제 드디어, 진짜로, 우리 맥북 안에 이 친구들을 살게 만들 시간입니다. 제목이 뭐였죠. 설치 한 줄의 의미. 한 줄. 명령어 딱 한 줄이에요. 그 한 줄이 도대체 무슨 일을 하는지, 왜 그게 대단한 건지, 그리고 그 한 줄이 실패하면 우리가 뭘 어떻게 해야 하는지, 이 한 시간 동안 천천히 같이 따라가 봅시다.
 
 먼저 옛날 얘기를 잠깐 할게요. 제가 처음 자동화라는 걸 회사에서 만져봤을 때가 한 십 년쯤 전이에요. 그때는 어떤 자동화 도구 하나를 내 컴퓨터에 깔려면, 진짜로 일주일이 걸렸어요. 일주일이요. 농담 아니에요. 왜냐하면 일단 설치 안내 문서가 있는데, 그 문서가 한 사십 페이지짜리예요. 그리고 첫 페이지부터 이렇게 시작합니다. "먼저 파이썬 3.7 이상이 설치되어 있어야 합니다." 그러면 저는 파이썬을 깔러 갑니다. 파이썬을 까는데 또 뭐가 필요해요. 뭔가 컴파일러가 필요하대요. 컴파일러를 깔려면 또 다른 게 필요하고요. 이게 끝없이 이어져요. 제가 그때 썼던 표현이 뭐였냐면, 양파 같다. 까도 까도 안에 또 다른 게 나와요. 그리고 그 양파를 다 까고 나면 이제 진짜 그 자동화 도구를 까는데, 이번엔 환경 변수라는 걸 설정해야 한대요. 그게 또 뭐예요. 그러면 또 검색합니다. 그렇게 일주일이 지나고 나면 어떤 일이 벌어지냐면, 제가 처음에 왜 이걸 깔려고 했는지를 까먹어요. 진짜예요. 분명히 어떤 업무 하나 자동화 하려고 시작한 건데, 일주일을 헤매다 보면 "내가 지금 뭐 하고 있지" 이 상태가 됩니다. 그리고 그 시점에서 한 절반 정도는 포기해요. "아, 됐다. 그냥 손으로 하자." 이게 자동화가 우리 일상으로 안 들어왔던 가장 큰 이유 중에 하나예요. 시작하기가 너무 어려워서.
