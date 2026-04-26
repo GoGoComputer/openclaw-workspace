@@ -1541,6 +1541,131 @@ sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /usr/local/bin/
 sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/bin/openclaw    # Apple Silicon
 ```
 
+### 6.5단계 — 일반 실행 / 종료 / 데몬 자동시작 / 포트 충돌 (자유롭게 다루기)
+
+설치 후 실제 운영에서 자주 하는 동작들 — **다 자유롭게 가능합니다**. 두 가지 방식(스크립트 / 수동 docker compose) 으로 나란히 정리합니다.
+
+> ⚠️ 전제: `docker info` 가 ✓ 인 상태(Docker Desktop 데몬 켜짐). 데몬 켜기는 [2.5단계](#25단계--docker-사용법-기초-데몬--서버-켜고-끄기) 참조.
+
+#### 6.5.1 일반 실행 — 컨테이너 시작
+
+| 방식 | 명령 | 동작 |
+|---|---|---|
+| 🟢 스크립트 (권장) | `./openclaw start` | 현재 네트워크 모드(`isolated`/`online`)로 `compose up -d` 실행. 백그라운드 기동. |
+| ⚙️ 수동 (직접) | `cd "$OPENCLAW_DIR" && docker compose -f docker-compose.yml -f $OPENCLAW_MGR_DIR/compose.security.yml -f $OPENCLAW_MGR_DIR/compose.network.yml up -d` | 위와 동일하지만 compose 파일을 직접 지정 |
+
+`-d` (detach) 가 핵심 — 컨테이너가 **백그라운드에서 데몬으로** 동작합니다. 터미널을 닫아도 계속 실행됨.
+
+**foreground 모드 (디버그용 — 로그가 그대로 터미널에 흐름)**
+```bash
+cd "$OPENCLAW_DIR"
+docker compose up                           # -d 없으면 foreground
+# Ctrl+C 로 정지 (= ./openclaw stop 과 동일 효과)
+```
+또는 백그라운드 상태에서 로그만 따라보고 싶으면:
+```bash
+./openclaw logs                              # docker compose logs -f 와 동일
+# Ctrl+C — 컨테이너는 계속 동작, 화면만 빠져나옴
+```
+
+#### 6.5.2 일반 실행 종료 — 컨테이너만 정지 (Docker 데몬은 그대로)
+
+| 방식 | 명령 | 동작 |
+|---|---|---|
+| 🟢 스크립트 | `./openclaw stop` | `docker compose down` (컨테이너 제거, 볼륨/네트워크 보존) |
+| ⚙️ 수동 | `cd "$OPENCLAW_DIR" && docker compose down` | 위와 동일 |
+| 🔄 잠깐 멈춤 | `docker compose stop` | 컨테이너만 정지(제거 X). `docker compose start` 로 빠르게 재개 |
+
+> 차이: `down` = 컨테이너 삭제 후 다음에 새로 만듦, `stop` = 컨테이너 보존 + 정지. 일상적으로는 `down` 으로 충분합니다(다음 `up -d` 가 같은 이름으로 다시 만듦, 데이터는 호스트 볼륨에 그대로).
+
+#### 6.5.3 Docker 데몬 끄기 → OpenClaw 도 같이 정지
+
+```bash
+# Docker Desktop 자체를 끄기
+osascript -e 'quit app "Docker"'             # 또는 메뉴바 🐳 → Quit Docker Desktop
+```
+이 시점에 **OpenClaw 컨테이너도 자동으로 정지**됩니다 (데몬이 죽으면 컨테이너도 죽음). 데이터는 그대로 보존(`~/DEV/openclawAgent`, `~/.openclaw`).
+
+#### 6.5.4 데몬 켜자마자 OpenClaw 자동 복귀
+
+기본 compose 정의가 `restart: unless-stopped` 이므로:
+- **macOS 재부팅 / 로그인 → Docker 자동시작 → OpenClaw 자동 복귀** (Docker Settings → "Start Docker Desktop when you sign in" 켜야 함)
+- **`./openclaw stop` 으로 명시적 종료한 컨테이너는 자동 복귀하지 않음** (`unless-stopped` 의 의미)
+- 다시 띄우려면: `./openclaw start`
+
+부팅 후 자동 시작 흐름 검증:
+```bash
+docker ps --filter name=openclaw            # 비어 있어야 정상 (Docker 자체가 막 켜진 직후)
+# 잠시 후 (Docker가 안정화되면)
+docker ps --filter name=openclaw            # openclaw-gateway / openclaw-cli 가 자동으로 떠 있어야 함
+```
+
+#### 6.5.5 데몬 죽이기 — 강제
+
+```bash
+osascript -e 'quit app "Docker"'             # 정상 종료 (권장)
+# 안 죽으면:
+killall Docker 2>/dev/null
+killall com.docker.backend 2>/dev/null
+killall com.docker.virtualization 2>/dev/null
+```
+Docker 가 꺼지면 OpenClaw 도 자동 정지. 데이터는 보존.
+
+#### 6.5.6 포트 충돌 — `address already in use`
+
+```
+failed to bind host port 127.0.0.1:18789/tcp: address already in use
+```
+
+원인은 두 가지:
+
+**A) 이전 실패 실행의 잔여 OpenClaw 컨테이너** (가장 흔함)
+```bash
+cd "$OPENCLAW_DIR"
+docker compose down --remove-orphans         # 이 프로젝트의 잔재만 정리
+./openclaw start                              # 다시 시작
+```
+v0.1.10 이상의 `./openclaw install` 은 이 정리를 자동으로 합니다.
+
+**B) 다른 앱이 18789 / 18790 / 11434 점유**
+```bash
+# 어떤 프로세스가 잡고 있는지 확인
+lsof -nP -iTCP:18789 -sTCP:LISTEN
+lsof -nP -iTCP:18790 -sTCP:LISTEN
+lsof -nP -iTCP:11434 -sTCP:LISTEN            # Ollama
+
+# 1) 그 앱을 종료, 또는
+# 2) OpenClaw 의 포트를 변경 — .env 편집:
+#    OPENCLAW_GATEWAY_PORT=18800
+#    OPENCLAW_BRIDGE_PORT=18801
+./openclaw stop && ./openclaw start
+```
+
+전체 포트 표:
+
+| 포트 | 용도 | 설정 키 |
+|---|---|---|
+| 18789 | OpenClaw Gateway (HTTP API · UI · healthz) | `OPENCLAW_GATEWAY_PORT` |
+| 18790 | OpenClaw Bridge (websocket) | `OPENCLAW_BRIDGE_PORT` |
+| 11434 | Ollama (호스트의 로컬 LLM) | (Ollama 자체 설정) |
+
+#### 6.5.7 한눈 요약 — 자유로운 운영
+
+| 하고 싶은 것 | 스크립트 | 수동 |
+|---|---|---|
+| 켜기 (백그라운드) | `./openclaw start` | `cd $OPENCLAW_DIR && docker compose up -d` |
+| 끄기 (제거) | `./openclaw stop` | `cd $OPENCLAW_DIR && docker compose down` |
+| 잠깐 멈춤 (보존) | — | `docker compose stop` |
+| 재개 (보존된 것) | — | `docker compose start` |
+| 로그 보기 | `./openclaw logs` | `docker compose logs -f` |
+| 컨테이너 안 들어가기 | — | `docker compose exec openclaw-cli bash` |
+| Docker 데몬 끄기 | (없음) | `osascript -e 'quit app "Docker"'` |
+| Docker 데몬 켜기 | (없음 — install 이 자동) | `open -a Docker` |
+| 부팅 시 자동 | Settings → "Start Docker Desktop when you sign in" 체크 | 동일 |
+| 포트 충돌 정리 | `./openclaw install` (v0.1.10+) | `docker compose down --remove-orphans` |
+
+> 답: **네, 다 자유롭게 가능**합니다. 스크립트 한 줄로도, `docker compose` 직접 호출로도. 둘 다 같은 결과(컨테이너 상태)에 수렴합니다.
+
 ### 7단계 — 업데이트는 어떻게?
 
 > ❓ **OpenClaw 본체가 업데이트되면 내 도구도 자동으로 업데이트되나요?**
