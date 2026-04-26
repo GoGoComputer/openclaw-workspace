@@ -14,9 +14,11 @@
 
 ## 📖 목차 / Contents
 
+- [🔁 워크스페이스 파이프라인](#-워크스페이스-파이프라인)
 - [🚀 5분 시작 (비개발자 OK)](#-5분-시작-비개발자-ok)
-  - [옵션 A — Homebrew 탭](#옵션-a--homebrew-탭-관리형-업데이트-선호-시)
-  - [옵션 B — git clone](#옵션-b--git-clone-소스-직접-사용--개발자용)
+  - [표준 — 스크립트 설치 (권장)](#표준--스크립트-설치-권장)
+  - [완전 수동 설치 (회사 정책·오프라인용)](#완전-수동-설치-회사-정책오프라인용)
+- [🩺 진단 / `doctor` 항목별 가이드](#-진단--doctor-항목별-가이드)
 - [🤖 자동화 3종 — 한눈 카탈로그](#-자동화-3종--한눈-카탈로그)
 - [📚 문서 가이드](#-문서-가이드)
 - [🤔 이게 뭐예요?](#-이게-뭐예요)
@@ -45,44 +47,80 @@
 
 ---
 
+## 🔁 워크스페이스 파이프라인
+
+> 이 README 는 **하나의 파이프라인**입니다. 위에서 아래로, 또는 아래 표의 단계별 가이드를 따라가면 **설치 → 사용 → 유지보수 → 설정 → 업데이트** 까지 한 번에 됩니다. 각 단계마다 어떤 명령을 치고 어떤 문서를 보면 되는지 정해져 있습니다.
+
+| # | 단계 | 핵심 명령 | 안내 문서 |
+|---|---|---|---|
+| 1 | **설치** (Install) | `git clone … && ./openclaw install` | [표준 설치](#표준--스크립트-설치-권장) · [완전 수동](docs/GUIDE-MANUAL-INSTALL.md) · [처음부터](docs/GUIDE-FROM-ZERO.md) |
+| 2 | **진단** (Doctor) | `./openclaw doctor` | [진단 항목별 가이드](#-진단--doctor-항목별-가이드) · [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) |
+| 3 | **사용** (Use) | `./openclaw start` · `surf "…"` · `creative run "…"` · `shorts run "…"` | [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 4 | **유지보수** (Maintain) | `./openclaw logs` · `./openclaw clean` · `./openclaw backup` · `./openclaw restore` | [명령 카탈로그](#-명령-카탈로그) · [정리](#-메모리디스크-정리-비개발자용) |
+| 5 | **설정 변경** (Configure) | `.env` 편집 · `./openclaw models …` · `./openclaw network …` | [.env 설정](#️-설정-env) · [모델 관리](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기) · [네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) |
+| 6 | **업데이트** (Update) | `./openclaw update` · `./openclaw self-update` · `./openclaw schedule enable` | [업데이트 흐름](#-업데이트-흐름) |
+| 7 | **문제 해결** (Recover) | `./openclaw doctor` → `./openclaw logs <svc>` → 해당 항목 가이드 | [진단 항목별 가이드](#-진단--doctor-항목별-가이드) · [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) |
+
+각 단계의 명령은 모두 멱등(여러 번 실행해도 안전)입니다. 중간에 끊겨도 다시 같은 명령을 치면 이어서 진행됩니다.
+
+---
+
 ## 🚀 5분 시작 (비개발자 OK)
 
-> "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
+> "터미널이 뭐예요?" 라면 먼저 [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) 부터 보세요. 더 앞 단계(클릭/폴더/경로 개념) 부터 필요하면 [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md). 단계별 예시 출력이 다 있습니다. (English: [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md))
 
-### 옵션 A — Homebrew 탭 (관리형 업데이트 선호 시)
+설치 경로는 두 가지뿐입니다 — **표준 스크립트 설치** (대부분의 경우) 또는 **완전 수동 설치** (회사 보안 정책 / 오프라인 / GitHub 장애 시).
 
-```bash
-brew tap gogocomputer/openclaw
-brew install openclaw-workspace
-openclaw
-```
-
-업데이트: `brew update && brew upgrade openclaw-workspace`.
-
-### 옵션 B — git clone (소스 직접 사용 · 개발자용)
+### 표준 — 스크립트 설치 (권장)
 
 ```bash
 # 1) 코드 받기
 git clone https://github.com/GoGoComputer/openclaw-workspace.git
 cd openclaw-workspace/openclaw-mgr
 
-# 2) 런처 실행 — .env 는 자동으로 만들어집니다 (cp 불필요)
-#    인자 없이 실행하면 한국어/영어 대화형 메뉴 자동 표시
-./openclaw
+# 2) 진단 — 지금 무엇이 부족한지 한눈에
+./openclaw doctor
 
-# 혹은 단일 명령으로도 다 가능:
-./openclaw doctor          # 이 명령 하나로 진단
-./openclaw install         # 부족한 부분만 자동 설치
+# 3) 설치 — 부족한 부분만 자동으로. 중간에 끊겨도 다시 치면 이어서 진행
+./openclaw install
+
+# 4) 인자 없이 실행하면 한국어/영어 대화형 메뉴
+./openclaw
 ```
 
-설치 중 Docker Desktop 실행 동의/Xcode CLT 다이얼로그가 뜰 수 있습니다. 따라가면 됩니다. 끝나면:
+설치 중 **Docker Desktop 약관 동의 / Xcode Command Line Tools 다이얼로그**가 뜰 수 있습니다. 따라가시면 됩니다. 각 다이얼로그가 무엇을 묻는지 자세한 설명은 [docs/TROUBLESHOOTING.md — Docker Desktop 첫 실행](docs/TROUBLESHOOTING.md#docker-desktop-첫-실행--업데이트-안내--시스템-비밀번호--백그라운드-실행-알림) 참조.
+
+설치 끝나면 한 번 더 진단하고, 원하면 자동 업데이트를 켭니다:
 
 ```bash
-./openclaw doctor          # 모두 ✓ 인지 확인 (brew 설치 시: openclaw doctor)
-./openclaw schedule enable # 매일 새벽 자동 업데이트 (선택)
+./openclaw doctor              # 모두 ✓ 확인
+./openclaw schedule enable     # 매일 새벽 자동 업데이트 (선택)
 ```
 
-> ℹ️ **OpenClaw 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동으로 생성**됩니다. 별도 설정 없이 `openclaw install` (또는 `./openclaw install`) 바로 실행 가능합니다.
+> ℹ️ **OpenClaw 본체 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동 생성**됩니다(`cp` 불필요). `./openclaw install` 만으로 바로 띄울 수 있습니다.
+
+### 완전 수동 설치 (회사 정책·오프라인용)
+
+`curl | bash` 형태의 자동 설치를 못 쓰는 환경 — 사내 보안 정책, GitHub codeload 502 장기 장애, 또는 "내 손으로 한 단계씩 확인하고 깔고 싶다" 는 분들을 위해 **완전 수동 설치 가이드**가 따로 있습니다.
+
+| 무엇 | 어디서 직접 받나 |
+|---|---|
+| Xcode Command Line Tools | `xcode-select --install` 다이얼로그 |
+| Docker Desktop | https://www.docker.com/products/docker-desktop/ |
+| Ollama (선택) | https://ollama.com/download |
+| openclaw-workspace | `git clone …` 또는 GitHub Releases tarball |
+| OpenClaw 본체 | `git clone https://github.com/openclaw/openclaw.git` |
+
+전체 단계·명령·예시 출력은 → **[docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md)**
+
+수동 설치 후에도 마지막에는 동일한 명령으로 검증·운영합니다:
+
+```bash
+cd openclaw-workspace/openclaw-mgr
+./openclaw doctor      # 진단
+./openclaw install     # 누락된 부분만 자동 보충 (수동으로 다 깔았다면 거의 다 skip)
+./openclaw start       # 컨테이너 기동
+```
 
 ---
 
@@ -137,13 +175,13 @@ shorts   run "여행 감성 풍경"
 | 🎬 **쇼츠 자동화 (Pinterest → 미리캔버스 → CapCut)** | [docs/GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) | `shorts run "키워드"` 으로 레퍼런스·1080×1920 디자인·9:16 영상 export. 샌드박스 경계 유지 + 프로그램 설치 안내 포함. KO+EN |
 | 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
 | 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
+| 🩺 **진단 항목별 상세 가이드** | [docs/TROUBLESHOOTING.md — doctor 상세 항목별 가이드](docs/TROUBLESHOOTING.md#doctor-항목별-상세-가이드) | OS · RAM · 디스크 · Xcode CLT · Docker 데몬 · 포트 충돌 · compose 보안 경고(`docker.sock`) 각각에 대한 의미·자동·수동 해결 |
+| 🚑 **문제가 생겼을 때** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 흔한 오류·해결 명령 (KO+EN 병기) |
 | 🛡 **보안이 궁금한 사람** | [SECURITY.md](SECURITY.md) · 본문 [🔒 보안 주의](#-보안-주의-꼭-읽으세요) · [🔒 네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) | 위협 모델·취약점 신고 절차 |
 | 🧠 **내부 동작 알고 싶음** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 디스패처·멱등 설계·compose override (KO+EN 병기) |
-| 🚑 **문제가 생겼을 때** | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | 흔한 오류·해결 명령 (KO+EN 병기) |
 | 🤝 **기여하고 싶음 (처음)** | [docs/GUIDE-CONTRIBUTING.md](docs/GUIDE-CONTRIBUTING.md) | 비개발자도 환영 — 오타·번역·베타테스트도 기여 |
 | 🐙 **기여하고 싶음 (코드)** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | 코드 스타일·PR 절차 (KO+EN 병기) |
 | 📦 **릴리스 내역** | [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | 변경 사항 (KO+EN 병기) |
-| 🍺 **Homebrew tap** | [github.com/GoGoComputer/homebrew-openclaw](https://github.com/GoGoComputer/homebrew-openclaw) | brew formula 저장소 |
 
 ---
 
@@ -155,7 +193,7 @@ shorts   run "여행 감성 풍경"
 
 | 이 도구가 해주는 것 | 이 도구가 안 하는 것 |
 |---|---|
-| Homebrew · Docker · Ollama 자동 설치 | OpenClaw 자체 개발/수정 |
+| Docker · Ollama · Homebrew(필요 시) 자동 설치 (스크립트) | OpenClaw 자체 개발/수정 |
 | OpenClaw 저장소 clone & 컨테이너 기동 | 클라우드 호스팅 (그건 [ClawBro.ai](https://clawbro.ai)) |
 | 매일 자동 업데이트 (launchd) | Windows / Linux 지원 |
 | 백업·복원·완전 제거 | 멀티 인스턴스 동시 운영 |
@@ -181,6 +219,87 @@ shorts   run "여행 감성 풍경"
 | `./openclaw models list\|add\|remove\|pull\|suggest` | 로컬 LLM 모델 관리 (·env 자동 수정) |
 | `./openclaw clean [--light\|--all\|--status]` | 메모리·디스크 정리 (비개발자용 대화형) |
 | `./openclaw uninstall [--purge]` | OpenClaw 제거. `--purge` 면 Docker/Ollama까지 |
+
+---
+
+---
+
+## 🩺 진단 / `doctor` 항목별 가이드
+
+`./openclaw doctor` 는 설치 전·후 언제든 안전하게 돌리는 명령입니다. 한 번에 모든 항목을 `✓ / ✗ / ⚠` 로 보여주며, **부족한 항목은 거의 모두 `./openclaw install` 이 자동으로 채워줍니다**.
+
+다만 각 항목이 무슨 뜻이고, **자동으로 뭐를 하고**, **수동으로 고친다면 어떻게 하는지**, **자주 생기는 문제는 무엇인지** 는 따로 정리되어 있습니다. 항목 이름을 클릭하세요 — [TROUBLESHOOTING — doctor 항목별 상세 가이드](docs/TROUBLESHOOTING.md#doctor-항목별-상세-가이드) 으로 갑니다.
+
+| 항목 | 일반적 상태 | 자동 해결 | 수동/문제 시 가이드 |
+|---|---|---|---|
+| OS / CPU / RAM / 디스크 | 하드웨어 설명·최소 권장치 | — (하드웨어) | [하드웨어 요구](docs/TROUBLESHOOTING.md#os--cpu--ram--디스크) |
+| Xcode CLT | git · 컴파일러 도구 | ✓ `install` 이 설치 다이얼로그 호출 | [Xcode CLT](docs/TROUBLESHOOTING.md#xcode-command-line-tools) |
+| Homebrew | macOS 패키지 매니저 | ✓ `install` 이 공식 스크립트 실행 | [Homebrew](docs/TROUBLESHOOTING.md#homebrew) |
+| Docker / Compose v2 | 샌드박스 런타임 | ✓ `install` 이 Docker Desktop 설치 + 실행 | [Docker 설치/첫 실행](docs/TROUBLESHOOTING.md#docker-desktop-첫-실행--업데이트-안내--시스템-비밀번호--백그라운드-실행-알림) |
+| Docker 데몬 ✗ | Docker Desktop 앱이 꺼져 있음 | ⚠ `install` 이 앱을 엽니다 (첫 실행 시 일회성 시스템 비밀번호 필요) | [Docker 데몬 ✗](docs/TROUBLESHOOTING.md#docker-데몬-✗) |
+| Ollama / Ollama 데몬 / 모델 | 로컬 LLM 서비스 | ✓ `install` 이 설치 + `brew services start` | [Ollama](docs/TROUBLESHOOTING.md#ollama--데몬--모델) |
+| OpenClaw 저장소 | 에이전트 본체 소스 | ✓ `install` 이 git clone (존재하면 pull) | [OpenClaw 저장소](docs/TROUBLESHOOTING.md#openclaw-저장소) |
+| 컨테이너 실행 0개 | 에이전트가 마지막 종료 상태 | `./openclaw start` | [컨테이너 0개](docs/TROUBLESHOOTING.md#컨테이너-실행-0개) |
+| ⚠ **포트 충돌 11434** | 다른 Ollama/동일 포트 프로세스 | — (수동 확인 필요) | [포트 충돌 11434](docs/TROUBLESHOOTING.md#포트-충돌-11434) |
+| ⚠ 자동 업데이트 | launchd 미등록 | `./openclaw schedule enable` (선택) | [스케줄](docs/TROUBLESHOOTING.md#자동-업데이트-스케줄) |
+| ⚠ 네트워크 격리 | online (일시 허용) | `./openclaw network isolated --restart` | [네트워크 명시적 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) |
+| 한국 소버린 AI | EXAONE · A.X · Solar 감지 | — (자동 감지만) | [한국 소버린 AI](#-한국-소버린-ai-와-함께-쓰기) |
+
+### 설치 중 멈춘 시 — 단계별 장애 가이드
+
+`./openclaw install` 은 멱등 설계라 중단되어도 **같은 명령을 다시 치면 마지막 실패 단계부터 이어서** 진행됩니다. 이어서도 계속 실패하는 경우:
+
+| 실패 단계 | 일반적 원인 | 가이드 |
+|---|---|---|
+| `xcode_clt` | 애플 서버 일시 장애 / OS 너무 옛 버전 | [Xcode CLT](docs/TROUBLESHOOTING.md#xcode-command-line-tools) |
+| `brew` | Homebrew 설치 스크립트 다운로드 실패 (회사 프록시) | [Homebrew](docs/TROUBLESHOOTING.md#homebrew) |
+| `docker_install` / `docker_start` | 데몬 멈춤 · Rosetta · 약관 동의 | [Docker 첫 실행](docs/TROUBLESHOOTING.md#docker-desktop-첫-실행--업데이트-안내--시스템-비밀번호--백그라운드-실행-알림) |
+| `ollama_install` / `ollama_start` | brew services 권한 또는 포트 충돌 | [Ollama](docs/TROUBLESHOOTING.md#ollama--데몬--모델) · [포트 충돌 11434](docs/TROUBLESHOOTING.md#포트-충돌-11434) |
+| `repo_clone` | GitHub 502 / 사내 프록시 | [GitHub 502 우회](docs/TROUBLESHOOTING.md#brew-install-중-curl-56--error-502--github-502-bad-gateway) · [완전 수동](docs/GUIDE-MANUAL-INSTALL.md) |
+| ✗ **`compose_scan`** — "`/var/run/docker.sock` 마운트 발견" | OpenClaw fork 가 호스트 Docker 명령권을 요구 | [compose 보안 경고](docs/TROUBLESHOOTING.md#compose-보안-경고--varrundockersock) |
+| `env_merge` | 존재하는 `.env` 권한 | [.env 병합 실패](docs/TROUBLESHOOTING.md#env-병합-실패) |
+| `compose_up` | 포트 점유 / 이미지 pull 실패 / 디스크 부족 | [compose up 실패](docs/TROUBLESHOOTING.md#compose-up-실패) |
+| `health` | 컨테이너는 떴는데 초기화가 오래 걸림 | [헬스체크 실패](docs/TROUBLESHOOTING.md#헬스체크-실패) |
+
+특정 단계만 다시 돌리려면 상태 파일에서 해당 줄을 지웁니다:
+
+```bash
+# 예: docker_start 만 다시
+sed -i '' '/^docker_start=done$/d' ~/.openclaw-mgr/state
+./openclaw install
+```
+
+---
+
+## 🔄 업데이트 흐름
+
+두 종류의 업데이트가 있습니다 — **워크스페이스 자체** 와 **OpenClaw 컨테이너·이미지·모델**.
+
+```bash
+# 1) 이 런처 자체 갱신 (이 저장소의 코드)
+./openclaw self-update
+
+# 2) OpenClaw 코드 + Docker 이미지 + Ollama 모델 갱신
+./openclaw update
+#   ├ 필요한 동안만 자동으로 isolated → online 으로 전환
+#   └ 완료 후 원래 모드로 복귀
+
+# 3) 매일 새벽 자동 돌아가게 (선택)
+./openclaw schedule enable
+./openclaw schedule status   # 다음 실행 시각 확인
+./openclaw schedule disable  # 해제
+```
+
+업데이트 전에는 백업 한 번을 권장합니다:
+
+```bash
+./openclaw backup --name before-update
+./openclaw update
+# 문제 시:
+./openclaw restore ~/openclaw-backups/openclaw-...-before-update.tar.gz
+```
+
+launchd 스케줄이 안 돌 때의 진단은 [TROUBLESHOOTING — 자동 업데이트 스케줄](docs/TROUBLESHOOTING.md#자동-업데이트-스케줄) 참조.
 
 ---
 
@@ -597,13 +716,9 @@ shfmt -d -i 2 openclaw-mgr
 brew install gh
 gh auth login
 ./scripts/publish.sh        # 메인 저장소 생성·푸시·토픽·v0.1.0 릴리스까지 자동
-./scripts/publish-tap.sh    # Homebrew tap (homebrew-openclaw) 자동 게시
 ```
 
-`publish-tap.sh` 는 `v0.1.0` tarball 의 SHA256 을 자동 계산하고
-`<owner>/homebrew-openclaw` 저장소를 생성/갱신합니다. 다른 owner 로 게시하려면
-`GH_OWNER=myorg ./scripts/publish-tap.sh`. 새 릴리스(예: v0.1.1) 후에는
-`TAG=v0.1.1 ./scripts/publish-tap.sh` 를 다시 실행하세요.
+> Homebrew 탭 공식 배포는 현재 공식 경로에서 제외되었습니다. 설치는 스크립트 한 가지 경로로 통일되며, 완전 수동 경로([docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md))를 백업으로 제공합니다. `Formula/` 디렉토리와 `scripts/publish-tap.sh` 는 내부·실험을 위해 남겨두지만, 공식 안내에서는 `git clone` 경로만 권장합니다.
 
 ---
 
