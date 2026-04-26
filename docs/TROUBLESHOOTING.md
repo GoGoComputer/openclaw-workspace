@@ -180,6 +180,13 @@ osascript -e 'quit app "Docker"' && sleep 5 && open -a Docker
 - *첫 실행 — 약관 동의 / 시스템 비밀번호* — 사람이 한 번 입력해야 데몬이 올라옵니다. 다이얼로그가 어떤 것인지는 [Docker Desktop 첫 실행](#docker-desktop-첫-실행--업데이트-안내--시스템-비밀번호--백그라운드-실행-알림) 표 참조.
 - *Apple Silicon Rosetta 다이얼로그* — [Disable Rosetta] 추천, [Rosetta 다이얼로그 절](#docker-desktop---rosetta-installation-failed--vzerrordomain-code1-apple-silicon).
 - *VM 디스크 손상* — Docker → Settings → Troubleshoot → Reset to factory defaults (드물게 필요).
+- *설치 도중 Docker Desktop 을 끔 — `compose_up` 이 데몬에 연결 못 함* —
+  ```
+  unable to get image 'openclaw:local': Cannot connect to the Docker daemon
+  at unix:///Users/mo/.docker/run/docker.sock. Is the docker daemon running?
+  ✗ 단계 실패: compose_up (rc=1)
+  ```
+  `docker_start=done` 마커는 그대로 남아 있지만 데몬은 죽은 상태. v0.1.8 이상에서는 `compose_up` 이 시작 시점에 데몬을 다시 검사·기동합니다. 이전 버전은 `./openclaw self-update` 후 재시도하거나, 수동으로 `open -a Docker` 후 `./openclaw install` 재실행하세요.
 
 ---
 

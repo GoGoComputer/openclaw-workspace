@@ -246,6 +246,27 @@ run_step env_merge ".env 머지" -- step_env_merge
 step_compose_up() {
   cd "$OPENCLAW_DIR"
 
+  # ── Docker 데몬 라이브니스 재확인 (마커가 있어도 매번 검사) ──────────────
+  # docker_start=done 이라도 그 이후 사용자가 Docker Desktop 을 끌 수 있다.
+  # compose_up 직전에 데몬이 죽어 있으면 자동으로 다시 띄운다.
+  if ! docker info >/dev/null 2>&1; then
+    warn "Docker 데몬이 응답하지 않습니다 — 자동 재기동 시도"
+    open -a "Docker" 2>/dev/null || die "Docker.app 을 열 수 없습니다. Docker Desktop 을 직접 실행 후 './openclaw install' 재시도하세요."
+    info "데몬 기동 대기 (최대 90초)..."
+    local i
+    for i in $(seq 1 90); do
+      if docker info >/dev/null 2>&1; then
+        ok "Docker 데몬 재기동 완료 (${i}s)"
+        break
+      fi
+      sleep 1
+    done
+    if ! docker info >/dev/null 2>&1; then
+      err "Docker 데몬이 시간 내 기동하지 않았습니다. Docker Desktop 첫 실행 시 약관 동의가 필요할 수 있습니다."
+      return 1
+    fi
+  fi
+
   # ── 기존 이미지·컨테이너 사전 감지 ────────────────────────────────────────
   local existing_images
   existing_images="$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null \
