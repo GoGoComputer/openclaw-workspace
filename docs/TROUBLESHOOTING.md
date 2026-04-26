@@ -524,11 +524,19 @@ lsof -nP -iTCP:8000 -sTCP:LISTEN
 
 **원인 B — 이미지 pull 실패**
 ```
-Error response from daemon: pull access denied / manifest unknown
+Error response from daemon: pull access denied for openclaw,
+repository does not exist or may require 'docker login'
 ```
+- *`openclaw:local` 을 pull 하려고 함* — `openclaw:local` 은 **로컬 빌드 이미지**라 레지스트리에 없습니다. v0.1.9 이상은 `compose_up` 직전에 자동으로 `docker build -t openclaw:local "$OPENCLAW_DIR"` 를 실행합니다. 이전 버전은 `./openclaw self-update` 후 재시도하거나, 수동으로:
+  ```bash
+  cd "$OPENCLAW_DIR"
+  DOCKER_BUILDKIT=1 docker build -t openclaw:local .
+  cd -
+  ./openclaw install
+  ```
 - *공개 이미지인데 401* — Docker Hub 무인증 한도 초과(드뭄). `docker login` 후 재시도.
 - *비공개 레지스트리* — `docker login <레지스트리>` 필요.
-- *태그 오타* — `OPENCLAW_REPO` 의 compose 파일 이미지 태그 확인.
+- *태그 오타* — `OPENCLAW_REPO` 의 compose 파일 이미지 태그 확인. 다른 이미지를 쓰려면 `.env` 의 `OPENCLAW_IMAGE` 를 그 태그로 지정.
 
 **원인 C — Compose 파일 문법 오류**
 ```

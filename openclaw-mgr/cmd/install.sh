@@ -280,6 +280,28 @@ step_compose_up() {
     info "OpenClaw Docker 이미지 없음 — 처음 실행 시 pull 됩니다."
   fi
 
+  # ── openclaw:local 자동 빌드 ──────────────────────────────────────────────
+  # docker-compose.yml 의 기본 이미지 태그는 'openclaw:local' 인데, 이건
+  # 레지스트리에 없고 로컬에서 'docker build' 로 만들어야 한다. 사용자가
+  # 다른 이미지(${OPENCLAW_IMAGE})를 지정하지 않은 경우 자동으로 빌드한다.
+  local target_image="${OPENCLAW_IMAGE:-openclaw:local}"
+  if [ "$target_image" = "openclaw:local" ]; then
+    if ! docker image inspect "$target_image" >/dev/null 2>&1; then
+      if [ -f "$OPENCLAW_DIR/Dockerfile" ]; then
+        info "openclaw:local 이미지가 없습니다 — 로컬에서 빌드합니다 (몇 분 소요)"
+        ( cd "$OPENCLAW_DIR" \
+          && DOCKER_BUILDKIT=1 docker build -t openclaw:local . ) \
+          || { err "openclaw:local 이미지 빌드 실패"; return 1; }
+        ok "이미지 빌드 완료: openclaw:local"
+      else
+        err "이미지 'openclaw:local' 도 Dockerfile 도 찾을 수 없습니다."
+        err "  - $OPENCLAW_DIR/Dockerfile 가 존재해야 합니다."
+        err "  - 또는 .env 에 OPENCLAW_IMAGE=<레지스트리 이미지> 를 지정하세요."
+        return 1
+      fi
+    fi
+  fi
+
   local existing_containers
   existing_containers="$(docker ps -a --format '{{.Names}}\t{{.Status}}' 2>/dev/null \
     | grep -iE 'openclaw' || true)"
