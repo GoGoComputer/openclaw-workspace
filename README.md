@@ -55,7 +55,7 @@
 |---|---|---|---|
 | 1 | **설치** (Install) | `git clone … && ./openclaw install` | [표준 설치](#표준--스크립트-설치-권장) · [완전 수동](docs/GUIDE-MANUAL-INSTALL.md) · [처음부터](docs/GUIDE-FROM-ZERO.md) |
 | 2 | **진단** (Doctor) | `./openclaw doctor` | [진단 항목별 가이드](#-진단--doctor-항목별-가이드) · [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) |
-| 3 | **사용** (Use) | `./openclaw start` · `docker compose exec openclaw-cli bash` · `surf "…"` · `creative run "…"` · `shorts run "…"` | [설치 끝났습니다 — 어떻게 대화하죠?](docs/GUIDE-OPENCLAW.md#설치-끝났습니다--이제-어떻게-대화하죠) · [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 3 | **사용** (Use) | `./openclaw start` · `docker compose exec openclaw-cli bash` · `surf "…"` · `creative run "…"` · `shorts run "…"` | **▶ [설치 후 첫 사용 가이드](docs/GUIDE-FIRST-USE.md)** · [GUIDE-OPENCLAW](docs/GUIDE-OPENCLAW.md) · [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
 | 4 | **유지보수** (Maintain) | `./openclaw logs` · `./openclaw clean` · `./openclaw backup` · `./openclaw restore` | [명령 카탈로그](#-명령-카탈로그) · [정리](#-메모리디스크-정리-비개발자용) |
 | 5 | **설정 변경** (Configure) | `.env` 편집 · `./openclaw models …` · `./openclaw network …` | [.env 설정](#️-설정-env) · [모델 관리](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기) · [네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) |
 | 6 | **업데이트** (Update) | `./openclaw update` · `./openclaw self-update` · `./openclaw schedule enable` | [업데이트 흐름](#-업데이트-흐름) |
@@ -96,6 +96,8 @@ cd openclaw-workspace/openclaw-mgr
 ./openclaw doctor              # 모두 ✓ 확인
 ./openclaw schedule enable     # 매일 새벽 자동 업데이트 (선택)
 ```
+
+> 💬 **"이제 어떻게 대화하죠?"** → 설치 후 첫 사용은 별도 가이드로 정리되어 있습니다 — [**docs/GUIDE-FIRST-USE.md**](docs/GUIDE-FIRST-USE.md) (5분 안에 첫 프롬프트까지: 헬스체크 → UI/CLI 접속 → 모델 선택 → 작업 파일 위치 → 일상 운영 → 웹 수집 → 첫 사용 트러블슈팅).
 
 > ℹ️ **OpenClaw 본체 공식 저장소**: `https://github.com/openclaw/openclaw` — `.env` 는 **첫 실행 시 자동 생성**됩니다(`cp` 불필요). `./openclaw install` 만으로 바로 띄울 수 있습니다.
 
@@ -207,7 +209,8 @@ shorts   run "여행 감성 풍경"
 
 | 누구 | 어디부터 | 무엇이 있나 |
 |---|---|---|
-| 🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **−1단계: 클릭/더블클릭/우클릭 차이, GUI vs CLI, 창·메뉴바·Dock, 파일·폴더·경로** 부터 시작 → 터미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
+| � **설치 직후 — 첫 대화까지 5분** | [docs/GUIDE-FIRST-USE.md](docs/GUIDE-FIRST-USE.md) | `✓ 설치 완료!` 직후 무엇을 치는지: 헬스체크 → UI/CLI 접속 → 첫 프롬프트 → 모델 추가 → 작업 파일 위치 → 일상 운영 → 웹 수집 → 첫 사용 트러블슈팅. KO+EN |
+| �🌱 **진짜 처음부터 (폴더 만들기·`pwd`·`cd` 부터)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **−1단계: 클릭/더블클릭/우클릭 차이, GUI vs CLI, 창·메뉴바·Dock, 파일·폴더·경로** 부터 시작 → 터미널 열기 → 5개 핵심 명령 → 한 줄 설치. KO+EN 병기 |
 | 🪜 **완전 수동 설치 (공식 사이트에서 직접 다운)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 Docker·Ollama·소스 직접 다운. 회사 IT 심사·GitHub 502 회피용. KO+EN 병기 |
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |

@@ -112,7 +112,8 @@ shorts   run "moody travel landscapes"
 
 | Who you are | Start here | What's inside |
 |---|---|---|
-| 🌱 **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **Step −1: click vs double-click vs right-click, GUI vs CLI, window·menu bar·Dock, file·folder·path** → open Terminal → 5 essential commands → git clone install. KO+EN |
+| � **Right after install — first chat in 5 min** | [docs/GUIDE-FIRST-USE.md](docs/GUIDE-FIRST-USE.md) | What to type the moment `✓ install complete` shows: health check → UI/CLI access → first prompt → add a model → where files live → daily ops → web fetch → first-use troubleshooting. KO+EN |
+| �🌱 **Truly from zero (`mkdir`, `cd`, opening Terminal)** | [docs/GUIDE-FROM-ZERO.md](docs/GUIDE-FROM-ZERO.md) | **Step −1: click vs double-click vs right-click, GUI vs CLI, window·menu bar·Dock, file·folder·path** → open Terminal → 5 essential commands → git clone install. KO+EN |
 | 🦜 **Fully manual install (download from official sites)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | 8 stages, each with command + expected output + recovery: **0** prereq diagnose · **0.5** reuse existing Docker/Ollama · **1** Xcode CLT · **2** Docker Desktop · **3** Ollama + models · **4** git clone · **5** `./openclaw install` (`5b` fully-by-hand, `5c` sandbox) · **6** PATH + start/stop/port cheatsheet · **7** update — what to re-run after `git pull` (per change type). KO+EN |
 | 🆕 **First time / never used a terminal** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Step-by-step from "open Terminal", with sample output |
 | 🇰🇷 **한국어 처음 사용자** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 한국어 버전 |
