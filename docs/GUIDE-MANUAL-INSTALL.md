@@ -630,38 +630,88 @@ docker info            # Server: ... 가 보이면 데몬 정상
 
 #### 데몬(서버) 켜기
 
-| 방법 | 명령 / 동작 |
-|---|---|
-| 🖱 **앱으로 켜기** (가장 쉬움) | Applications → **Docker.app** 더블클릭, 또는 Spotlight (`⌘ Space` → "docker") |
-| ⌨ **터미널에서 켜기** | `open -a Docker` |
-| 🔄 **부팅 시 자동 켜기** (기본 ON) | GUI: Docker Desktop 설정 → General → "Start Docker Desktop when you sign in" — CLI 는 아래 섬션 참고 |
+| 방법 | 명령 / 동작 | 언제 쓰나 |
+|---|---|---|
+| 🖱 **앱 더블클릭** (가장 쉬움) | Applications → **Docker.app** 더블클릭 (또는 Spotlight `⌘ Space` → "docker") | GUI 익숙 / 한 번만 켤 때 |
+| ⌨ **터미널에서 켜기** | `open -a Docker` | 스크립트·SSH·자동화에서 |
+| 🔄 **부팅 시 자동 켜기** | Settings → General → "Start Docker Desktop when you sign in" ✓ | 매번 켜기 귀찮을 때 (기본 ON) |
+| ❌ **부팅 시 자동 꺼두기** | 위 체크 해제 | 평소 Docker 안 쓰는데 메모리 절약하고 싶을 때 |
 
-켜진 후 **메뉴바의 🐳 고래 아이콘이 움직임을 멈출 때까지** 30~60초 대기 → 그제서야 `docker` 명령이 동작합니다.
+**켜진 뒤 흐름** (3단계):
+
+1. 메뉴바 🐳 **고래 아이콘이 등장** → 시동 시작
+2. 30~60초 동안 고래가 움직임 (=내부 VM 부팅 중)
+3. **고래가 멈추면** → 그제서야 `docker` 명령이 동작합니다. 안 멈췄는데 명령 치면 `Cannot connect to the Docker daemon` 정상.
+
+> ⏱ **얼마나 기다려야?** Apple Silicon 30초, 인텔 Mac/처음 설치 직후 60~90초. 2분 넘게 움직이면 hang — 메뉴바 🐳 클릭 → Restart.
 
 #### 데몬(서버) 켜졌는지 확인
 
+> 🎯 **핵심**: Docker 는 *데몬(서버)* 과 *CLI(클라이언트)* 가 분리되어 있어서, **CLI 명령은 데몬이 꺼져 있어도 일부 동작합니다**. 헷갈리지 않으려면 아래 "한 줄 진단"을 쓰세요.
+
+##### 🥇 한 줄 진단 (가장 확실)
+
 ```bash
-# 가장 확실한 한 줄
 if docker info >/dev/null 2>&1; then echo "✓ daemon up"; else echo "✗ daemon down"; fi
-
-# 버전만 짧게
-docker info --format '{{.ServerVersion}}'   # 예: 29.4.0
-
-# 전체 정보 보기
-docker info | head -30                       # "Server:" 섬션이 아래쪽에 나와야 OK
-docker ps                                    # 표 헤더 (CONTAINER ID  IMAGE ...) 나오면 OK
 ```
 
-> ⚠️ `docker info | head -5` 는 **Client 섹션만** 출력해서 데몬이 껌져 있어도 동일하게 보입니다. **`Server:` 줄을 확인**하거나 위의 한 줄짜리 방법을 쓰세요.
+| 출력 | 의미 | 다음에 할 일 |
+|---|---|---|
+| `✓ daemon up` | 데몬 기동 완료, 명령 다 됨 | 그대로 진행 |
+| `✗ daemon down` | 앱 자체가 꺼져 있거나 시동 중 | `open -a Docker` 후 30~60초 대기, 다시 확인 |
 
-**✗ daemon down 이 나오면 → Docker 앱이 안 켜져 있는 것입니다:**
+##### 🥈 자세히 보기
+
 ```bash
-open -a Docker          # 앱 실행
-# 메뉴바 🐳 가 움직임을 멈출 때까지 30~60초 대기
-# 그 뒤 위 확인 명령 다시 치기 → ✓ daemon up 이 나와야 OK
+# 1) 서버 버전만 짧게
+docker info --format '{{.ServerVersion}}'
+# ── 결과 해석 ────────────────────────────
+#   29.4.0                         → ✓ 데몬 ON
+#   (빈 줄)                         → 표시할 게 없음 (드물지만 에러)
+#   "Cannot connect to..." 등 에러 → ✗ 데몬 OFF
+
+# 2) 컨테이너 목록 (살아 있는 것만)
+docker ps
+# ── 결과 해석 ────────────────────────────
+#   CONTAINER ID  IMAGE  COMMAND ...        → ✓ 데몬 ON, 표 헤더만 = 컨테이너 0개
+#   (헤더 + 행)                              → ✓ 데몬 ON, OpenClaw 등 실행 중
+#   "Cannot connect to the Docker daemon"   → ✗ 데몬 OFF
+#   "permission denied while trying ..."     → 데몬 ON 인데 권한 문제 (드뭄, macOS Desktop 에선 거의 안 봄)
+
+# 3) 전체 시스템 정보
+docker info | head -30
+# ── 결과 해석 ────────────────────────────
+#   "Client:" 섹션 다음 "Server:" 섹션이 같이 나옴   → ✓ 데몬 ON
+#   "Client:" 섹션만 + 끝에 "ERROR: Cannot connect"  → ✗ 데몬 OFF
 ```
 
-`Cannot connect to the Docker daemon` 가 나오면 → 아직 시동 중. 잠시 기다리거나 메뉴바 고래 아이콘을 클릭해 상태 확인.
+> ⚠️ `docker info | head -5` 만 보지 마세요 — **Client 섹션만** 잘려서 데몬이 꺼져 있어도 정상처럼 보입니다. **`Server:` 줄이 보여야** 진짜 켜진 것입니다.
+
+##### 🥉 자주 보는 에러 메시지와 정확한 의미
+
+| 에러 메시지 | 진짜 의미 | 해결 |
+|---|---|---|
+| `Cannot connect to the Docker daemon at unix:///var/run/docker.sock` | 앱이 꺼졌거나 아직 시동 중 | `open -a Docker` → 메뉴바 🐳 멈출 때까지 30~60초 → 다시 확인 |
+| `Is the docker daemon running?` | 위와 같음 | 위와 같음 |
+| `request returned 500 Internal Server Error` | 데몬이 켜졌지만 일시 오류 / hang | "재시작" 절 참고 (`osascript ... quit; sleep 5; open -a Docker`) |
+| `docker: command not found` | Docker Desktop **자체가 미설치** | [2단계](#2단계--docker-desktop-직접-다운로드) 진행 |
+| `permission denied while trying to connect to ... docker.sock` | 권한 문제 (보통 Linux. macOS Desktop 에선 거의 발생 X) | Docker Desktop 재시작 / 재설치 |
+
+##### ✗ daemon down 이 나왔을 때 — 단계별 복구
+
+```bash
+# ❶ 앱이 깔려 있는지 확인
+ls /Applications/Docker.app >/dev/null 2>&1 && echo "✓ 앱 설치됨" || echo "✗ 앱 미설치 → 2단계 진행"
+
+# ❷ 앱 켜기
+open -a Docker
+
+# ❸ 메뉴바 🐳 고래가 움직임을 멈출 때까지 대기 (30~60초)
+#    움직이는 동안은 시동 중 — 명령 쳐도 'Cannot connect' 가 정상
+
+# ❹ 다시 확인
+docker info >/dev/null 2>&1 && echo "✓ daemon up" || echo "아직 시동 중 — 30초 더 기다려보세요"
+```
 
 #### Docker 켜기 / 끄기 / 항상 켜기 / 완전 죽이기 — 한눈에
 
