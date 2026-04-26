@@ -113,9 +113,15 @@ detect_compose() {
 }
 
 detect_ports() {
-  local port conflicts=""
+  local port conflicts="" pid proc
   for port in 11434 "${OPENCLAW_PORT:-8000}"; do
-    if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    pid="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1)"
+    if [ -n "$pid" ]; then
+      proc="$(ps -p "$pid" -o comm= 2>/dev/null)"
+      # 11434 + ollama = 정상 (OpenClaw 가 호스트 Ollama 를 공유)
+      if [ "$port" = "11434" ] && echo "$proc" | grep -qi ollama; then
+        continue
+      fi
       conflicts="${conflicts}${conflicts:+,}${port}"
     fi
   done

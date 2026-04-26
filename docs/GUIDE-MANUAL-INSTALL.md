@@ -406,9 +406,18 @@ for p in 18789 18790 11434; do
   pid="$(lsof -nP -iTCP:$p -sTCP:LISTEN -t 2>/dev/null | head -1)"
   if [ -n "$pid" ]; then
     proc="$(ps -p "$pid" -o comm= 2>/dev/null)"
-    echo "  포트 $p ⚠ 점유 중 (pid=$pid, $proc)"
+    # 11434 + Ollama = 정상 (OpenClaw 가 호스트 Ollama 를 공유함)
+    if [ "$p" = "11434" ] && echo "$proc" | grep -qi ollama; then
+      echo "  포트 $p ✓ Ollama 점유 (정상 — OpenClaw 가 공유해서 씀)"
+    else
+      echo "  포트 $p ⚠ 점유 중 (pid=$pid, $proc)"
+    fi
   else
-    echo "  포트 $p ✓ 비어 있음"
+    if [ "$p" = "11434" ]; then
+      echo "  포트 $p · 비어 있음 (Ollama 데몬 OFF — 3단계에서 켤 예정)"
+    else
+      echo "  포트 $p ✓ 비어 있음"
+    fi
   fi
 done
 echo ""
