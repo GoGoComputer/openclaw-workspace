@@ -19,9 +19,11 @@ param(
 )
 
 . "$PSScriptRoot\lib-win\common.ps1"
-Assert-Windows
 
 $Version = '0.2.4'
+
+# help / version 은 OS 무관하게 동작 (Linux pwsh 환경에서도 사용법 확인 가능).
+# 그 외 실 명령(install/start/...) 은 각 case 에서 Assert-Windows 로 차단.
 
 # ── Windows 경로 → WSL /mnt/<drive>/... 변환 ─────────────────────────────────
 function ConvertTo-WslPath {
@@ -129,11 +131,13 @@ switch -Regex ($Command) {
     }
 
     '^install-bootstrap$' {
+        Assert-Windows
         & "$PSScriptRoot\cmd-win\install-bootstrap.ps1" @Rest
         exit $LASTEXITCODE
     }
 
     '^doctor$' {
+        Assert-Windows
         # 1. Windows 측 doctor
         & "$PSScriptRoot\cmd-win\doctor.ps1"
         $winRc = $LASTEXITCODE
@@ -151,12 +155,14 @@ switch -Regex ($Command) {
     }
 
     '^schedule$' {
+        Assert-Windows
         & "$PSScriptRoot\cmd-win\schedule.ps1" @Rest
         exit $LASTEXITCODE
     }
 
     # 그 외 모든 서브커맨드는 WSL bash 로 위임 (install, start, stop, logs, ...)
     '^(install|start|stop|logs|update|backup|restore|uninstall|clean|network|menu|models|self-update|ai-update|upgrade)$' {
+        Assert-Windows
         Invoke-WslOpenclaw -ArgsList (@($Command) + $Rest)
     }
 
