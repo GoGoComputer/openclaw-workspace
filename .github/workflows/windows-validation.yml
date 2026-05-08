@@ -1,0 +1,163 @@
+name: windows-validation
+
+# Windows 측 PowerShell 진입점·헬퍼 스크립트의 문법·호환성·동작 검증.
+# 모든 매 push / PR 마다 windows-latest runner 에서 자동 실행.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ps-validation:
+    name: PowerShell (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        # actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      # ── 1. Parser (PowerShell 7) ──────────────────────────────────────────
+      - name: Parser check (pwsh 7)
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Filter *.ps1 -Path openclaw-mgr
+          $bad = 0
+          foreach ($f in $files) {
+            $errs = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$null, [ref]$errs)
+            if ($errs -and $errs.Count -gt 0) {
+              $bad++
+              foreach ($e in $errs) {
+                Write-Host ("::error file={0},line={1}::{2}" -f $f.FullName, $e.Extent.StartLineNumber, $e.Message)
+              }
+            } else {
+              Write-Host "OK  $($f.FullName)"
+            }
+          }
+          if ($bad -gt 0) { exit 1 }
+
+      # ── 2. PSScriptAnalyzer (Error / Warning) ────────────────────────────
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module PSScriptAnalyzer
+          $r = Invoke-ScriptAnalyzer -Path openclaw-mgr -Recurse -Severity Error,Warning -ExcludeRule @(
+            'PSAvoidUsingWriteHost',
+            'PSUseShouldProcessForStateChangingFunctions',
+            'PSAvoidGlobalAliases',
+            'PSUseSingularNouns'
+          )
+          if ($null -eq $r -or @($r).Count -eq 0) {
+            Write-Host 'PSScriptAnalyzer: 0 issues'
+            exit 0
+          }
+          $r | Format-Table -AutoSize
+          foreach ($i in $r) {
+            $sev = if ($i.Severity -eq 'Error') { 'error' } else { 'warning' }
+            Write-Host ("::{0} file={1},line={2}::[{3}] {4}" -f $sev, $i.ScriptPath, $i.Line, $i.RuleName, $i.Message)
+          }
+          $errs = @($r | Where-Object Severity -EQ 'Error').Count
+          if ($errs -gt 0) { exit 1 }
+
+      # ── 3. PS 5.1 / 7.0 / 7.4 호환 구문 ──────────────────────────────────
+      - name: Compatibility (PSUseCompatibleSyntax)
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          $settings = @{
+            IncludeRules = @('PSUseCompatibleSyntax')
+            Rules = @{
+              PSUseCompatibleSyntax = @{
+                Enable = $true
+                TargetVersions = @('5.1', '7.0', '7.4')
+              }
+            }
+          }
+          $r = Invoke-ScriptAnalyzer -Path openclaw-mgr -Recurse -Settings $settings
+          if ($null -eq $r -or @($r).Count -eq 0) {
+            Write-Host 'Compatibility OK (5.1 / 7.0 / 7.4)'
+            exit 0
+          }
+          $r | Format-Table -AutoSize
+          foreach ($i in $r) {
+            Write-Host ("::error file={0},line={1}::[{2}] {3}" -f $i.ScriptPath, $i.Line, $i.RuleName, $i.Message)
+          }
+          exit 1
+
+      # ── 4. Smoke: help / version (OS 무관 동작) ──────────────────────────
+      - name: Smoke — help / version (pwsh 7)
+        shell: pwsh
+        run: |
+          .\openclaw-mgr\openclaw.ps1 help | Out-Null
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::help exit=$LASTEXITCODE"; exit 1 }
+          .\openclaw-mgr\openclaw.ps1 version
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::version exit=$LASTEXITCODE"; exit 1 }
+
+      # ── 5. Smoke: 알 수 없는 명령은 exit 2 ────────────────────────────────
+      - name: Smoke — unknown command (exit 2)
+        shell: pwsh
+        run: |
+          .\openclaw-mgr\openclaw.ps1 unknownXYZ 2>&1 | Out-Null
+          if ($LASTEXITCODE -ne 2) {
+            Write-Host "::error::expected exit 2, got $LASTEXITCODE"
+            exit 1
+          }
+
+      # ── 6. Smoke: install-bootstrap -DryRun (실제 winget 호출 없음) ───────
+      - name: Smoke — install-bootstrap -DryRun
+        shell: pwsh
+        run: |
+          .\openclaw-mgr\cmd-win\install-bootstrap.ps1 -DryRun
+          # bare runner 에는 winget/git/docker 가 일부 없을 수 있음 → exit code 자체는 0
+          if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
+            Write-Host "::error::install-bootstrap exit=$LASTEXITCODE"
+            exit 1
+          }
+
+      # ── 7. Smoke: doctor (Windows 측 진단) ───────────────────────────────
+      - name: Smoke — doctor.ps1
+        shell: pwsh
+        run: |
+          .\openclaw-mgr\cmd-win\doctor.ps1
+          # docker/WSL 미설치라 ✗ 행이 나오는 건 정상. 실행 자체가 끝나면 OK.
+          if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
+            Write-Host "::error::doctor crashed exit=$LASTEXITCODE"
+            exit 1
+          }
+
+      # ── 8. Smoke: schedule status (미등록 → warn 메시지, 정상 종료) ──────
+      - name: Smoke — schedule status
+        shell: pwsh
+        run: |
+          .\openclaw-mgr\cmd-win\schedule.ps1 status
+
+      # ── 9. PS 5.1 (Windows PowerShell) 호환 — 진입점 호출 ────────────────
+      - name: Smoke — Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          # 5.1 에서 같은 진입점이 도움말/버전을 출력하는지
+          .\openclaw-mgr\openclaw.ps1 help | Out-Null
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::PS 5.1 help exit=$LASTEXITCODE"; exit 1 }
+          .\openclaw-mgr\openclaw.ps1 version
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::PS 5.1 version exit=$LASTEXITCODE"; exit 1 }
+          # 5.1 진입점에서 모든 .ps1 을 파싱
+          $files = Get-ChildItem -Recurse -Filter *.ps1 -Path openclaw-mgr
+          $bad = 0
+          foreach ($f in $files) {
+            $errs = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$null, [ref]$errs)
+            if ($errs -and $errs.Count -gt 0) {
+              $bad++
+              foreach ($e in $errs) {
+                Write-Host ("::error file={0},line={1}::PS 5.1: {2}" -f $f.FullName, $e.Extent.StartLineNumber, $e.Message)
+              }
+            }
+          }
+          if ($bad -gt 0) { exit 1 }
