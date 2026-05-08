@@ -2,13 +2,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![macOS](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)](#)
+[![Windows (WSL2)](https://img.shields.io/badge/Windows-10%2F11_(WSL2)-0078D6?logo=windows)](#)
 [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-blue?logo=apple)](#)
-[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B-1f425f?logo=gnu-bash)](#)
+[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B%20%C2%B7%20PowerShell%205.1%2B-1f425f?logo=gnu-bash)](#)
 [![CI](https://img.shields.io/github/actions/workflow/status/GoGoComputer/openclaw-workspace/ci.yml?branch=main)](https://github.com/GoGoComputer/openclaw-workspace/actions)
 
-> **OpenClaw self-host automation for macOS — install, maintain, and uninstall with one command.**
+> **OpenClaw self-host automation for macOS · Windows (WSL2) — install, maintain, and uninstall with one command.**
 >
-> One `./openclaw install` on a fresh MacBook sets up Docker, (optionally) Ollama, and the OpenClaw container. Idempotent: if interrupted, just rerun and it picks up where it left off. 100% local sandboxing by default.
+> One `./openclaw install` on a fresh MacBook sets up Docker, (optionally) Ollama, and the OpenClaw container. On Windows 10/11, run `.\openclaw.ps1 install-bootstrap` once + activate WSL2, then the same flow works identically. Idempotent: if interrupted, just rerun and it picks up where it left off. 100% local sandboxing by default.
 
 > 🇰🇷 한국어 (메인): [README.md](README.md)
 
@@ -70,6 +71,28 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 ```
 
 > ℹ️ **Official OpenClaw repo**: `https://github.com/openclaw/openclaw` — `.env` is **created automatically on first run**. Just run `openclaw install` (or `./openclaw install`) — no manual setup needed.
+
+> 💻 **Windows 10/11 (WSL2) users**
+>
+> ```powershell
+> # 1) PowerShell execution policy (one-time)
+> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+>
+> # 2) Get the code
+> git clone https://github.com/GoGoComputer/openclaw-workspace.git
+> cd openclaw-workspace\openclaw-mgr
+>
+> # 3) Bootstrap — winget · WSL2 · Git · Docker Desktop · Ollama probe/install
+> .\openclaw.ps1 install-bootstrap
+>
+> # 4) Windows-side diagnose
+> .\openclaw.ps1 doctor
+>
+> # 5) Install — internally delegates to 'wsl bash openclaw install'
+> .\openclaw.ps1 install
+> ```
+>
+> The Windows entry-point is a single `openclaw.ps1`. All everyday commands (`start`/`stop`/`logs`/`update`/`backup`, etc.) are auto-delegated to the bash launcher inside WSL2 and produce identical results. See each step's **"💻 Windows equivalent"** callout in [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) for details.
 
 ---
 
@@ -135,14 +158,15 @@ shorts   run "moody travel landscapes"
 
 ## 🤔 What is this?
 
-[**OpenClaw**](https://clawbro.ai) is a powerful open-source AI agent that can run shell commands, touch files, and browse the web on your behalf. Because of that power, you must run it inside a Docker sandbox. This project automates the setup on a brand-new macOS machine.
+[**OpenClaw**](https://clawbro.ai) is a powerful open-source AI agent that can run shell commands, touch files, and browse the web on your behalf. Because of that power, you must run it inside a Docker sandbox. This project automates the setup on a brand-new macOS or Windows (WSL2) machine.
 
 | What this tool does | What it doesn't |
 |---|---|
 | Auto-installs Homebrew · Docker · Ollama | Develop OpenClaw itself |
 | Clones the OpenClaw repo & boots containers | Cloud hosting (see [ClawBro.ai](https://clawbro.ai)) |
-| Daily auto-update via launchd | Windows / Linux |
-| Backup · restore · clean uninstall | Multi-instance |
+| Daily auto-update (launchd · Windows Task Scheduler) | Native Linux auto-install (outside WSL) |
+| Windows 10/11 (WSL2 delegation + PowerShell entry-point) | Multi-instance |
+| Backup · restore · clean uninstall | |
 | Security hardening (read-only, cap_drop, 127.0.0.1-only, ...) | Channel integrations (Telegram, etc.) |
 
 ---
@@ -509,12 +533,19 @@ Use separate macOS user accounts (each gets their own `OPENCLAW_DIR`, `BACKUP_DI
 
 ```
 openclaw-mgr/
-├── openclaw                # single entry dispatcher
+├── openclaw                # macOS/Linux entry dispatcher (bash)
+├── openclaw.ps1            # Windows entry dispatcher (PowerShell) — WSL2 delegation + native helpers
 ├── .env.example            # configuration template
 ├── compose.security.yml    # security override
-├── lib/                    # common.sh / sec.sh / detect.sh / prompt.sh
-├── cmd/                    # doctor / install / start / stop / logs / update /
+├── lib/                    # bash common (macOS/WSL2): common.sh / sec.sh / detect.sh / prompt.sh
+├── lib-win/                # PowerShell common (Windows): common.ps1 (logging, idempotent steps, UTF-8 no-BOM writer)
+├── cmd/                    # bash subcommands (macOS/WSL2):
+│                           # doctor / install / start / stop / logs / update /
 │                           # backup / restore / uninstall / schedule / clean
+├── cmd-win/                # PowerShell subcommands (Windows-native):
+│                           # install-bootstrap (winget · WSL2 · Git · Docker Desktop · Ollama)
+│                           # doctor (WSL2 / Docker Desktop / port / path-pitfalls)
+│                           # schedule (Register-ScheduledTask)
 ├── etc/pre-commit.tmpl     # gitleaks hook
 └── docs/                   # QUICKSTART / ARCHITECTURE / TROUBLESHOOTING / CONTRIBUTING
 ```
