@@ -92,32 +92,37 @@ jobs:
           exit 1
 
       # ── 4. Smoke: help / version (OS 무관 동작) ──────────────────────────
-      # PowerShell pipe (`| Out-Null`) 안에서 .ps1 의 exit 코드는 부모 $LASTEXITCODE 로
-      # 정확히 전파되지 않는 알려진 이슈가 있어, 직접 호출 후 즉시 capture 한다.
+      # 핵심: GHA shell 의 같은 PowerShell process 안에서 .\script.ps1 호출 시
+      # 자식의 exit 코드가 부모 $LASTEXITCODE 로 깨끗이 전파되지 않는 케이스가 있어
+      # 모든 진입점 검증은 'pwsh -File ...' 명시적 child process 로 격리해 호출.
       - name: Smoke — help / version (pwsh 7)
         shell: pwsh
         run: |
-          .\openclaw-mgr\openclaw.ps1 help
+          & pwsh -NoProfile -File .\openclaw-mgr\openclaw.ps1 help
           $rc = $LASTEXITCODE
+          Write-Host "captured help exit=$rc"
           if ($rc -ne 0) { Write-Host "::error::help exit=$rc"; exit 1 }
-          .\openclaw-mgr\openclaw.ps1 version
+          & pwsh -NoProfile -File .\openclaw-mgr\openclaw.ps1 version
           $rc = $LASTEXITCODE
+          Write-Host "captured version exit=$rc"
           if ($rc -ne 0) { Write-Host "::error::version exit=$rc"; exit 1 }
 
       # ── 5. Smoke: 알 수 없는 명령은 exit 2 ────────────────────────────────
       - name: Smoke — unknown command (exit 2)
         shell: pwsh
         run: |
-          .\openclaw-mgr\openclaw.ps1 unknownXYZ
+          & pwsh -NoProfile -File .\openclaw-mgr\openclaw.ps1 unknownXYZ
           $rc = $LASTEXITCODE
+          Write-Host "captured unknown exit=$rc"
           if ($rc -ne 2) { Write-Host "::error::expected exit 2, got $rc"; exit 1 }
 
       # ── 6. Smoke: install-bootstrap -DryRun (실제 winget 호출 없음) ───────
       - name: Smoke — install-bootstrap -DryRun
         shell: pwsh
         run: |
-          .\openclaw-mgr\cmd-win\install-bootstrap.ps1 -DryRun
+          & pwsh -NoProfile -File .\openclaw-mgr\cmd-win\install-bootstrap.ps1 -DryRun
           $rc = $LASTEXITCODE
+          Write-Host "captured bootstrap exit=$rc"
           # bare runner 에는 winget/git/docker 가 일부 없을 수 있음 → exit code 0 이어도 정상.
           if ($rc -ne 0 -and $null -ne $rc) {
             Write-Host "::error::install-bootstrap exit=$rc"
@@ -128,8 +133,9 @@ jobs:
       - name: Smoke — doctor.ps1
         shell: pwsh
         run: |
-          .\openclaw-mgr\cmd-win\doctor.ps1
+          & pwsh -NoProfile -File .\openclaw-mgr\cmd-win\doctor.ps1
           $rc = $LASTEXITCODE
+          Write-Host "captured doctor exit=$rc"
           # docker/WSL 미설치라 ✗ 행이 나오는 건 정상. 실행 자체가 끝나면 OK.
           if ($rc -ne 0 -and $null -ne $rc) {
             Write-Host "::error::doctor crashed exit=$rc"
@@ -140,18 +146,22 @@ jobs:
       - name: Smoke — schedule status
         shell: pwsh
         run: |
-          .\openclaw-mgr\cmd-win\schedule.ps1 status
+          & pwsh -NoProfile -File .\openclaw-mgr\cmd-win\schedule.ps1 status
+          $rc = $LASTEXITCODE
+          Write-Host "captured schedule exit=$rc"
 
       # ── 9. PS 5.1 (Windows PowerShell) 호환 — 진입점 호출 ────────────────
       - name: Smoke — Windows PowerShell 5.1
         shell: powershell
         run: |
-          # 5.1 에서 같은 진입점이 도움말/버전을 출력하는지
-          .\openclaw-mgr\openclaw.ps1 help
+          # 5.1 진입점이 도움말/버전을 정상 출력하는지 — child process 로 격리
+          & powershell -NoProfile -File .\openclaw-mgr\openclaw.ps1 help
           $rc = $LASTEXITCODE
+          Write-Host "captured PS5.1 help exit=$rc"
           if ($rc -ne 0) { Write-Host "::error::PS 5.1 help exit=$rc"; exit 1 }
-          .\openclaw-mgr\openclaw.ps1 version
+          & powershell -NoProfile -File .\openclaw-mgr\openclaw.ps1 version
           $rc = $LASTEXITCODE
+          Write-Host "captured PS5.1 version exit=$rc"
           if ($rc -ne 0) { Write-Host "::error::PS 5.1 version exit=$rc"; exit 1 }
           # 5.1 진입점에서 모든 .ps1 을 파싱
           $files = Get-ChildItem -Recurse -Filter *.ps1 -Path openclaw-mgr
