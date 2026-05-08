@@ -56,10 +56,11 @@ _load_env_file "${OPENCLAW_MGR_HOME:-$HOME/.openclaw-mgr}/.env"
 
 usage() {
   cat <<'EOF'
-openclaw — OpenClaw 셀프호스트 자동화 (macOS)
+openclaw — OpenClaw 셀프호스트 자동화 (macOS · Windows/WSL2)
 
 사용법:
   ./openclaw <명령> [옵션]
+  Windows 사용자: PowerShell 에서 .\openclaw.ps1 <명령> (WSL2 자동 위임)
 
 명령 / Commands:
   menu                대화형 메뉴 (한국어/영어) — Interactive menu

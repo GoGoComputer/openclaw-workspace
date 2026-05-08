@@ -31,6 +31,10 @@
 >
 > 💡 **시연 팁**: 명령을 치기 전에 **"이 한 줄이 본문 N단계의 그 부분이에요"** 라고 한 번 짚어주면 비개발자가 본문과 명령을 연결하기 좋습니다.
 
+> 💻 **Windows 학생을 위한 한 줄 안내 (강사 멘트):**
+>
+> "여러분 중 Windows 쓰는 분도 있죠? 본문은 맥 흐름으로 가지만, **실제 동작 원리는 똑같습니다.** Windows 는 PowerShell 진입점 `openclaw.ps1` 가 자동으로 WSL2 안의 bash 로 위임하기 때문에, 위 1~8단계가 그대로 돌아갑니다. 사전에 `wsl --install` 한 번만 해두세요. 자세한 명령은 본문 8단계 끝의 **'Windows 학생용 명령 묶음'** 박스에 정리되어 있습니다."
+
 ### 1단계 — 자기소개 + Mac 신분증 확인 (대본: "첫 번째로 하는 일이 뭐냐면, 손님맞이 준비예요")
 
 ```bash
@@ -147,7 +151,27 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 ./openclaw doctor         # 다시 확인
 ```
 
-> 📖 더 깊이: 각 단계의 옵션·트러블슈팅·왜 그런 순서인지 → [GUIDE-MANUAL-INSTALL.md](../GUIDE-MANUAL-INSTALL.md)
+### 🪟 Windows 학생용 명령 묶음 (강의 후 집에서)
+
+```powershell
+# 0) 사전 준비 (관리자 PowerShell, 1회)
+wsl --install                          # WSL2 활성화 + Ubuntu 설치, 그 후 1회 재부팅
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# 1) 코드 받기 (한글 사용자명 함정 회피 — ASCII 경로 권장)
+mkdir C:\dev -ErrorAction SilentlyContinue
+cd C:\dev
+git clone https://github.com/GoGoComputer/openclaw-workspace.git
+cd openclaw-workspace\openclaw-mgr
+
+# 2) 한 묶음으로 처리 — 위 1~8단계와 1:1 대응
+.\openclaw.ps1 install-bootstrap        # winget 으로 Git/Docker Desktop/Ollama/WSL 점검·설치
+.\openclaw.ps1 doctor                   # Windows 측 진단 (포트·실행 정책·경로 함정)
+.\openclaw.ps1 install                  # ← 이 한 줄이 'wsl bash openclaw install' 로 위임
+.\openclaw.ps1 schedule enable          # 매일 자동 update (작업 스케줄러 = launchctl 등가)
+```
+
+> 📖 더 깊이: 각 단계의 옵션·트러블슈팅·왜 그런 순서인지 → [GUIDE-MANUAL-INSTALL.md](../GUIDE-MANUAL-INSTALL.md) (각 단계 끝의 `> 💻 Windows 동등 명령` 박스 참고)
 
 ---
 

@@ -1,0 +1,35 @@
+[book]
+title = "OpenClaw 자동화 한 권으로"
+authors = ["박성모 (Park Sungmo)"]
+description = "강의 대본 H1~H8을 한 권으로 묶은 OpenClaw 자동화 안내서. 이 책 한 권만으로 레포 없이 처음부터 끝까지 재현 가능합니다."
+language = "ko"
+src = "src"
+
+[rust]
+edition = "2021"
+
+[build]
+build-dir = "build"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/GoGoComputer/openclaw-workspace"
+edit-url-template = "https://github.com/GoGoComputer/openclaw-workspace/edit/main/book/{path}"
+site-url = "/openclaw-workspace/"
+no-section-label = false
+
+[output.html.fold]
+enable = true
+level = 2
+
+[output.html.search]
+enable = true
+limit-results = 30
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 2
+boost-paragraph = 1
+expand = true
+heading-split-level = 3

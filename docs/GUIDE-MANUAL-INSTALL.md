@@ -11,6 +11,17 @@
 
 빠른 길 (자동) 을 원하면 [README.md](../README.md) 의 git clone 설치 방법을 쓰세요.
 
+### 🖥 지원 OS / Supported OS
+
+| OS | 진입점 | 백엔드 |
+|---|---|---|
+| **macOS 12+** (Apple Silicon / Intel) | `./openclaw <명령>` (bash) | 호스트 직접 |
+| **Windows 10/11** (build 19041+) | `.\openclaw.ps1 <명령>` (PowerShell 5.1+) | WSL2 안의 bash 로 자동 위임 |
+| **Linux 네이티브** (Ubuntu/Fedora 등) | 미공식 — WSL2 와 동등하게 동작하나 `require_macos` 가드가 있어 후속 이슈 |
+
+> **각 단계마다 `> 💻 Windows 동등 명령` 박스가 본문 아래 따라옵니다.** Windows 사용자는 macOS 본문을 읽고 박스만 따라가면 됩니다.
+> Each Korean/English step below ends with a `> 💻 Windows equivalent` callout — Windows users can read the macOS body for context and just execute the callout.
+
 ## 📖 목차 / Contents
 
 **🇰🇷 한국어 — 단계별 (가장 많이 보는 곳)**
@@ -394,6 +405,18 @@ uname -m
 # x86_64 → Intel
 ```
 
+> 💻 **Windows 동등 명령 — 0단계**
+>
+> ```powershell
+> # PowerShell (관리자 권한 불필요) 에서:
+> winver                       # Windows 10/11 빌드 확인 (19041+ 필요)
+> wsl --version                # WSL2 사용 가능 여부 — 없으면 다음 안내 참고
+> winget --version             # Windows Package Manager — 없으면 Microsoft Store 의 'App Installer' 설치
+> $PSVersionTable.PSVersion    # PowerShell 5.1+ 권장
+> ```
+>
+> WSL 미설치라면 관리자 PowerShell 에서 `wsl --install` 한 번 + 재부팅 1회 필요. 이 가이드의 1~7단계 모두 **WSL2 안의 bash 가 처리**하고, Windows 측에서는 `openclaw.ps1` 진입점이 자동으로 위임합니다.
+
 ### 0.5단계 — 기존 환경 진단 (이미 쓰던 Mac 이라면 먼저!)
 
 > 💡 **이미 Docker / Ollama / Git 등을 설치해서 쓰고 있던 컴퓨터** 라면, 새로 설치하기 전에 **이미 있는 것은 그대로 재사용** 하는 게 안전합니다 (모델 데이터·포트 점유·익숙한 버전 보존). 아래 한 번에 진단해서 **어떤 단계는 건너뛰고 어떤 단계는 다시 해야 하는지** 결정하세요.
@@ -566,6 +589,18 @@ cd openclaw-workspace
 ```
 출력의 ✗/⚠ 항목만 수동으로 처리하고, 나머지는 그대로 두면 됩니다.
 
+> 💻 **Windows 동등 명령 — 0.5단계 (기존 환경 진단)**
+>
+> ```powershell
+> # 이미 설치된 도구 확인 — 중복 설치 방지
+> Get-Command git, docker, ollama -ErrorAction SilentlyContinue
+> docker info 2>$null            # Docker Desktop 데몬이 켜져 있는지
+> wsl -l -v                      # 이미 들어간 WSL 배포판 (Ubuntu 권장)
+> Get-NetTCPConnection -LocalPort 8000,18789,11434 -ErrorAction SilentlyContinue   # 포트 충돌
+> ```
+>
+> Windows Defender 가 켜져 있으면 Docker 이미지 빌드가 매우 느려질 수 있습니다 — 필요 시 Docker 이미지 폴더를 제외 폴더로 추가.
+
 ### 1단계 — Xcode Command Line Tools (Git 등 기본 도구)
 
 터미널에서:
@@ -580,6 +615,24 @@ xcode-select --install
 git --version       # git version 2.x 가 나오면 OK
 clang --version
 ```
+
+> 💻 **Windows 동등 명령 — 1단계 (Xcode CLT 대체 = Git)**
+>
+> Windows 는 Xcode 가 없습니다. C 컴파일러도 OpenClaw 에는 필요 없습니다. **Git 만 깔면 됩니다.**
+>
+> ```powershell
+> # winget 사용 (권장):
+> winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements
+>
+> # 또는 공식 사이트: https://git-scm.com/download/win
+>
+> git --version                # git version 2.x 가 나오면 OK
+> ```
+>
+> 첫 실행 정책 안내 (1회):
+> ```powershell
+> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
 
 ### 2단계 — Docker Desktop 직접 다운로드
 
@@ -641,6 +694,24 @@ docker info            # Server: ... 가 보이면 데몬 정상
 ```
 
 > 💡 회사용/큰 조직 (250인 이상) 은 Docker Desktop 유료 라이선스가 필요할 수 있습니다. 무료 대안: **Colima** (`brew install colima`, Homebrew 가능할 때만).
+
+> 💻 **Windows 동등 명령 — 2단계 (Docker Desktop)**
+>
+> ```powershell
+> # winget (권장):
+> winget install --id Docker.DockerDesktop -e --accept-source-agreements --accept-package-agreements
+>
+> # 또는 공식 사이트: https://www.docker.com/products/docker-desktop/
+> ```
+>
+> ⚠ 첫 실행 시 다이얼로그에서 **"Use the WSL 2 based engine" 체크박스를 반드시 켜세요.** Hyper-V 백엔드는 OpenClaw 권장 구성이 아닙니다.
+>
+> 설치 후:
+> ```powershell
+> Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"   # 트레이 🐳 아이콘이 뜰 때까지 30~60초 대기
+> docker info                  # 데몬 응답 확인
+> docker compose version       # Compose v2 (Docker Desktop 에 기본 포함)
+> ```
 
 ### 2.5단계 — Docker 사용법 기초 (데몬 = 서버 켜고 끄기)
 
@@ -986,6 +1057,22 @@ osascript -e 'tell application "System Events" to get the name of every login it
 | `docker system df` | Docker 가 차지한 디스크 (`./openclaw clean --status` 로 한 번에) |
 
 OpenClaw 사용자에게 **꼭 외울 명령 = 0개**. `./openclaw` 가 다 해줍니다.
+
+> 💻 **Windows 동등 명령 — 2.5단계 (Docker 데몬 켜고/끄기)**
+>
+> ```powershell
+> # 데몬 시작
+> Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
+>
+> # 데몬 정지 (트레이 → Quit Docker Desktop 동등)
+> Stop-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+> Stop-Process -Name "com.docker.service" -ErrorAction SilentlyContinue
+>
+> # 데몬 상태
+> docker info > $null 2>&1; if ($?) { 'up' } else { 'down' }
+> ```
+>
+> macOS 의 `osascript` + `pkill` 콤보 alias 는 Windows 에서 위 두 줄 `Stop-Process` 로 대체됩니다.
 
 ### 3단계 — Ollama 설치 (로컬 LLM — M5 Pro GPU 가속 활용)
 
@@ -1400,6 +1487,24 @@ cd ~/DEV/openclaw-workspace/openclaw-mgr
 
 
 
+> 💻 **Windows 동등 명령 — 3단계 (Ollama 호스트 네이티브 설치)**
+>
+> ```powershell
+> # winget (권장):
+> winget install --id Ollama.Ollama -e --accept-source-agreements --accept-package-agreements
+>
+> # 또는 공식 사이트: https://ollama.com/download/windows
+>
+> ollama --version
+> ollama list                                # 처음엔 빈 목록
+> Invoke-WebRequest http://127.0.0.1:11434/api/version -UseBasicParsing | Select-Object Content
+>
+> # 모델 받기 (예시 — 본인 환경에 맞게):
+> # ollama pull qwen2.5-coder:7b
+> ```
+>
+> Ollama 는 **Windows 호스트에 설치**합니다. Docker 컨테이너는 `host.docker.internal:11434` 로 자동 접근하므로 macOS 와 동일한 토폴로지가 됩니다. WSL 안에 별도 설치하지 마세요 (GPU 가속 약화).
+
 ### 4단계 — openclaw-workspace 소스 직접 받기
 
 > 🤔 **잠깐, 두 개의 저장소가 헷갈려요!**
@@ -1471,6 +1576,23 @@ mv ~/openclaw-main ~/DEV/openclaw
 이렇게 미리 받아두면 `~/DEV/openclaw` 에 본체가 있으니 `./openclaw install` 이 그걸 그대로 사용합니다 (clone 단계 [skip]). 다른 위치에 받았으면 `.env` 의 `OPENCLAW_DIR` 만 수정하세요.
 
 > ⚠ **주의**: 본체 저장소 URL 이나 클론 위치를 바꾸려면 `.env` 의 `OPENCLAW_REPO`, `OPENCLAW_DIR` 두 변수를 함께 맞춰주세요. 첫 실행 시 `.env` 가 자동 생성되니 그때 편집하면 됩니다.
+
+> 💻 **Windows 동등 명령 — 4단계 (소스 받기)**
+>
+> ```powershell
+> # ⚠ 한글 사용자명·공백 함정 회피: 사용자 홈이 'C:\Users\박성모\…' 같으면
+> #    Docker 볼륨 마운트가 깨질 수 있습니다. ASCII 경로 권장:
+> mkdir C:\dev -ErrorAction SilentlyContinue
+> cd C:\dev
+> git clone https://github.com/GoGoComputer/openclaw-workspace.git
+> cd openclaw-workspace\openclaw-mgr
+> Get-ChildItem                # README.md, openclaw, openclaw.ps1 등 보이면 OK
+>
+> # .env 준비 (PowerShell 진입점이 첫 실행 시 자동 생성하지만 미리 해도 됨)
+> Copy-Item .env.example .env
+> ```
+>
+> 본격적인 사용은 5단계 박스에서 `.\openclaw.ps1` 진입점으로 이어집니다.
 
 ### 5단계 — `openclaw` 첫 실행
 
@@ -1836,6 +1958,27 @@ cd ~/DEV/openclaw
 ./docker-setup.sh     # OPENCLAW_SANDBOX 없으면 자동으로 sandbox.mode=off 으로 리셋
 ```
 
+> 💻 **Windows 동등 명령 — 5/5b/5c단계 (첫 실행 + 수동 단계 + 샌드박스)**
+>
+> ```powershell
+> # 5: 부트스트랩 (winget · WSL2 · Git · Docker Desktop · Ollama 점검/설치)
+> .\openclaw.ps1 install-bootstrap
+>
+> # 5: Windows 측 진단 (포트/한글 경로/실행 정책 함정 사전 체크)
+> .\openclaw.ps1 doctor
+>
+> # 5: 본격 설치 — PowerShell 진입점이 'wsl bash openclaw install' 로 자동 위임
+> .\openclaw.ps1 install
+>
+> # 5b 의 수동 단계 (각 명령을 손으로 따라하고 싶다면 — WSL 안에서):
+> wsl bash
+> cd /mnt/c/dev/openclaw-workspace/openclaw-mgr
+> ./openclaw doctor                # Linux 로 잡혀 일부 macOS 검사가 ✗ 표시될 수 있음
+> ./openclaw install               # docker compose up -d 까지 동일
+> ```
+>
+> **5c 샌드박스**: WSL2 안의 `docker.sock` (`/var/run/docker.sock`) 을 그대로 사용하므로 macOS 와 동일하게 자동 설정됩니다. PowerShell 측에서는 별도 작업이 없습니다. 단, **Hyper-V 백엔드 모드**의 Docker Desktop 에서는 docker.sock 경로가 다르므로 WSL2 백엔드를 권장합니다.
+
 ### 6단계 — PATH 등록 (선택, 어디서나 `openclaw` 한 단어로 실행)
 
 ```bash
@@ -1978,6 +2121,24 @@ lsof -nP -iTCP:11434 -sTCP:LISTEN            # Ollama
 | 포트 충돌 정리 | `./openclaw install` (v0.1.10+) | `docker compose down --remove-orphans` |
 
 > 답: **네, 다 자유롭게 가능**합니다. 스크립트 한 줄로도, `docker compose` 직접 호출로도. 둘 다 같은 결과(컨테이너 상태)에 수렴합니다.
+
+> 💻 **Windows 동등 명령 — 6/6.5단계 (PATH alias + 일반 운영)**
+>
+> ```powershell
+> # PowerShell 프로필 (~/.zshrc 의 Windows 등가) 에 함수 등록
+> if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }
+> Add-Content $PROFILE @"
+> function openclaw { & 'C:\dev\openclaw-workspace\openclaw-mgr\openclaw.ps1' @args }
+> "@
+> . $PROFILE
+> openclaw doctor                  # 어디서나 한 단어로 호출
+>
+> # 매일 자동 update 등록 (launchctl 의 Windows 등가)
+> .\openclaw.ps1 schedule enable   # SCHEDULE_TIME 환경변수로 시간 변경 가능 (기본 03:00)
+> .\openclaw.ps1 schedule status
+> ```
+>
+> 일상 운영의 `start` / `stop` / `logs` / `network` / `models` / `clean` / `backup` / `restore` 는 모두 PowerShell 진입점이 그대로 받아 WSL2 안의 bash 로 위임합니다 — macOS 와 명령 이름·옵션이 동일합니다.
 
 ### 7단계 — 업데이트는 어떻게?
 
@@ -2139,6 +2300,22 @@ $EDITOR ~/.openclaw-mgr/.env
 
 > ⚠️ 수동 설치 환경에서는 `openclaw self-update` 가 의도적으로 비활성됩니다 (Homebrew formula 가 아니므로). 내 도구는 항상 `git pull` 을 쓰세요.
 
+> 💻 **Windows 동등 명령 — 7단계 (업데이트)**
+>
+> ```powershell
+> # PowerShell 진입점 위임 (일반 사용자 추천):
+> .\openclaw.ps1 update            # 내부적으로 'wsl bash openclaw update' 호출
+>
+> # 또는 WSL 안에서 직접:
+> wsl bash -lc "cd /mnt/c/dev/openclaw-workspace/openclaw-mgr && ./openclaw update"
+>
+> # PowerShell 진입점 자체 갱신 (.ps1 파일들):
+> cd C:\dev\openclaw-workspace
+> git pull --ff-only
+> ```
+>
+> 이 가이드 자체가 `openclaw-workspace` 저장소의 `docs/GUIDE-MANUAL-INSTALL.md` 이므로, `git pull --ff-only` 만으로 최신 Windows 안내까지 함께 갱신됩니다.
+
 ### ❓ 자주 막히는 부분
 
 | 증상 | 원인 / 해결 |
@@ -2201,6 +2378,17 @@ uname -m
 # x86_64 → Intel
 ```
 
+> 💻 **Windows equivalent — Step 0**
+>
+> ```powershell
+> winver                       # Need Windows 10/11 build 19041+
+> wsl --version                # WSL2 ready? If missing, run `wsl --install` (admin) and reboot
+> winget --version             # Otherwise install 'App Installer' from Microsoft Store
+> $PSVersionTable.PSVersion    # PowerShell 5.1+ recommended
+> ```
+>
+> All Steps 1–7 below are executed inside WSL2 bash; the `openclaw.ps1` entry-point auto-delegates.
+
 ### Step 1 — Xcode Command Line Tools (Git etc.)
 
 ```bash
@@ -2214,6 +2402,19 @@ Verify:
 git --version
 clang --version
 ```
+
+> 💻 **Windows equivalent — Step 1 (Git instead of Xcode CLT)**
+>
+> Windows has no Xcode and OpenClaw needs no C compiler. Just install Git:
+>
+> ```powershell
+> winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements
+> # Or: https://git-scm.com/download/win
+> git --version
+>
+> # One-time PowerShell execution policy:
+> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
 
 ### Step 2 — Download Docker Desktop directly
 
@@ -2274,6 +2475,21 @@ docker info
 ```
 
 > 💡 Companies with 250+ employees may need a paid Docker Desktop licence. Free alternative: **Colima** (`brew install colima`, only when Homebrew is allowed).
+
+> 💻 **Windows equivalent — Step 2 (Docker Desktop)**
+>
+> ```powershell
+> winget install --id Docker.DockerDesktop -e --accept-source-agreements --accept-package-agreements
+> # Or: https://www.docker.com/products/docker-desktop/
+> ```
+>
+> ⚠ On first launch, **enable "Use the WSL 2 based engine"**. Hyper-V backend is not the recommended OpenClaw setup.
+>
+> ```powershell
+> Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"   # wait 30–60s
+> docker info
+> docker compose version
+> ```
 
 ### Step 2.5 — Docker basics (turning the daemon = server on/off)
 
@@ -2559,6 +2775,20 @@ Menu-bar 🐳 → **Dashboard** (or click the app icon) opens the GUI. Sidebar t
 | `docker system df` | Disk used by Docker (or use `./openclaw clean --status`) |
 
 Number of `docker` commands an OpenClaw user must memorise: **zero**. `./openclaw` handles it all.
+
+> 💻 **Windows equivalent — Step 2.5 (daemon on/off)**
+>
+> ```powershell
+> # Start
+> Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"
+>
+> # Stop (= Quit Docker Desktop from the tray)
+> Stop-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+> Stop-Process -Name "com.docker.service" -ErrorAction SilentlyContinue
+>
+> # Health
+> docker info > $null 2>&1; if ($?) { 'up' } else { 'down' }
+> ```
 
 ### Step 3 — Download Ollama directly (optional — for local LLMs)
 
@@ -2951,6 +3181,18 @@ sudo powermetrics --samplers gpu_power -n 1 2>/dev/null \
 | Model not visible in OpenClaw | `isolated` mode blocking it → `./openclaw network online --restart` |
 | GPU not accelerating | Outdated Ollama version — reinstall from ollama.com |
 
+> 💻 **Windows equivalent — Step 3 (Ollama, host-native)**
+>
+> ```powershell
+> winget install --id Ollama.Ollama -e --accept-source-agreements --accept-package-agreements
+> # Or: https://ollama.com/download/windows
+> ollama --version
+> ollama list
+> Invoke-WebRequest http://127.0.0.1:11434/api/version -UseBasicParsing | Select-Object Content
+> ```
+>
+> Install Ollama on the **Windows host**, not inside WSL — containers reach it via `host.docker.internal:11434` (same topology as macOS).
+
 ### Step 4 — Get openclaw-workspace source
 
 > 🤔 **Wait, two repos? Which one am I downloading?**
@@ -3019,6 +3261,18 @@ mv ~/openclaw-main ~/DEV/openclaw
 If `~/DEV/openclaw` already exists, `./openclaw install` will skip the clone step. Using a different location? Edit `OPENCLAW_DIR` in `.env`.
 
 > ⚠ If you change the upstream URL or location, keep `OPENCLAW_REPO` and `OPENCLAW_DIR` in `.env` consistent. The `.env` file is auto-created on first run, so you can edit it then.
+
+> 💻 **Windows equivalent — Step 4 (clone source)**
+>
+> ```powershell
+> # ⚠ Avoid non-ASCII / spaces in user path (Docker volume mounts can break):
+> mkdir C:\dev -ErrorAction SilentlyContinue
+> cd C:\dev
+> git clone https://github.com/GoGoComputer/openclaw-workspace.git
+> cd openclaw-workspace\openclaw-mgr
+> Get-ChildItem        # README.md, openclaw, openclaw.ps1 visible → OK
+> Copy-Item .env.example .env    # entry-point also auto-creates this on first run
+> ```
 
 ### Step 5 — First run of `openclaw`
 
@@ -3359,6 +3613,22 @@ cd ~/DEV/openclaw
 ./docker-setup.sh
 ```
 
+> 💻 **Windows equivalent — Steps 5/5b/5c (first run + manual + sandbox)**
+>
+> ```powershell
+> .\openclaw.ps1 install-bootstrap   # winget · WSL2 · Git · Docker Desktop · Ollama
+> .\openclaw.ps1 doctor              # Windows-side checks
+> .\openclaw.ps1 install             # delegates to 'wsl bash openclaw install'
+>
+> # 5b — manual steps (run them yourself in WSL):
+> wsl bash
+> cd /mnt/c/dev/openclaw-workspace/openclaw-mgr
+> ./openclaw doctor                  # OS detected as Linux — some macOS-only checks may show ✗
+> ./openclaw install
+> ```
+>
+> **5c sandbox** uses `/var/run/docker.sock` inside WSL2 — works the same as macOS automatically. Use the WSL2 Docker backend (not Hyper-V) so the socket is reachable.
+
 ### Step 6 — Add to PATH (optional)
 
 ```bash
@@ -3373,6 +3643,21 @@ Or symlink:
 sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /usr/local/bin/openclaw       # Intel
 sudo ln -sf "$HOME/DEV/openclaw-workspace/openclaw-mgr/openclaw" /opt/homebrew/bin/openclaw    # Apple Silicon
 ```
+
+> 💻 **Windows equivalent — Step 6 (PowerShell `$PROFILE` alias + scheduler)**
+>
+> ```powershell
+> if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }
+> Add-Content $PROFILE @"
+> function openclaw { & 'C:\dev\openclaw-workspace\openclaw-mgr\openclaw.ps1' @args }
+> "@
+> . $PROFILE
+> openclaw doctor
+>
+> # Daily auto-update (launchctl equivalent on Windows):
+> .\openclaw.ps1 schedule enable     # set $env:SCHEDULE_TIME='02:30' to override
+> .\openclaw.ps1 schedule status
+> ```
 
 ### Step 7 — Updating
 
@@ -3445,6 +3730,19 @@ $EDITOR ~/.openclaw-mgr/.env
 ```
 
 > ⚠️ `openclaw self-update` is intentionally disabled in manual mode (it's only for the Homebrew formula). Always use `git pull` for this tool in manual mode.
+
+> 💻 **Windows equivalent — Step 7 (Updating)**
+>
+> ```powershell
+> .\openclaw.ps1 update                       # delegates to 'wsl bash openclaw update'
+>
+> # Or directly inside WSL:
+> wsl bash -lc "cd /mnt/c/dev/openclaw-workspace/openclaw-mgr && ./openclaw update"
+>
+> # Update the .ps1 entry-point itself:
+> cd C:\dev\openclaw-workspace
+> git pull --ff-only
+> ```
 
 ### ❓ Common pitfalls
 

@@ -2,13 +2,14 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![macOS](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)](#)
+[![Windows (WSL2)](https://img.shields.io/badge/Windows-10%2F11_(WSL2)-0078D6?logo=windows)](#)
 [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-arm64-blue?logo=apple)](#)
-[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B-1f425f?logo=gnu-bash)](#)
+[![Shell](https://img.shields.io/badge/shell-bash%203.2%2B%20%C2%B7%20PowerShell%205.1%2B-1f425f?logo=gnu-bash)](#)
 [![CI](https://img.shields.io/github/actions/workflow/status/GoGoComputer/openclaw-workspace/ci.yml?branch=main)](https://github.com/GoGoComputer/openclaw-workspace/actions)
 
-> **OpenClaw 셀프호스트 자동화 — macOS용 한 줄 설치/유지보수 도구**
+> **OpenClaw 셀프호스트 자동화 — macOS · Windows(WSL2) 한 줄 설치/유지보수 도구**
 >
-> 새 맥북에서 `./openclaw install` 한 번이면 Docker · (선택)Ollama · OpenClaw 컨테이너까지 자동으로 준비됩니다. 중간에 끊겨도 다시 실행하면 **이어서** 진행합니다. 로컬 100% 격리 환경을 지향합니다.
+> 새 맥북에서 `./openclaw install` 한 번이면 Docker · (선택)Ollama · OpenClaw 컨테이너까지 자동으로 준비됩니다. Windows 10/11 에서는 `.\openclaw.ps1 install-bootstrap` 한 번 + WSL2 활성화 후 같은 흐름이 그대로 동작합니다. 중간에 끊겨도 다시 실행하면 **이어서** 진행합니다. 로컬 100% 격리 환경을 지향합니다.
 
 > 🇬🇧 English version: [README.en.md](README.en.md)
 
@@ -89,6 +90,28 @@ cd openclaw-workspace/openclaw-mgr
 ```
 
 설치 중 **Docker Desktop 약관 동의 / Xcode Command Line Tools 다이얼로그**가 뜰 수 있습니다. 따라가시면 됩니다. 각 다이얼로그가 무엇을 묻는지 자세한 설명은 [docs/TROUBLESHOOTING.md — Docker Desktop 첫 실행](docs/TROUBLESHOOTING.md#docker-desktop-첫-실행--업데이트-안내--시스템-비밀번호--백그라운드-실행-알림) 참조.
+
+> 💻 **Windows 10/11 (WSL2) 사용자**
+>
+> ```powershell
+> # 1) PowerShell 실행 정책 (1회)
+> Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+>
+> # 2) 코드 받기
+> git clone https://github.com/GoGoComputer/openclaw-workspace.git
+> cd openclaw-workspace\openclaw-mgr
+>
+> # 3) 부트스트랩 — winget · WSL2 · Git · Docker Desktop · Ollama 점검/설치
+> .\openclaw.ps1 install-bootstrap
+>
+> # 4) Windows 측 진단
+> .\openclaw.ps1 doctor
+>
+> # 5) 설치 — 내부적으로 WSL2 안의 ./openclaw install 로 위임됩니다
+> .\openclaw.ps1 install
+> ```
+>
+> Windows 진입점은 `openclaw.ps1` 하나뿐이며, 모든 일상 명령(`start`/`stop`/`logs`/`update`/`backup` 등)은 자동으로 WSL2 안의 bash 로 위임돼 동일한 결과를 냅니다. 자세한 단계별 안내는 [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) 의 각 단계 끝의 "💻 Windows 동등 명령" 박스를 참고하세요.
 
 설치 끝나면 한 번 더 진단하고, 원하면 자동 업데이트를 켭니다:
 
@@ -240,8 +263,9 @@ shorts   run "여행 감성 풍경"
 |---|---|
 | Docker · Ollama · Homebrew(필요 시) 자동 설치 (스크립트) | OpenClaw 자체 개발/수정 |
 | OpenClaw 저장소 clone & 컨테이너 기동 | 클라우드 호스팅 (그건 [ClawBro.ai](https://clawbro.ai)) |
-| 매일 자동 업데이트 (launchd) | Windows / Linux 지원 |
-| 백업·복원·완전 제거 | 멀티 인스턴스 동시 운영 |
+| 매일 자동 업데이트 (launchd · Windows 작업 스케줄러) | 네이티브 Linux (WSL 외) 자동 설치 |
+| Windows 10/11 (WSL2 위임 + PowerShell 진입점) | 멀티 인스턴스 동시 운영 |
+| 백업·복원·완전 제거 | |
 | 보안 하드닝 (read-only, cap_drop, 127.0.0.1만 바인딩 등) | OpenClaw 의 채널 연동 (Telegram 등) |
 
 ---
@@ -704,15 +728,18 @@ Docker/Ollama 가 시간이 갈수록 캐시·이미지를 쌓습니다. 위 명
 
 ```
 openclaw-mgr/
-├── openclaw                # 단일 진입 디스패처 (서브커맨드 라우팅 + .env 로드)
+├── openclaw                # macOS/Linux 진입 디스패처 (bash) — 서브커맨드 라우팅 + .env 로드
+├── openclaw.ps1            # Windows 진입 디스패처 (PowerShell) — WSL2 위임 + 네이티브 보조
 ├── .env.example            # 환경 변수 템플릿
 ├── compose.security.yml    # 보안 override (read_only, cap_drop, ...)
-├── lib/
+├── lib/                    # bash 공용 (macOS/WSL2)
 │   ├── common.sh           # 로그·확인·멱등 단계 관리 (run_step, state)
 │   ├── sec.sh              # 입력 검증·시크릿 마스킹·위험 마운트 검사
 │   ├── detect.sh           # 시스템 상태 KV 출력 (eval 가능)
 │   └── prompt.sh           # 대화형 입력 헬퍼
-├── cmd/
+├── lib-win/                # PowerShell 공용 (Windows 측)
+│   └── common.ps1          # 색상·로그·멱등 단계·UTF-8 no-BOM 파일 쓰기
+├── cmd/                    # bash 서브커맨드 (macOS/WSL2)
 │   ├── doctor.sh           # 진단 (✓/✗/⚠)
 │   ├── install.sh          # 멱등 설치 (이어서 진행)
 │   ├── start.sh / stop.sh / logs.sh
@@ -720,6 +747,10 @@ openclaw-mgr/
 │   ├── backup.sh / restore.sh
 │   ├── uninstall.sh        # --purge 옵션
 │   └── schedule.sh         # launchd plist enable/disable/status
+├── cmd-win/                # PowerShell 서브커맨드 (Windows 네이티브 영역)
+│   ├── install-bootstrap.ps1  # winget · WSL2 · Git · Docker Desktop · Ollama 사전 설치
+│   ├── doctor.ps1             # Windows 측 진단 (WSL2/포트/한글 경로 함정)
+│   └── schedule.ps1           # 작업 스케줄러 (Register-ScheduledTask)
 ├── etc/
 │   └── pre-commit.tmpl     # gitleaks 훅
 └── docs/
