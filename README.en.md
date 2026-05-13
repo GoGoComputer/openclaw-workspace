@@ -461,6 +461,26 @@ Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and
 </details>
 
 <details>
+<summary><b>Install keeps printing <code>[skip]</code> for every step and ends with a "sandbox not configured" warning</b></summary>
+
+The state file claims "done" but the actual artifacts (clone dir / `.env` / sandbox compose overlay) have disappeared. Common causes:
+
+- You manually deleted `~/DEV/openclaw`
+- The very first install ran while Docker Desktop was still booting; `docker.sock` wasn't ready, so `step_sandbox` exited early and the marker got stuck at `done`
+
+**Auto-recovery:** `./openclaw install` runs `validate_state` at startup and clears stale markers whose artifacts are missing — so just rerun:
+
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace
+git pull --ff-only origin main   # pull in the validate_state patch
+./openclaw install               # re-runs only the steps that were faked
+./openclaw doctor                # verify
+```
+
+To wipe and start clean: `rm ~/.openclaw-mgr/state && ./openclaw install`.
+</details>
+
+<details>
 <summary><b>My Mac feels slow / memory is full</b></summary>
 
 ```bash
@@ -598,6 +618,20 @@ openclaw-mgr/
 ### Idempotency (`state` file)
 
 `~/.openclaw-mgr/state` accumulates `KEY=done` lines per completed step. `./openclaw install` checks each key and skips done steps. To rerun a single step, delete its line.
+
+#### 🔄 Artifact verification (`validate_state`)
+
+If the state file claims "done" but the **actual artifacts have vanished**, install clears those markers at startup. This prevents the classic trap: user deletes a folder or cleans up containers → reruns install → it forever reports `[skip]` because the markers say "done" without checking reality.
+
+| Detected condition | Markers auto-cleared |
+|---|---|
+| `OPENCLAW_DIR/.git` missing (clone gone) | `repo_clone` · `compose_scan` · `env_merge` · `compose_up` · `health` · `lockdown` · `sandbox` |
+| `OPENCLAW_DIR/.env` missing | `env_merge` · `compose_up` · `health` · `lockdown` · `sandbox` |
+| `docker-compose.sandbox.yml` missing while `docker.sock` is ready | `sandbox` |
+
+Additionally, when `step_sandbox` is deferred because `docker.sock` wasn't ready (`SANDBOX_DEFERRED=1`), the marker is cleared after `run_step` so the next install retries — preventing the previous bug where a marker got stuck at `done` if Docker Desktop was still booting on the first install.
+
+The real idempotency contract is **"counts as done only while the artifact still exists"**, not "ran it once and forgot".
 
 ### Static checks
 

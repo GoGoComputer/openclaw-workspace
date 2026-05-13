@@ -654,6 +654,26 @@ brew services restart ollama
 </details>
 
 <details>
+<summary><b>install 이 자꾸 <code>[skip]</code> 만 뜨고 마지막에 "샌드박스 미설정" 경고가 떠요</b></summary>
+
+state 파일이 "다 됐다"고 주장하는데 실제 산출물(클론·.env·sandbox compose 오버레이)이 사라진 케이스입니다. 대표적인 발생 경로:
+
+- `~/DEV/openclaw` 를 수동으로 지웠음
+- Docker Desktop 부팅 직후 install 했을 때 `docker.sock` 이 잠깐 안 잡혀서 `step_sandbox` 가 일찍 빠졌고, 그 사이 마커가 박힘
+
+**자동 복구:** `./openclaw install` 진입 직후 `validate_state` 가 산출물 부재를 감지해 관련 마커를 자동으로 해제합니다 — 그냥 다시 install 한 번이면 됩니다.
+
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace
+git pull --ff-only origin main   # validate_state 패치 받기
+./openclaw install               # 자동으로 빠진 단계만 다시 실행
+./openclaw doctor                # 검증
+```
+
+수동으로 처음부터 다시 깨끗이 하고 싶으면 `rm ~/.openclaw-mgr/state` 후 `./openclaw install`.
+</details>
+
+<details>
 <summary><b>맥북이 느려졌어요 / 메모리가 가득 찼어요</b></summary>
 
 ```bash
@@ -820,9 +840,25 @@ compose_scan=done
 env_merge=done
 compose_up=done
 health=done
+lockdown=done
+sandbox=done
 ```
 
 `./openclaw install` 은 `state_has KEY` 검사 후 `done` 이면 단계를 건너뜁니다. 특정 단계만 다시 돌리려면 그 줄을 지우면 됩니다.
+
+#### 🔄 산출물 자동 검증 (`validate_state`)
+
+state 파일이 "다 됐다"고 말하는데 **실제 산출물이 사라졌으면** install 시작 직후 마커를 자동으로 해제합니다. "사용자가 폴더를 지우거나 컨테이너를 정리한 뒤 다시 install 했더니 영원히 `[skip]` 만 뜨더라" 같은 함정을 방지합니다.
+
+| 발견 조건 | 자동 해제되는 마커 |
+|---|---|
+| `OPENCLAW_DIR/.git` 부재 (클론이 사라짐) | `repo_clone` · `compose_scan` · `env_merge` · `compose_up` · `health` · `lockdown` · `sandbox` |
+| `OPENCLAW_DIR/.env` 부재 | `env_merge` · `compose_up` · `health` · `lockdown` · `sandbox` |
+| `docker-compose.sandbox.yml` 부재 + `docker.sock` 가용 | `sandbox` |
+
+추가로 `step_sandbox` 가 `docker.sock` 부재로 보류된 경우(`SANDBOX_DEFERRED=1`) `run_step` 후에 마커를 다시 풀어, 다음 install 에서 자동 재시도되도록 합니다. 한 번 `done` 으로 박혀 영영 스킵되는 과거 버그(Docker Desktop 부팅 직후 install 했을 때 흔히 발생) 재발 방지.
+
+요약: **"한 번 한 건 안 다시 한다"가 아니라 "산출물이 아직 있을 때만 한 걸로 친다"** 가 진짜 멱등 계약.
 
 ### 정적 검사
 
