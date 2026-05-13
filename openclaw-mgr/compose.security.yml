@@ -10,8 +10,13 @@ services:
   openclaw-gateway:
     cap_drop: [ALL]
     cap_add: []
-    security_opt:
-      - no-new-privileges:true
+    # 주의: 베이스 docker-compose.yml 의 openclaw-gateway 가 이미
+    #   security_opt: [no-new-privileges:true]
+    # 를 갖고 있다 (line 59-60). compose v2 는 시퀀스를 concat 하므로 여기서
+    # 같은 항목을 다시 적으면 "items at 0 and 1 are equal" 검증 오류가 난다.
+    # 이미 no-new-privileges 가 적용되므로 override 에서는 다시 선언하지 않는다.
+    # (openclaw-cli 아래 동일 주석 참조 — 그쪽은 먼저 고쳤지만 게이트웨이에
+    # 같은 수정이 빠져 있었다.)
     pids_limit: 512
     mem_limit: ${OPENCLAW_MEM_LIMIT:-8g}
     memswap_limit: ${OPENCLAW_MEM_LIMIT:-8g}
