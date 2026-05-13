@@ -24,6 +24,7 @@
 - [📚 문서 가이드](#-문서-가이드)
 - [🤔 이게 뭐예요?](#-이게-뭐예요)
 - [📋 명령 카탈로그](#-명령-카탈로그)
+- [💬 터미널 채팅 (`chat`)](#-터미널-채팅-chat)
 - [🤖 모델 관리 — 내 로컬 Ollama 모델 그대로 쓰기](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기)
   - [비개발자 모드 (한 줄 명령)](#비개발자-모드-한-줄-명령)
   - [개발자 모드 (직접 편집 또는 호스트 명령)](#개발자-모드-직접-편집-또는-호스트-명령)
@@ -56,7 +57,7 @@
 |---|---|---|---|
 | 1 | **설치** (Install) | `git clone … && ./openclaw install` | [표준 설치](#표준--스크립트-설치-권장) · [완전 수동](docs/GUIDE-MANUAL-INSTALL.md) · [처음부터](docs/GUIDE-FROM-ZERO.md) |
 | 2 | **진단** (Doctor) | `./openclaw doctor` | [진단 항목별 가이드](#-진단--doctor-항목별-가이드) · [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) |
-| 3 | **사용** (Use) | `./openclaw start` · `docker compose exec openclaw-cli bash` · `surf "…"` · `creative run "…"` · `shorts run "…"` | **▶ [설치 후 첫 사용 가이드](docs/GUIDE-FIRST-USE.md)** · [GUIDE-OPENCLAW](docs/GUIDE-OPENCLAW.md) · [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
+| 3 | **사용** (Use) | `./openclaw start` · `./openclaw chat` · `docker compose exec openclaw-cli bash` · `surf "…"` · `creative run "…"` · `shorts run "…"` | **▶ [설치 후 첫 사용 가이드](docs/GUIDE-FIRST-USE.md)** · [GUIDE-OPENCLAW](docs/GUIDE-OPENCLAW.md) · [자동화 3종](#-자동화-3종--한눈-카탈로그) · [GUIDE-WEB-FETCH](docs/GUIDE-WEB-FETCH.md) · [GUIDE-CREATIVE-PIPELINE](docs/GUIDE-CREATIVE-PIPELINE.md) · [GUIDE-SHORTS-PIPELINE](docs/GUIDE-SHORTS-PIPELINE.md) |
 | 4 | **유지보수** (Maintain) | `./openclaw logs` · `./openclaw clean` · `./openclaw backup` · `./openclaw restore` | [명령 카탈로그](#-명령-카탈로그) · [정리](#-메모리디스크-정리-비개발자용) |
 | 5 | **설정 변경** (Configure) | `.env` 편집 · `./openclaw models …` · `./openclaw network …` | [.env 설정](#️-설정-env) · [모델 관리](#-모델-관리--내-로컬-ollama-모델-그대로-쓰기) · [네트워크 격리](#-네트워크-격리-모드-명시적-외부-차단-토글) |
 | 6 | **업데이트** (Update) | `./openclaw update` · `./openclaw self-update` · `./openclaw schedule enable` | [업데이트 흐름](#-업데이트-흐름) |
@@ -275,6 +276,7 @@ shorts   run "여행 감성 풍경"
 | 명령 | 한 줄 설명 |
 |---|---|
 | `./openclaw` (또는 `menu`) | 대화형 메뉴 (한국어/영어 자동) — 모든 작업을 번호로 선택 |
+| `./openclaw chat [-m MODEL]` | 터미널 REPL 로 에이전트와 채팅 (호스트 Ollama 직접 + `IDENTITY`/`SOUL`/`USER` 자동 로드) |
 | `./openclaw doctor` | 현재 시스템/설치 상태 점검 (✓/✗/⚠ 표) |
 | `./openclaw install` | 부족한 부분만 자동 설치. 중간에 끊겨도 이어서 진행 |
 | `./openclaw start` | 컨테이너 시작 |
@@ -290,6 +292,47 @@ shorts   run "여행 감성 풍경"
 | `./openclaw uninstall [--purge]` | OpenClaw 제거. `--purge` 면 Docker/Ollama까지 |
 
 ---
+
+## 💬 터미널 채팅 (`chat`)
+
+호스트 Ollama 만으로 워크스페이스의 에이전트와 즉시 대화할 수 있습니다. **컨테이너·웹 UI 없이도** 됩니다 — 모델 받자마자 바로 "안녕"이 가능합니다.
+
+```bash
+./openclaw chat                          # 기본 모델 + IDENTITY/SOUL/USER 자동 system prompt
+./openclaw chat -m llama3.1:8b           # 모델 지정
+./openclaw chat --no-system              # 인격 파일 무시, 순수 모델
+./openclaw chat --host http://127.0.0.1:11434   # Ollama 호스트 변경
+```
+
+**REPL 안 슬래시 명령**
+
+| 명령 | 동작 |
+|---|---|
+| `/exit` · `/quit` · `/q` | 종료 |
+| `/reset` | 대화 컨텍스트 초기화 (system prompt 는 유지) |
+| `/model <name>` | 모델 즉시 전환 |
+| `/history` | 현재 system/user/assistant 메시지 수 |
+| `/help` · `/?` | 도움말 |
+
+**자동 인격 로드** — `$OPENCLAW_WORKSPACE_DIR` (기본 `~/DEV/openclawAgent`) 에 다음 파일들이 있으면 묶어서 system prompt 로 주입합니다:
+
+- `IDENTITY.md` — 에이전트의 이름·종류·말투
+- `SOUL.md` — 가치·태도·금지선
+- `USER.md` — 사용자(당신)에 대한 메모
+- `AGENTS.md` — 워크스페이스 운영 규칙
+- `MEMORY.md` — 장기 기억(있을 때만)
+
+덕분에 새 세션이라도 에이전트가 자기 이름과 당신을 기억한 상태로 대답합니다. 인격 파일이 하나도 없으면 일반 어시스턴트처럼 동작합니다.
+
+**전제** — 호스트에 Ollama 가 떠 있고, 선택한 모델이 로컬에 받아져 있어야 합니다.
+
+```bash
+./openclaw doctor                                  # 상태 점검
+./openclaw models add qwen2.5-coder:7b             # 모델 없으면 받기
+./openclaw chat                                    # 채팅 시작
+```
+
+> ℹ️ 외부 인터넷 차단(`network isolated`) 상태와 무관하게 작동합니다 — 채팅은 컨테이너가 아니라 **호스트 Ollama** 와 직접 통신하기 때문입니다.
 
 ---
 

@@ -20,6 +20,7 @@
 - [📚 Documentation map](#-documentation-map)
 - [🤔 What is this?](#-what-is-this)
 - [📋 Command catalog](#-command-catalog)
+- [💬 Terminal chat (`chat`)](#-terminal-chat-chat)
 - [🤖 Models — use your existing local Ollama models](#-models--use-your-existing-local-ollama-models)
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [💻 Shell compatibility (zsh / bash)](#-shell-compatibility-zsh--bash)
@@ -176,6 +177,7 @@ shorts   run "moody travel landscapes"
 | Command | Description |
 |---|---|
 | `./openclaw` (or `menu`) | Interactive menu (auto KO/EN) — pick a number to do anything |
+| `./openclaw chat [-m MODEL]` | Terminal REPL chat with the agent (host Ollama + auto-loads `IDENTITY`/`SOUL`/`USER`) |
 | `./openclaw doctor` | Diagnose installed/running state (✓/✗/⚠ table) |
 | `./openclaw install` | Idempotent install. Resumes after interruption |
 | `./openclaw start` | Start container |
@@ -189,6 +191,49 @@ shorts   run "moody travel landscapes"
 | `./openclaw models list\|add\|remove\|pull\|suggest` | Manage local Ollama models (auto-edits `.env`) |
 | `./openclaw clean [--light\|--all\|--status]` | Memory & disk cleanup (interactive, non-developer friendly) |
 | `./openclaw uninstall [--purge]` | Remove. `--purge` also removes Docker/Ollama |
+
+---
+
+## 💬 Terminal chat (`chat`)
+
+Talk to the agent directly via the host Ollama — **no container, no web UI** required. Pull a model and say "hi" immediately.
+
+```bash
+./openclaw chat                          # default model + auto IDENTITY/SOUL/USER system prompt
+./openclaw chat -m llama3.1:8b           # pick a model
+./openclaw chat --no-system              # ignore personality files, pure model
+./openclaw chat --host http://127.0.0.1:11434   # custom Ollama host
+```
+
+**Slash commands inside the REPL**
+
+| Command | Effect |
+|---|---|
+| `/exit` · `/quit` · `/q` | Quit |
+| `/reset` | Clear conversation context (system prompt is preserved) |
+| `/model <name>` | Switch model on the fly |
+| `/history` | Show current system/user/assistant message counts |
+| `/help` · `/?` | Show help |
+
+**Auto-loaded personality** — if `$OPENCLAW_WORKSPACE_DIR` (default `~/DEV/openclawAgent`) contains any of the following, they are concatenated into the system prompt:
+
+- `IDENTITY.md` — the agent's name, kind, voice
+- `SOUL.md` — values, attitude, red lines
+- `USER.md` — notes about you (the human)
+- `AGENTS.md` — workspace operating rules
+- `MEMORY.md` — long-term memory (when present)
+
+The agent remembers its name and what it knows about you across sessions. If none of these exist, it behaves like a generic assistant.
+
+**Requirements** — host Ollama running + the chosen model pulled locally.
+
+```bash
+./openclaw doctor                                  # check state
+./openclaw models add qwen2.5-coder:7b             # pull a model if needed
+./openclaw chat                                    # start chatting
+```
+
+> ℹ️ Works regardless of `network isolated` mode — chat talks to **host Ollama** directly, not via the container.
 
 ---
 
