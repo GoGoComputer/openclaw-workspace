@@ -20,10 +20,64 @@ set -euo pipefail
 require_macos
 trap cleanup_tmp EXIT
 
+# ── 기본 경로 (validate_state 가 일찍 참조하기 위해 상단에서 확정) ───────────
+OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
+OPENCLAW_WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/DEV/openclawAgent}"
+OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
+
 # ── 0. 사전 점검 ─────────────────────────────────────────────────────────────
 title "OpenClaw 설치 시작"
 info "상태 파일: $STATE_FILE  (이미 끝난 단계는 자동 스킵됩니다)"
 info "재시작/중단 후 다시 실행해도 안전합니다."
+
+# ── state 무결성 검증 ────────────────────────────────────────────────────────
+# 이전 install 후 사용자가 ~/DEV/openclaw 를 지우거나 컨테이너를 정리했을 수
+# 있습니다. 상태 마커는 "이미 했음"이라고 주장하지만 산출물이 사라진 경우,
+# 마커를 해제해 이번 실행이 자동으로 다시 만들도록 합니다. "멱등·재개 가능"
+# 계약은 산출물 부재까지 포함해야 의미가 있습니다.
+validate_state() {
+  local repo_dir="$OPENCLAW_DIR"
+  local cleared=0
+
+  # 1) 클론 자체가 사라진 경우 → 클론과 그 뒤 모든 단계를 다시
+  if state_has repo_clone && [ ! -d "$repo_dir/.git" ]; then
+    info "state 보정: $repo_dir 클론 부재 → repo_clone 이후 단계 재실행"
+    state_unmark repo_clone
+    state_unmark compose_scan
+    state_unmark env_merge
+    state_unmark compose_up
+    state_unmark health
+    state_unmark lockdown
+    state_unmark sandbox
+    cleared=1
+  fi
+
+  # 2) .env 가 사라진 경우 → 머지부터 다시
+  if state_has env_merge && [ ! -f "$repo_dir/.env" ]; then
+    info "state 보정: $repo_dir/.env 부재 → env_merge 이후 단계 재실행"
+    state_unmark env_merge
+    state_unmark compose_up
+    state_unmark health
+    state_unmark lockdown
+    state_unmark sandbox
+    cleared=1
+  fi
+
+  # 3) 샌드박스: 마커는 있는데 compose 오버레이 파일이 없고, 이제 docker.sock
+  #    이 떠 있다면 다시 시도. (과거 docker.sock 부재로 step_sandbox 가 일찍
+  #    빠지면서 done 마킹만 남은 케이스 — 이 스크립트의 이전 버전 버그.)
+  if [ "${OPENCLAW_SANDBOX:-1}" = "1" ] \
+     && state_has sandbox \
+     && [ ! -f "$repo_dir/docker-compose.sandbox.yml" ] \
+     && [ -S /var/run/docker.sock ]; then
+    info "state 보정: 샌드박스 compose 오버레이 부재 → sandbox 재실행"
+    state_unmark sandbox
+    cleared=1
+  fi
+
+  [ "$cleared" = "1" ] && info "  (영향받는 단계는 자동으로 다시 진행됩니다)"
+}
+validate_state
 
 # 디렉토리 안내 (설치 전 사용자에게 미리 고지)
 hr
@@ -158,11 +212,7 @@ else
 fi
 
 # ── 5. OpenClaw 저장소 ───────────────────────────────────────────────────────
-OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
-# 에이전트 파일 저장 폴더 (Docker 볼륨 마운트 — 로컬에는 아무것도 설치 안 됨)
-OPENCLAW_WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/DEV/openclawAgent}"
-OPENCLAW_CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
-# 폴더가 없으면 미리 생성 (Docker 마운트 전 필요)
+# 경로는 파일 상단에서 이미 확정 — 여기서는 Docker 마운트 전 디렉터리 생성만.
 mkdir -p "$OPENCLAW_WORKSPACE_DIR"
 mkdir -p "$OPENCLAW_CONFIG_DIR"
 export OPENCLAW_WORKSPACE_DIR OPENCLAW_CONFIG_DIR
@@ -436,6 +486,10 @@ step_sandbox() {
   if [ ! -S "$sock" ]; then
     warn "docker.sock 이 없습니다 ($sock) — 샌드박스 건너뛰기."
     warn "  Docker Desktop 이 켜진 뒤 './openclaw install' 재실행하면 샌드박스가 설정됩니다."
+    # 보류 신호: 본 함수는 0 으로 빠지지만(전체 install 실패 아님),
+    # 호출부에서 이 플래그를 보고 state 의 'sandbox=done' 마커를 지웁니다.
+    # 다음 install 실행에서 자동으로 다시 시도됩니다.
+    SANDBOX_DEFERRED=1
     return 0
   fi
   local gid
@@ -473,7 +527,16 @@ step_sandbox() {
     warn "수동 명령:  cd ~/DEV/openclaw && OPENCLAW_SANDBOX=1 ./docker-setup.sh"
   fi
 }
+SANDBOX_DEFERRED=0
 run_step sandbox "샌드박스 설정 (기본 ON)" -- step_sandbox
+
+# step_sandbox 가 docker.sock 부재로 보류된 경우(SANDBOX_DEFERRED=1) state 마커를
+# 지워 다음 install 에서 자동 재시도되게 합니다. (run_step 은 본문 성공 시 항상
+# 마크하므로 후처리로 되돌립니다.)
+if [ "${SANDBOX_DEFERRED:-0}" = "1" ]; then
+  state_unmark sandbox
+  warn "샌드박스 설정 보류 — Docker Desktop 준비 후 './openclaw install' 재실행 시 자동 적용됩니다."
+fi
 
 
 ok "설치 완료! 다음 단계:"
