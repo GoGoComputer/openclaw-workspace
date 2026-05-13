@@ -75,7 +75,13 @@ validate_state() {
     cleared=1
   fi
 
-  [ "$cleared" = "1" ] && info "  (영향받는 단계는 자동으로 다시 진행됩니다)"
+  if [ "$cleared" = "1" ]; then
+    info "  (영향받는 단계는 자동으로 다시 진행됩니다)"
+  fi
+  # set -e 환경에서 함수의 마지막 명령이 false 면 함수 자체가 non-zero 로
+  # 종료해 호출 측 스크립트를 조용히 죽인다. 정리할 게 없는 정상 케이스에서도
+  # 항상 0 으로 빠지게 명시.
+  return 0
 }
 validate_state
 
