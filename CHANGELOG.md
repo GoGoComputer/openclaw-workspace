@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.21 — 2026-05-15](#v0221--2026-05-15)
 - [v0.2.20 — 2026-05-14](#v0220--2026-05-14)
 - [v0.2.19 — 2026-05-14](#v0219--2026-05-14)
 - [v0.2.18 — 2026-05-14](#v0218--2026-05-14)
@@ -26,6 +27,96 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.21 — 2026-05-15
+
+### Discord "Something went wrong" — two new root causes after v0.2.20 sandbox-off (cases D + E)
+
+Even after v0.2.20 disabled the sub-container sandbox, the Discord bot still replied with the generic `Something went wrong while processing your request. Please try again, or use /new to start a fresh session.` to every message. Log inspection surfaced two distinct, independent failures:
+
+#### Case D — model too heavy for first-load watchdog
+
+```
+[agent] agent/embedded Profile ollama:default timed out
+[llm]   llm-idle-timeout: ollama/gemma4:26b produced no reply before the idle watchdog
+```
+
+The first message picks whichever model is at index `[0]` of `models.providers.ollama.models[]` in `~/.openclaw/openclaw.json`. `./openclaw setup` (and OpenClaw's onboard) had been seeding `gemma4:26b` (17GB) at the front. On a 24GB MacBook Pro, the first call to that model loads weights for ~55s. OpenClaw's per-channel idle watchdog cuts the lane long before Ollama returns — the bot has no result to send, falls back to the generic apology, and the next message hits the same wall (model has to load again because the lane is fresh).
+
+**Fix — reorder the config array so the lightest viable model is first, plus warm it up**
+
+```bash
+python3 -c '
+import json
+p = "/Users/mo/.openclaw/openclaw.json"
+cfg = json.load(open(p))
+m = cfg["models"]["providers"]["ollama"]["models"]
+pref = "llama3.1:8b-instruct-q4_K_M"   # 4.9GB, second-call load ~2.6s
+cfg["models"]["providers"]["ollama"]["models"] = (
+    [x for x in m if x["id"] == pref] + [x for x in m if x["id"] != pref]
+)
+json.dump(cfg, open(p, "w"), indent=2)
+'
+
+# warm it once so the first Discord message doesn't pay the cold-load tax
+curl -s -X POST http://127.0.0.1:11434/api/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"llama3.1:8b-instruct-q4_K_M","prompt":"hi","stream":false}' >/dev/null
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+```
+
+Heavier models (e.g. `gemma4:26b`, `qwen2.5-coder:14b`) are still usable, but only after the lighter default has been picked up and Ollama is warm. RAM guidance table added to `docs/GUIDE-DISCORD-BOT.md` case D.
+
+#### Case E — `plugin-runtime-deps/openclaw-unknown-<hash>/` left half-populated
+
+```
+[discord] channel exited: Cannot find module
+  '/home/node/.openclaw/plugin-runtime-deps/openclaw-unknown-a1b2c3d4/node_modules/@openclaw/plugin-sdk/dist/text-runtime.js'
+[discord] channel exited: ENOENT: no such file or directory, open
+  '.../plugin-runtime-deps/openclaw-unknown-.../node_modules/@openclaw/account-core/dist/index.js'
+```
+
+OpenClaw's plugin loader tries to read its own version (`process.env.OPENCLAW_VERSION` or `package.json#version`), hashes that to a deps dir name, and bundle-installs ~26 runtime deps on first boot. In our containerized run on macOS, the version sometimes comes back empty — the loader falls back to a hash-based identifier `openclaw-unknown-<hash>`. That itself is fine. What broke was that **a previous host-paths experiment (v0.2.20 unshipped overlay) had partially populated the deps directory and then died mid-install**, leaving the bundle directory with directory entries but missing `text-runtime.js`, `account-core.js`, and a handful of other files. Subsequent boots saw the dir already exists, skipped reinstall, and crashed the Discord channel on first tool call.
+
+**Fix — purge the deps directory; OpenClaw reinstalls on next boot**
+
+```bash
+trash ~/.openclaw/plugin-runtime-deps 2>/dev/null || rm -rf ~/.openclaw/plugin-runtime-deps
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+
+# verify — should see all 26 deps installed and bot logged in:
+./openclaw logs | grep -iE 'installed bundled runtime deps|logged in to discord'
+# [discord] installed bundled runtime deps in 3421ms: @buape/carbon, @discordjs/voice, …
+# [discord] logged in to discord as 1477667959601369139 (openclaw)
+```
+
+#### Result after applying D + E (with v0.2.20 sandbox-off already in place)
+
+```
+$ ./openclaw logs --tail 50 | grep -iE 'ready|logged in|channel exited'
+[gateway] ready (6 plugins: bonjour, browser, device-pair, discord, phone-control, talk-voice)
+[discord] logged in to discord as 1477667959601369139 (openclaw)
+(no `channel exited` lines)
+```
+
+Discord bot responds to `@openclaw 안녕` with a coherent reply in ~3 seconds. 🎉
+
+#### Docs
+
+- `docs/GUIDE-DISCORD-BOT.md` troubleshooting expanded from 3 cases (A/B/C) to **5** (A/B/C/**D**/**E**), with full diagnosis + fix scripts and an RAM-to-model recommendation table.
+- `docs/GUIDE-DAILY-USE.md` troubleshooting matrix gained two corresponding rows that link back to the Discord guide.
+- No code changes in this version — every fix is a config tweak the user applies manually. `setup.sh` / `install.sh` patches to automate D + E are tracked as TODO (auto-pick lightest model as default, periodically prune stale `openclaw-unknown-*` deps).
+
+#### TODO (carried from v0.2.20)
+
+- Upstream PR for `OPENCLAW_HOST_PATH_PREFIX` env var to translate container paths to host paths — would let case C be solved properly and re-enable `sandbox.mode = "non-main"`.
+- Auto-rank Ollama models by parameter count / file size in `cmd/setup.sh` so the lightest one is always at index `[0]`.
 
 ---
 

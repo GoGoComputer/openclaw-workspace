@@ -833,10 +833,10 @@ json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
 
 ### "봇이 응답으로 `Something went wrong while processing your request. Please try again, or use /new to start a fresh session.`"
 
-게이트웨이 로그를 보면 **세 케이스** 중 하나 — OpenClaw 의 sandbox 도구 격리(`docker-in-docker via docker.sock`) 가 macOS Docker Desktop 에서 단계별로 막히는 회귀들:
+게이트웨이 로그를 보면 **다섯 케이스** 중 하나 — OpenClaw 의 sandbox 도구 격리(`docker-in-docker via docker.sock`) · 모델 로딩 · plugin runtime 이 macOS Docker Desktop 에서 단계별로 막히는 회귀들:
 
 ```bash
-./openclaw logs | grep -iE "Failed to inspect sandbox image|mounts denied"
+./openclaw logs | grep -iE "Failed to inspect sandbox image|mounts denied|timed out|llm-idle-timeout|plugin-runtime-deps|channel exited"
 # 케이스 A — 마운트 누락 (v0.2.17 에서 fix):
 #   Error: ... no such file or directory
 # 케이스 B — 권한 거부 (v0.2.19 에서 fix):
@@ -844,6 +844,12 @@ json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
 # 케이스 C — 호스트 경로 매핑 실패 (v0.2.20 에서 sandbox 비활성화로 회피):
 #   Error: ... mounts denied: The path /home/node/.openclaw/sandboxes/...
 #          is not shared from the host and is not known to Docker
+# 케이스 D — 모델 너무 무거워 idle watchdog 트리거 (v0.2.21):
+#   Error: agent/embedded Profile ollama:default timed out
+#   Error: llm-idle-timeout: ollama/<model> produced no reply before the idle watchdog
+# 케이스 E — plugin-runtime-deps 부분 설치 / 모듈 누락 (v0.2.21):
+#   Error: Cannot find module '.../plugin-runtime-deps/openclaw-unknown-<hash>/...text-runtime.js'
+#   Error: ENOENT: no such file or directory ... account-core.js
 ```
 
 **케이스 C 의 근본 원인**: OpenClaw 가 sandbox sub-container 띄울 때 mount source 로 **자기가 본 컨테이너 내부 경로** (`/home/node/.openclaw/sandboxes/...`) 를 그대로 Docker daemon 에 넘긴다. daemon 은 호스트 위에서 도는 거라 그 경로를 호스트의 어떤 경로인지 모름 → 거절. OpenClaw 본체는 `OPENCLAW_HOST_*` 같은 호스트 경로 env 변수를 읽지 않아 (`grep process.env.OPENCLAW_HOST /app/dist` → 0건) 우회 어려움.
@@ -905,6 +911,89 @@ docker inspect openclaw-openclaw-gateway-1 \
 ```
 
 원래는 install 의 `step_sandbox` 가 `docker-compose.sandbox.yml` 을 만들어 처음엔 마운트가 들어가는데, 그 이후 stop/start 또는 lockdown 이 호출되면 sandbox 오버레이가 빠지는 게 v0.2.16 까지의 회귀였음. v0.2.17 에서 `start.sh` 와 `step_lockdown` 둘 다 sandbox 오버레이를 자동 포함하도록 수정.
+
+**케이스 D — 모델이 너무 무거워 첫 응답 전에 watchdog 트리거 (v0.2.21)**: sandbox 가 떴고 docker.sock 권한도 있고 호스트 경로도 해결됐는데, **Ollama 가 모델 첫 로딩에 너무 오래 걸려** OpenClaw 의 idle watchdog 이 "응답이 멎었다" 고 판단하고 채널을 종료. 24GB RAM 노트북에서 `gemma4:26b` (17GB) 첫 로드 55+초 — Discord 봇 한 번의 메시지 처리 안에 못 끝남.
+
+증상:
+```bash
+./openclaw logs | grep -iE "timed out|idle-timeout"
+# [agent] agent/embedded Profile ollama:default timed out
+# [llm] llm-idle-timeout: ollama/llama3.1:70b produced no reply before the idle watchdog
+```
+
+즉시 fix — 가벼운 모델을 config 첫 항목으로 옮기기 (배열 순서가 default 결정):
+```bash
+python3 -c '
+import json
+p = "/Users/mo/.openclaw/openclaw.json"
+cfg = json.load(open(p))
+m = cfg["models"]["providers"]["ollama"]["models"]
+pref = "llama3.1:8b-instruct-q4_K_M"   # 4.9GB, 첫 로드 후 2.6초
+cfg["models"]["providers"]["ollama"]["models"] = (
+    [x for x in m if x["id"] == pref] + [x for x in m if x["id"] != pref]
+)
+json.dump(cfg, open(p, "w"), indent=2)
+print("default model →", pref)
+'
+
+# 사전 워밍업 — 한 번 부르면 RAM 에 캐시돼 다음부턴 ~2초
+curl -X POST http://127.0.0.1:11434/api/generate \
+  -d '{"model":"llama3.1:8b-instruct-q4_K_M","prompt":"hi","stream":false}' \
+  -H 'Content-Type: application/json' >/dev/null 2>&1
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+```
+
+RAM 가이드:
+| RAM | 권장 default | 무거운 모델은 |
+|---|---|---|
+| 16GB | `llama3.1:8b-instruct-q4_K_M` (4.9GB) | DM 으로만 명시 호출 |
+| 24GB | `llama3.1:8b-instruct-q4_K_M` 또는 `qwen2.5-coder:14b` (8.4GB) | `gemma4:26b` 도 가능하지만 워밍업 필수 |
+| 32GB+ | `qwen2.5-coder:14b`, `gemma4:26b` 둘 다 OK | — |
+
+**케이스 E — `plugin-runtime-deps/openclaw-unknown-<hash>/` 가 부분 설치된 채로 남음 (v0.2.21)**: OpenClaw 가 컨테이너 안에서 자기 버전을 못 읽거나 (`process.env.OPENCLAW_VERSION` 비어 있음), upstream 의 plugin-sdk autoinstall 가 중간에 끊겼거나, host-paths 실험 후 디렉토리가 어긋난 상태. 결과적으로 `~/.openclaw/plugin-runtime-deps/openclaw-unknown-<hash>/` 디렉토리가 만들어졌는데 그 안에 `text-runtime.js` · `account-core.js` 같은 핵심 모듈이 빠져 있음. Discord 채널은 부팅까진 되는데, 첫 메시지가 와서 도구를 실행하려는 순간 모듈 못 찾고 채널이 죽음.
+
+증상:
+```bash
+./openclaw logs | grep -iE "plugin-runtime-deps|channel exited|Cannot find module"
+# [discord] channel exited: Cannot find module
+#   '/home/node/.openclaw/plugin-runtime-deps/openclaw-unknown-a1b2c3d4/node_modules/@openclaw/plugin-sdk/dist/text-runtime.js'
+# [discord] channel exited: ENOENT: no such file or directory, open
+#   '.../plugin-runtime-deps/openclaw-unknown-.../node_modules/@openclaw/account-core/dist/index.js'
+```
+
+```bash
+# 부분 설치 확인 — 이 디렉토리가 있고 안에 dep 가 26개 미만이면 손상:
+ls ~/.openclaw/plugin-runtime-deps/openclaw-unknown-*/node_modules/@openclaw/ 2>/dev/null | wc -l
+# 정상: 0 (없거나) 또는 26
+# 손상: 1 ~ 25
+```
+
+즉시 fix — 손상된 deps 디렉토리 통째로 비우고 재부팅 (OpenClaw 가 다음 부팅 시 자동 재설치):
+```bash
+# 휴지통으로 (실수 시 복원 가능). 'trash' 없으면 rm -rf ~/.openclaw/plugin-runtime-deps
+trash ~/.openclaw/plugin-runtime-deps 2>/dev/null || rm -rf ~/.openclaw/plugin-runtime-deps
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+
+# 부팅 로그에 26개 dep 설치 확인 (수 초 ~ 수십 초):
+./openclaw logs | grep -i "installed bundled runtime deps"
+# → [discord] installed bundled runtime deps in 3421ms:
+#     @buape/carbon, @discordjs/voice, @openclaw/account-core,
+#     @openclaw/plugin-sdk, ... (총 26개)
+
+# 봇 로그인까지 확인:
+./openclaw logs | grep -i "logged in to discord"
+# → [discord] logged in to discord as 1477667959601369139 (openclaw)
+```
+
+`openclaw-unknown-<hash>` 디렉토리명의 의미: OpenClaw 가 자기 버전 (`v0.x.y`) 을 못 찾으면 패키지 식별자로 폴백을 만들고 hash 값으로 묶음. 매번 다른 hash 가 나오면 새 디렉토리가 누적되니, 일주일에 한 번 확인해서 stale 디렉토리는 정리:
+```bash
+ls -la ~/.openclaw/plugin-runtime-deps/
+# 정상이면 1~2개. 5개 넘으면 stale 누적 → trash 후 재부팅.
+```
 
 ### "봇이 Online 인데 어떤 메시지에도 응답 안 함 — TUI 에서는 `fetch failed`"
 
