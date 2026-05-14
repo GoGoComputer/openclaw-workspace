@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.17 — 2026-05-14](#v0217--2026-05-14)
 - [v0.2.16 — 2026-05-14](#v0216--2026-05-14)
 - [v0.2.15 — 2026-05-14](#v0215--2026-05-14)
 - [v0.2.14 — 2026-05-14](#v0214--2026-05-14)
@@ -22,6 +23,43 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.17 — 2026-05-14
+
+### Bug fix — Discord bot replies "Something went wrong" after stop/start (sandbox compose overlay drop)
+User's Discord bot was Online but every message got the generic OpenClaw error reply:
+
+> ⚠️ Something went wrong while processing your request. Please try again, or use `/new` to start a fresh session.
+
+Gateway logs revealed the actual cause:
+
+```
+[diagnostic] lane task error: lane=session:agent:main:discord:channel:...
+  error="Error: Failed to inspect sandbox image: failed to connect to the
+  docker API at unix:///var/run/docker.sock; ... no such file or directory"
+```
+
+The bot processes each message by spinning a sandbox sub-container, which needs `/var/run/docker.sock` mounted into the gateway container. `install.sh` step_sandbox generates `~/DEV/openclaw/docker-compose.sandbox.yml` (the overlay that mounts the socket) and brings the gateway up with that overlay included — but **neither `cmd/start.sh` nor `step_lockdown` referenced this overlay afterward**. So the first `./openclaw stop && ./openclaw start` (or any `network online --restart` / `network isolated --restart`) silently dropped the socket mount, and the bot stopped being able to invoke tools.
+
+Symptom: `docker inspect openclaw-openclaw-gateway-1 --format '{{range .Mounts}}{{.Source}} {{end}}'` shows the workspace and config mounts but **no `/var/run/docker.sock`**. Plugins list shrinks from 7 (with `discord`) back to 6 because the discord channel can't run.
+
+- **`cmd/start.sh`** — now adds `-f $OPENCLAW_DIR/docker-compose.sandbox.yml` to the compose args when that file exists. Same conditional include pattern already used for `compose.security.yml` / `compose.network.yml`. If the overlay doesn't exist (sandbox disabled by `OPENCLAW_SANDBOX=0`, or never set up) the start path is unchanged.
+- **`cmd/install.sh step_lockdown`** — same fix. Without this, the very last step of `./openclaw install` (the auto-lockdown to isolated) was already dropping the sandbox mount on first install, so the bot worked only between step_sandbox and step_lockdown — invisible to users until they tried Discord.
+
+### Documentation
+- **GUIDE-DAILY-USE 트러블슈팅 표** — new row for "`Something went wrong while processing your request`" with the docker.sock cause and the `git pull → stop → start` recovery. Includes a one-liner to verify the mount.
+- **GUIDE-DISCORD-BOT 트러블슈팅** — new dedicated entry "봇이 응답으로 'Something went wrong...'" with the full diagnosis, log grep one-liner, mount verification, and history of the v0.2.16-and-earlier regression.
+
+### Verified on user's machine
+After patch + `./openclaw stop && start`:
+- Gateway healthy
+- Mounts now include `/var/run/docker.sock -> /var/run/docker.sock`
+- Plugins line: `ready (7 plugins: acpx, bonjour, browser, device-pair, **discord**, phone-control, talk-voice)`
+- `discord client initialized as <id> (openclaw); awaiting gateway readiness` — connected and ready to process messages.
+
+VERSION 0.2.16 → 0.2.17.
 
 ---
 

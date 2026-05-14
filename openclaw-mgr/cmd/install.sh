@@ -454,8 +454,13 @@ step_lockdown() {
   [ -f compose.yml ] && files="-f compose.yml"
   local sec="$OPENCLAW_MGR_DIR/compose.security.yml"
   local net="$OPENCLAW_MGR_DIR/compose.network.yml"
+  local sandbox_overlay="$OPENCLAW_DIR/docker-compose.sandbox.yml"
   [ -f "$sec" ] && files="$files -f $sec"
   [ -f "$net" ] && files="$files -f $net"
+  # 🛡 step_sandbox 가 만든 docker.sock 마운트 오버레이도 포함해 lockdown.
+  # 안 그러면 lockdown 직후 sandbox 마운트가 풀려 봇이 도구 호출 시 "Failed
+  # to inspect sandbox image" 로 떨어진다. (start.sh 와 동일한 회귀 방지.)
+  [ -f "$sandbox_overlay" ] && files="$files -f $sandbox_overlay"
   # shellcheck disable=SC2086
   docker compose $files up -d --pull missing
 }

@@ -831,6 +831,30 @@ json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
 - [ ] OpenClaw 게이트웨이 컨테이너가 떠 있는가? `docker compose ps`
 - [ ] 방화벽이 `discord.com`/`gateway.discord.gg` outbound 를 차단? (회사 네트워크 흔한 케이스)
 
+### "봇이 응답으로 `Something went wrong while processing your request. Please try again, or use /new to start a fresh session.`"
+
+게이트웨이 로그에 다음이 보이면 `docker.sock` 마운트 누락:
+```bash
+./openclaw logs | grep -i "Failed to inspect sandbox image"
+# → Error: Failed to inspect sandbox image: failed to connect to the docker
+#   API at unix:///var/run/docker.sock; ... no such file or directory
+```
+
+원인: `./openclaw stop && start` 또는 `network online/isolated --restart` 사이클 후 gateway 컨테이너 안에 `/var/run/docker.sock` 마운트가 빠진 상태. 봇이 메시지를 받으면 도구 실행을 위해 **sandbox 서브컨테이너**를 띄우려는데 socket 이 없어 실패.
+
+해결 (v0.2.17+):
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+git pull
+./openclaw stop && ./openclaw start
+# 확인:
+docker inspect openclaw-openclaw-gateway-1 \
+  --format '{{range .Mounts}}{{.Source}} {{end}}' | tr ' ' '\n' | grep docker.sock
+# → /var/run/docker.sock  이 나와야 정상
+```
+
+원래는 install 의 `step_sandbox` 가 `docker-compose.sandbox.yml` 을 만들어 처음엔 마운트가 들어가는데, 그 이후 stop/start 또는 lockdown 이 호출되면 sandbox 오버레이가 빠지는 게 v0.2.16 까지의 회귀였음. v0.2.17 에서 `start.sh` 와 `step_lockdown` 둘 다 sandbox 오버레이를 자동 포함하도록 수정.
+
 ### "봇이 Online 인데 어떤 메시지에도 응답 안 함 — TUI 에서는 `fetch failed`"
 
 OpenClaw 의 설정에 등록된 **모델 이름이 실제 설치된 Ollama 모델과 다른** 케이스. OpenClaw 가 onboard 중 하드코딩 기본값 (`gemma4` 등 태그 없는 이름) 을 자동으로 모델 목록에 끼워 넣어 일어남. → [GUIDE-DAILY-USE: 현재 어떤 모델을 쓰는지](GUIDE-DAILY-USE.md#-현재-어떤-모델을-쓰는지--openclawjson-점검) 의 진단·해결 3단계 그대로 적용. 빠른 fix: `./openclaw setup --skip-confirm` (v0.2.11+ 자동 정리).

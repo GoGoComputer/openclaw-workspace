@@ -37,6 +37,9 @@ OPENCLAW_DIR="${OPENCLAW_DIR:-$HOME/DEV/openclaw}"
 cd "$OPENCLAW_DIR"
 sec="${OPENCLAW_MGR_DIR}/compose.security.yml"
 net="${OPENCLAW_MGR_DIR}/compose.network.yml"
+# install 의 step_sandbox 가 생성한 docker.sock 마운트 오버레이.
+# 없으면 (샌드박스 비활성 또는 사용자가 OPENCLAW_SANDBOX=0 으로 설정) 그냥 스킵.
+sandbox="$OPENCLAW_DIR/docker-compose.sandbox.yml"
 
 # 네트워크 override 가 없으면 isolated 로 자동 생성 (기본 = 최고 보안).
 if [ ! -f "$net" ]; then
@@ -50,6 +53,12 @@ info "네트워크 모드: $mode (변경: ./openclaw network online|isolated --r
 args=(-f docker-compose.yml)
 [ -f "$sec" ] && args+=(-f "$sec")
 [ -f "$net" ] && args+=(-f "$net")
+# 🛡 샌드박스 오버레이 포함 — 없으면 gateway 컨테이너 안에 /var/run/docker.sock
+# 마운트가 빠져, 봇이 도구 실행할 때 "Failed to inspect sandbox image: dial
+# unix /var/run/docker.sock: no such file or directory" 로 떨어진다. install
+# 의 step_sandbox 가 이 파일을 만들지만 그 직후 ./openclaw stop && start 만
+# 해도 이 오버레이가 빠지는 게 v0.2.16 까지의 회귀였다.
+[ -f "$sandbox" ] && args+=(-f "$sandbox")
 docker compose "${args[@]}" up -d
 ok "컨테이너 시작 완료"
 
