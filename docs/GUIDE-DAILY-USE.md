@@ -54,9 +54,50 @@ TUI/chat **안에서** 빠져나오는 법:
 - TUI 안에서: `Ctrl+D` 또는 입력창에 `/exit`
 - chat REPL 안에서: `/exit`, `/quit`, `/q`, 또는 `Ctrl+D`
 
+### 💬 Discord 에서 자주 쓰는 프롬프트 (병렬 cheat sheet)
+
+호스트 터미널 대신 **Discord 로** OpenClaw 봇을 부를 때 가장 자주 보내는 메시지. 봇 이름은 예시 (`@OpenClaw-Mo`) — 당신이 [GUIDE-DISCORD-BOT](GUIDE-DISCORD-BOT.md) 에서 설정한 이름으로 바꿔서 사용.
+
+```
+# ① 봇 살아있는지 확인 (cold boot 직후 / 모바일에서 점검)
+@OpenClaw-Mo 살아있어?
+
+# ② 빠른 질문 (채널)
+@OpenClaw-Mo rsync 권한 유지 옵션이 뭐였지?
+
+# ③ 1:1 대화 (DM) — 매번 멘션 불필요, 평문 입력
+[봇과 DM 채널 열고]  안녕. 너는 어떤 모델이야?
+
+# ④ 워크스페이스 파일 작업 (모바일에서도 가능)
+@OpenClaw-Mo ~/DEV/openclawAgent/daily-notes/2026-05-14.md 만들어서
+오늘 회의 핵심 3줄 적어줘:
+- A 안건 연기
+- B 내일 초안
+- C 검토 완료
+
+# ⑤ 컨텍스트 초기화 (인격은 유지, 대화 히스토리만 삭제)
+/reset                또는    @OpenClaw-Mo /reset
+
+# ⑥ 모델 즉시 전환 (admin)
+/agent model gemma4:26b
+```
+
+**핵심 트리거 4종 한 줄 요약:**
+
+| 트리거 | 언제 | 컨텍스트 |
+|---|---|---|
+| `@봇이름 <메시지>` | 채널에서 가끔 부를 때 | 메시지마다 새로 |
+| DM 평문 | 1:1, 모바일, 비밀 작업 | 가장 길게 유지 |
+| `/명령` (슬래시) | 매개변수 많은 작업 | 필드별 분리 → 오타 없음 |
+| 자동응답 채널 | 봇 전용 채널 (`#ai-chat` 등) | 멘션 없이 모든 메시지 |
+
+자세한 8개 상황별 워크플로우 (모바일·팀·파일·운영·긴 작업·정기·cold boot) + 9구간 시간순 통합 시나리오 → [GUIDE-DISCORD-BOT §12](GUIDE-DISCORD-BOT.md#12--상황별-discord-워크플로우--모든-상황에서).
+
+---
+
 **컴퓨터 완전히 껐다 켠 직후라면** → 곧장 [🆕 시나리오 0 (cold boot)](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 로. 5단계 + 1분 검증 체크리스트.
 
-**Discord 를 주 인터페이스로 쓰고 싶으면** (모바일·팀 협업·외출·정기 알림·시스템 운영 등 8개 상황) → [GUIDE-DISCORD-BOT §12 — 상황별 워크플로우](GUIDE-DISCORD-BOT.md#12--상황별-discord-워크플로우--모든-상황에서).
+**Discord 를 주 인터페이스로 쓰고 싶으면** (모바일·팀 협업·외출·정기 알림·시스템 운영 등 8개 상황) → [GUIDE-DISCORD-BOT §12 — 상황별 워크플로우](GUIDE-DISCORD-BOT.md#12--상황별-discord-워크플로우--모든-상황에서) (특히 [⓪ 통합 시나리오](GUIDE-DISCORD-BOT.md#-통합-시나리오--노트북-끔-상태에서-discord-만으로-하루-보내기) 부터).
 
 ---
 

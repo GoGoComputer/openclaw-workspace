@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.16 — 2026-05-14](#v0216--2026-05-14)
 - [v0.2.15 — 2026-05-14](#v0215--2026-05-14)
 - [v0.2.14 — 2026-05-14](#v0214--2026-05-14)
 - [v0.2.13 — 2026-05-14](#v0213--2026-05-14)
@@ -21,6 +22,28 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.16 — 2026-05-14
+
+### GUIDE-DAILY-USE TL;DR — Discord prompt cheat sheet alongside host commands
+User pointed out the TL;DR section had six host-side commands (`start` / `chat` / `tui` / `stop` / `doctor`) but no parallel "what do you actually type in Discord" reference, even though Discord is one of the primary interaction modes.
+
+Added a **💬 Discord 에서 자주 쓰는 프롬프트** block right below the host cheat sheet:
+
+  ① Bot alive check (`@bot 살아있어?`)
+  ② Quick question in a channel
+  ③ DM (plain text, no mention)
+  ④ Workspace file write (with concrete path example, mobile-friendly)
+  ⑤ `/reset` context clear
+  ⑥ `/agent model <name>` switch
+
+Plus a compact trigger-comparison table (mention / DM / slash / auto-respond channel) with "when to use" and "context length" columns. Closes with a direct link into GUIDE-DISCORD-BOT §12 ⓪ integrated scenario for the full Discord-only day walkthrough.
+
+No code change; docs and CHANGELOG only.
+
+VERSION 0.2.15 → 0.2.16.
 
 ---
 
