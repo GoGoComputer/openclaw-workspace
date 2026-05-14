@@ -19,6 +19,12 @@
 - [🚀 5분 시작 (비개발자 OK)](#-5분-시작-비개발자-ok)
   - [표준 — 스크립트 설치 (권장)](#표준--스크립트-설치-권장)
   - [완전 수동 설치 (회사 정책·오프라인용)](#완전-수동-설치-회사-정책오프라인용)
+- [🎯 install 직후 — 첫 사용](#-install-직후--첫-사용)
+  - [① 브라우저 웹 UI](#-브라우저-웹-ui)
+  - [② 컨테이너 CLI](#-컨테이너-cli)
+  - [③ 터미널 REPL 채팅](#-터미널-repl-채팅)
+  - [정상 동작 확인](#정상-동작-확인)
+  - [🌐 외부 네트워크 잠깐 켜기](#-외부-네트워크-잠깐-켜기)
 - [🩺 진단 / `doctor` 항목별 가이드](#-진단--doctor-항목별-가이드)
 - [🤖 자동화 3종 — 한눈 카탈로그](#-자동화-3종--한눈-카탈로그)
 - [📚 문서 가이드](#-문서-가이드)
@@ -189,6 +195,85 @@ cd openclaw-workspace/openclaw-mgr
 ./openclaw install     # 누락된 부분만 자동 보충 (수동으로 다 깔았다면 거의 다 skip)
 ./openclaw start       # 컨테이너 기동
 ```
+
+---
+
+## 🎯 install 직후 — 첫 사용
+
+`./openclaw install` 끝에 `✓ 설치 완료!` + `🛡 샌드박스 활성 (기본)` 메시지가 떴다면 컨테이너 두 개가 이미 떠 있습니다:
+
+| 컨테이너 | 역할 | 노출 |
+|---|---|---|
+| `openclaw-openclaw-gateway-1` | 웹 UI · REST 게이트웨이 · healthz | `127.0.0.1:18789` |
+| `openclaw-openclaw-cli-1` | 컨테이너 안 셸 (`claude` CLI 실행 환경) | (네트워크는 gateway 공유) |
+
+다음 셋 중 편한 방식으로 첫 대화를 시작하세요.
+
+### ① 브라우저 웹 UI
+
+```bash
+open http://127.0.0.1:18789
+```
+
+가장 시각적·직관적. Safari/Chrome 어디든 OK. 주소창에 `open` 까지 같이 붙여넣지 마세요 — `open` 은 터미널 명령어입니다.
+
+> **"Safari can't connect" / "Empty reply"** 가 뜨면 `./openclaw doctor` 로 게이트웨이 상태부터 확인. 컨테이너는 떴지만 healthz 가 아직 응답 전일 수 있어요 (`docker compose ps` 로 `(healthy)` 표시 확인).
+
+### ② 컨테이너 CLI
+
+가장 안정적. 컨테이너 안 격리 환경에서 직접 `claude` 실행.
+
+```bash
+cd ~/DEV/openclaw
+docker compose exec openclaw-cli bash
+# 컨테이너 셸이 뜨면:
+claude
+```
+
+### ③ 터미널 REPL 채팅
+
+호스트 Ollama 와 직접 대화 — 컨테이너·웹 UI 없이도 워크스페이스의 인격 파일(`IDENTITY.md` · `SOUL.md` · `USER.md` 등)을 자동 system prompt 로 로드.
+
+```bash
+./openclaw chat                       # 기본 모델 + 인격 자동 로드
+./openclaw chat -m llama3.1:8b        # 모델 지정
+./openclaw chat --no-system           # 인격 무시, 순수 모델
+```
+
+REPL 안 슬래시 명령(`/exit` `/reset` `/model` `/history` `/help`)·자세한 동작은 [💬 터미널 채팅 (`chat`)](#-터미널-채팅-chat) 섹션 참조.
+
+### 정상 동작 확인
+
+```bash
+./openclaw doctor
+# 핵심 확인:
+#   ✓ OpenClaw 저장소     /Users/mo/DEV/openclaw
+#   ✓ 컨테이너 실행       2개 (gateway + cli)
+#   ✓ 네트워크 격리       isolated (외부 차단)
+#   ✓ Ollama 데몬 / 모델  (호스트 측 준비)
+```
+
+뭔가 ✗ 면 `./openclaw install` 한 번 더 — [`validate_state`](#멱등-설계-state-파일-포맷) 가 산출물 부재를 감지해 자동으로 다시 진행합니다.
+
+### 🌐 외부 네트워크 잠깐 켜기
+
+기본은 `isolated` (외부 차단). 모델 다운로드·코드 업데이트·`pip install` 처럼 외부 접속이 필요한 작업 때만 잠깐 열고 곧장 다시 잠그는 게 표준입니다.
+
+```bash
+./openclaw network online --restart    # 외부 열기 + 컨테이너 재기동
+# (필요한 작업 — 예: ollama pull · pip install · git clone …)
+./openclaw network isolated --restart   # 끝나면 다시 잠그기
+```
+
+| 상황 | 어떻게 |
+|---|---|
+| `./openclaw update` (코드·이미지·모델 갱신) | **자동** — `update` 가 잠깐 online 으로 토글 후 원래 모드로 복귀. 수동 토글 불필요 |
+| `ollama pull <모델>` 처럼 호스트에서만 다운로드 | `isolated` 그대로 OK (Ollama 는 호스트 측이라 컨테이너 네트워크와 무관) |
+| 컨테이너 안에서 `pip install` / `npm install` / `apt-get` / `git clone` | `online --restart` 로 잠깐 열어야 함 |
+| 컨테이너에서 호스트 Ollama 호출 (`host.docker.internal:11434`) | `online --restart` 필요 — isolated 에서는 이것도 차단됨 |
+| 평소 대화·작업 (추가 다운로드 없음) | **항상 `isolated`** — 외부 유출 통로 자체가 없으므로 가장 안전 |
+
+격리 모드의 보안 의미·트레이드오프는 [🔒 네트워크 격리 모드](#-네트워크-격리-모드-명시적-외부-차단-토글) 섹션 참조.
 
 ---
 

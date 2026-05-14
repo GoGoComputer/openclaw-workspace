@@ -16,6 +16,12 @@
 ## 📖 Contents
 
 - [🚀 5-minute start (non-developer friendly)](#-5-minute-start-non-developer-friendly)
+- [🎯 Right after install — first use](#-right-after-install--first-use)
+  - [① Browser web UI](#-browser-web-ui)
+  - [② Container CLI](#-container-cli)
+  - [③ Terminal REPL chat](#-terminal-repl-chat)
+  - [Verify](#verify)
+  - [🌐 Temporarily opening external network](#-temporarily-opening-external-network)
 - [🤖 Automation trio — at a glance](#-automation-trio--at-a-glance)
 - [📚 Documentation map](#-documentation-map)
 - [🤔 What is this?](#-what-is-this)
@@ -94,6 +100,85 @@ You may see system dialogs for Docker Desktop / Xcode CLT — just accept them. 
 > ```
 >
 > The Windows entry-point is a single `openclaw.ps1`. All everyday commands (`start`/`stop`/`logs`/`update`/`backup`, etc.) are auto-delegated to the bash launcher inside WSL2 and produce identical results. See each step's **"💻 Windows equivalent"** callout in [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) for details.
+
+---
+
+## 🎯 Right after install — first use
+
+When `./openclaw install` ends with `✓ install complete!` and `🛡 sandbox active (default)`, two containers are already running:
+
+| Container | Role | Exposed on |
+|---|---|---|
+| `openclaw-openclaw-gateway-1` | Web UI · REST gateway · healthz | `127.0.0.1:18789` |
+| `openclaw-openclaw-cli-1` | In-container shell (where `claude` CLI runs) | (shares gateway's network namespace) |
+
+Pick whichever entry point fits.
+
+### ① Browser web UI
+
+```bash
+open http://127.0.0.1:18789
+```
+
+The most visual / approachable path. Safari or Chrome — either works. Do **not** include `open` in the address bar; `open` is a terminal command, not a URL.
+
+> If you see **"Safari can't connect" / "Empty reply"**, run `./openclaw doctor` first. Containers might be up but healthz might still be initializing — confirm with `docker compose ps` and look for `(healthy)`.
+
+### ② Container CLI
+
+The most stable path. Drop into the isolated container shell and run `claude` directly.
+
+```bash
+cd ~/DEV/openclaw
+docker compose exec openclaw-cli bash
+# then, inside the container:
+claude
+```
+
+### ③ Terminal REPL chat
+
+Talk to the agent through host Ollama directly — no container, no web UI. The workspace personality files (`IDENTITY.md` · `SOUL.md` · `USER.md`, …) get auto-loaded into the system prompt.
+
+```bash
+./openclaw chat                       # default model + auto personality
+./openclaw chat -m llama3.1:8b        # pick a model
+./openclaw chat --no-system           # ignore personality, pure model
+```
+
+Slash commands (`/exit` `/reset` `/model` `/history` `/help`) and full details: see [💬 Terminal chat (`chat`)](#-terminal-chat-chat).
+
+### Verify
+
+```bash
+./openclaw doctor
+# Key rows to check:
+#   ✓ OpenClaw repo       /Users/<you>/DEV/openclaw
+#   ✓ Containers running  2 (gateway + cli)
+#   ✓ Network isolation   isolated (outbound blocked)
+#   ✓ Ollama daemon / models (host-side ready)
+```
+
+Any ✗? Just rerun `./openclaw install` — [`validate_state`](#idempotency-state-file) detects missing artifacts and re-runs the affected steps automatically.
+
+### 🌐 Temporarily opening external network
+
+Default is `isolated` (outbound blocked). For model downloads / code updates / `pip install` style work, briefly switch to `online`, then close it again — that's the standard cycle.
+
+```bash
+./openclaw network online --restart    # open + restart containers
+# (do the work — ollama pull · pip install · git clone …)
+./openclaw network isolated --restart  # lock it back down
+```
+
+| Situation | What to do |
+|---|---|
+| `./openclaw update` (code · images · models refresh) | **Automatic** — `update` flips to `online` briefly and restores the previous mode. No manual toggle needed. |
+| `ollama pull <model>` from the host shell | Keep `isolated` — Ollama runs on the host, unaffected by container networking. |
+| `pip install` / `npm install` / `apt-get` / `git clone` **inside** the container | Need `online --restart` for the duration. |
+| Container reaching the host Ollama (`host.docker.internal:11434`) | Need `online --restart` — `isolated` blocks this too. |
+| Normal chatting / work (no new downloads) | **Stay `isolated`** — no exfil channel exists, which is the whole point. |
+
+For the security rationale and full blocked-actions list, see [🔒 Network isolation modes](#-network-isolation-modes-explicit-outbound-kill-switch).
 
 ---
 

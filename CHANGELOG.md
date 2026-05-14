@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.5 — 2026-05-14](#v025--2026-05-14)
 - [v0.2.4 — 2026-04-25](#v024--2026-04-25)
 - [v0.2.3 — 2026-04-25](#v023--2026-04-25)
 - [v0.2.2 — 2026-04-25](#v022--2026-04-25)
@@ -10,6 +11,30 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.5 — 2026-05-14
+
+### New features
+- **`openclaw chat`** — terminal REPL chat with the agent via host Ollama. Streams `/api/chat` token-by-token; auto-loads workspace personality files (`IDENTITY.md` · `SOUL.md` · `USER.md` · `AGENTS.md` · `MEMORY.md`) into the system prompt. Slash commands: `/exit` `/reset` `/model` `/history` `/help`. Pure stdlib (`curl` + `python3`); no extra deps.
+
+### Install reliability
+- **`install.sh`: `validate_state()`** — at install start, cascade-unmarks state keys whose underlying artifacts are gone:
+  - `OPENCLAW_DIR/.git` missing → unmark `repo_clone` through `sandbox` (7 steps)
+  - `OPENCLAW_DIR/.env` missing → unmark `env_merge` through `sandbox` (5 steps)
+  - `docker-compose.sandbox.yml` missing + `docker.sock` ready → unmark `sandbox`
+  - Fixes "install reports `[skip]` for every step but final summary keeps warning 샌드박스 미설정" when the user manually deleted the clone or ran the first install while Docker Desktop was still booting.
+- **`step_sandbox` deferred marker** — when `docker.sock` is absent the step now sets `SANDBOX_DEFERRED=1` and the marker is cleared after `run_step`, so the next install retries instead of staying stuck at `sandbox=done`.
+- **`validate_state` always returns 0** — guards against silent `set -e` exit when no markers need clearing (the function's final `[ ] && info` short-circuited to exit code 1).
+
+### Bug fixes
+- **`compose.security.yml`**: drop duplicate `security_opt: [no-new-privileges:true]` on `openclaw-gateway`. Base `docker-compose.yml` already declared it, so Compose v2 concatenated the sequences and rejected with `services.openclaw-gateway.security_opt items at 0 and 1 are equal`. (The same fix was previously applied to `openclaw-cli` but the matching change to `openclaw-gateway` was missing.)
+
+### Documentation
+- **README** new section: **🎯 install 직후 — 첫 사용 / Right after install — first use** — three entry points (browser web UI · container CLI · `openclaw chat`), how to verify, and a quick-reference for the `network online ↔ isolated` toggle.
+- **README** idempotency section: documents `validate_state` artifact verification with a table of detection conditions and the markers that get auto-cleared.
+- **README** FAQ: new entry "install keeps printing `[skip]` but nothing works" — explains the cause and the one-line recovery.
 
 ---
 
