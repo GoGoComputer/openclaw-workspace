@@ -455,6 +455,8 @@ step_lockdown() {
   local sec="$OPENCLAW_MGR_DIR/compose.security.yml"
   local net="$OPENCLAW_MGR_DIR/compose.network.yml"
   local sandbox_overlay="$OPENCLAW_DIR/docker-compose.sandbox.yml"
+  # host_paths_overlay 는 v0.2.20 에서 실험했다가 OpenClaw 본체 config-loader
+  # 와 충돌 (gateway 가 'loading configuration' 단계에서 hang) 으로 일시 비활성화.
   [ -f "$sec" ] && files="$files -f $sec"
   [ -f "$net" ] && files="$files -f $net"
   # 🛡 step_sandbox 가 만든 docker.sock 마운트 오버레이도 포함해 lockdown.

@@ -40,6 +40,11 @@ net="${OPENCLAW_MGR_DIR}/compose.network.yml"
 # install 의 step_sandbox 가 생성한 docker.sock 마운트 오버레이.
 # 없으면 (샌드박스 비활성 또는 사용자가 OPENCLAW_SANDBOX=0 으로 설정) 그냥 스킵.
 sandbox="$OPENCLAW_DIR/docker-compose.sandbox.yml"
+# 호스트 경로 일치 오버레이 (v0.2.20 에서 실험했다가 회귀 발견하고 일시 비활성화).
+# OpenClaw 본체의 config-loader 가 startup 단계에서 hang 하는 부작용이 있어
+# 안전한 default 가 확정되기 전까지는 포함하지 않는다.
+# host_paths="${OPENCLAW_MGR_DIR}/compose.host-paths.yml"
+host_paths=""
 
 # 네트워크 override 가 없으면 isolated 로 자동 생성 (기본 = 최고 보안).
 if [ ! -f "$net" ]; then
@@ -59,6 +64,12 @@ args=(-f docker-compose.yml)
 # 의 step_sandbox 가 이 파일을 만들지만 그 직후 ./openclaw stop && start 만
 # 해도 이 오버레이가 빠지는 게 v0.2.16 까지의 회귀였다.
 [ -f "$sandbox" ] && args+=(-f "$sandbox")
+# 🌐 호스트 경로 일치 오버레이 — sandbox sub-container 의 mount 인자가
+# `/home/node/...` (컨테이너 내부 경로) 로 가서 Docker daemon 이 "mounts
+# denied: not shared from the host" 로 거절하던 v0.2.19 의 잔여 회귀를 막음.
+# OpenClaw 가 envHomedir() 로 보는 모든 경로 변수를 호스트 기준 절대경로로
+# 강제하고, 그 경로를 컨테이너에 그대로 마운트 (호스트 경로 = 컨테이너 경로).
+[ -f "$host_paths" ] && args+=(-f "$host_paths")
 docker compose "${args[@]}" up -d
 ok "컨테이너 시작 완료"
 

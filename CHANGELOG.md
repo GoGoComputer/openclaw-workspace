@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.20 — 2026-05-14](#v0220--2026-05-14)
 - [v0.2.19 — 2026-05-14](#v0219--2026-05-14)
 - [v0.2.18 — 2026-05-14](#v0218--2026-05-14)
 - [v0.2.17 — 2026-05-14](#v0217--2026-05-14)
@@ -25,6 +26,67 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.20 — 2026-05-14
+
+### Discord "Something went wrong" case C — host-path mismatch in sandbox sub-container creation
+
+After v0.2.19 fixed the docker.sock permission, a third variant surfaced:
+
+```
+[diagnostic] lane task error: lane=session:agent:main:discord:channel:<id>
+  error="Error response from daemon: mounts denied:
+  The path /home/node/.openclaw/sandboxes/agent-main-f331f052 is not
+  shared from the host and is not known to Docker."
+```
+
+**Root cause (OpenClaw upstream limitation)**
+
+OpenClaw's `appendWorkspaceMountArgs` builds `-v ${hostPath}:${containerPath}` for the new sandbox sub-container, where `hostPath` is set to `workspaceDir` — which is whatever the running gateway sees in `OPENCLAW_WORKSPACE_DIR` (`/home/node/.openclaw/workspace`). That's a *container-internal* path. The Docker daemon runs on the host (or Docker Desktop's LinuxKit VM) and tries to find `/home/node/.openclaw/...` on the host filesystem — which doesn't exist. There is no env var or CLI flag in OpenClaw that exposes the actual host-side path:
+
+```bash
+grep -hroE 'process\.env\.[A-Z_]+(HOST|HOSTPATH)[A-Z_]*' /app/dist | sort -u
+# (no OPENCLAW_HOST_* matches)
+```
+
+The `resolveSandboxHostPathViaExistingAncestor` function only normalizes an already-host path; it doesn't translate from container space.
+
+**Experiment that didn't ship**: `openclaw-mgr/compose.host-paths.yml` — an overlay that mounts `$HOME/.openclaw` and `$HOME/DEV/openclawAgent` at the **same paths inside the container** and overrides `HOME`, `OPENCLAW_HOME`, `OPENCLAW_CONFIG_DIR`, `OPENCLAW_WORKSPACE_DIR`, etc. to those host paths. In theory this makes OpenClaw's mount sources match real host paths. In practice it triggered an OpenClaw `config-loader` hang during gateway startup (>2 min in `loading configuration…` state, eventually `unhealthy`). Wires in `start.sh` and `install.sh step_lockdown` were left commented-out for the next attempt; the overlay file is kept in the tree but unreferenced.
+
+**Workaround that did ship — disable the sandbox sub-container layer**
+
+Set `agents.defaults.sandbox.mode = "off"` in `~/.openclaw/openclaw.json` (valid values per upstream: `off | non-main | all`). The gateway then executes agent tool calls directly inside its own container without spawning a sub-sandbox — no docker-in-docker, no host-path translation needed.
+
+The user's gateway came back as `ready (7 plugins: ... discord ...)` and `[discord] logged in to discord as <id> (openclaw)` immediately after the restart.
+
+**Trade-off (honestly documented)**
+
+`sandbox: off` loses one defense-in-depth layer — the per-tool-call sub-container that restricts workspace access, network, capabilities even further. The gateway container itself still has:
+
+- read-only filesystem
+- `cap_drop: [ALL]`
+- non-root `node` user (uid 1000)
+- isolated network (default `network online --restart` path notwithstanding)
+- docker.sock access only through `group_add` we control
+
+…so general use is still safe. **For workflows that auto-execute untrusted code or open URLs the agent picked**, the sub-sandbox is meaningful and `mode: off` is a real downgrade. Such workflows should wait until the upstream PR (TODO) lands.
+
+### Changes
+- `openclaw-mgr/compose.host-paths.yml` — new overlay file (currently unreferenced; preserved for the next host-path attempt)
+- `openclaw-mgr/cmd/start.sh` — `host_paths` variable added but commented out with a note explaining the v0.2.20 hang
+- `openclaw-mgr/cmd/install.sh step_lockdown` — same commented-out wiring + note
+- **User's `~/.openclaw/openclaw.json`** — `agents.defaults.sandbox.mode` set to `"off"` (manual fix applied during the session; rollback path preserved via timestamped `.bak`)
+
+### Documentation
+- `GUIDE-DISCORD-BOT.md` "Something went wrong" entry now lists all three cases (A no-such-file, B permission-denied, C mounts-denied) with grep one-liner and per-case fix. Case C section includes the upstream-limitation explanation and the trade-off of `mode: off`.
+- `GUIDE-DAILY-USE.md` troubleshooting matrix gets the case-C row pointing at the GUIDE-DISCORD-BOT detail.
+- VERSION 0.2.19 → 0.2.20.
+
+### TODO (future)
+- File a PR against OpenClaw upstream to honor `OPENCLAW_HOST_PATH_PREFIX` (or similar) so `appendWorkspaceMountArgs` can translate container paths back to host paths before calling docker.sock.
+- Once that ships, re-enable `compose.host-paths.yml` and remove the `mode: off` workaround.
 
 ---
 

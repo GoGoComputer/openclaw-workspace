@@ -833,15 +833,45 @@ json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
 
 ### "봇이 응답으로 `Something went wrong while processing your request. Please try again, or use /new to start a fresh session.`"
 
-게이트웨이 로그를 보면 둘 중 하나입니다 — **마운트 누락**(v0.2.17 이전 회귀) 또는 **권한 거부**(v0.2.18 이전 회귀):
+게이트웨이 로그를 보면 **세 케이스** 중 하나 — OpenClaw 의 sandbox 도구 격리(`docker-in-docker via docker.sock`) 가 macOS Docker Desktop 에서 단계별로 막히는 회귀들:
 
 ```bash
-./openclaw logs | grep -i "Failed to inspect sandbox image"
+./openclaw logs | grep -iE "Failed to inspect sandbox image|mounts denied"
 # 케이스 A — 마운트 누락 (v0.2.17 에서 fix):
 #   Error: ... no such file or directory
 # 케이스 B — 권한 거부 (v0.2.19 에서 fix):
 #   Error: ... permission denied while trying to connect to the docker API
+# 케이스 C — 호스트 경로 매핑 실패 (v0.2.20 에서 sandbox 비활성화로 회피):
+#   Error: ... mounts denied: The path /home/node/.openclaw/sandboxes/...
+#          is not shared from the host and is not known to Docker
 ```
+
+**케이스 C 의 근본 원인**: OpenClaw 가 sandbox sub-container 띄울 때 mount source 로 **자기가 본 컨테이너 내부 경로** (`/home/node/.openclaw/sandboxes/...`) 를 그대로 Docker daemon 에 넘긴다. daemon 은 호스트 위에서 도는 거라 그 경로를 호스트의 어떤 경로인지 모름 → 거절. OpenClaw 본체는 `OPENCLAW_HOST_*` 같은 호스트 경로 env 변수를 읽지 않아 (`grep process.env.OPENCLAW_HOST /app/dist` → 0건) 우회 어려움.
+
+**즉시 fix (v0.2.20 부터 권장)**: sandbox sub-container 격리를 비활성화하고 gateway 컨테이너 자체의 다층 격리에 의존. 보안 한 층 잃지만 봇은 즉시 동작:
+
+```bash
+# config 의 agents.defaults.sandbox.mode 를 "off" 로
+python3 -c '
+import json
+p = "/Users/mo/.openclaw/openclaw.json"
+cfg = json.load(open(p))
+cfg["agents"]["defaults"].setdefault("sandbox", {})["mode"] = "off"
+json.dump(cfg, open(p, "w"), indent=2)
+print("sandbox.mode = off")
+'
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+
+# 검증 — Discord 봇 로그인 확인
+./openclaw logs | grep -i 'logged in to discord'
+# → [discord] logged in to discord as <id> (openclaw)
+```
+
+**유실되는 격리**: sandbox sub-container 는 도구 실행마다 새 컨테이너를 띄워 workspace·network·capability 를 추가로 제한하는 **defense-in-depth** 한 층. `mode: off` 로 두면 gateway 컨테이너 안에서 직접 실행. 다만 gateway 자체가 이미 read-only filesystem · `cap_drop: [ALL]` · 격리된 user (`node`, uid 1000) · isolated network 가능 · docker.sock 권한 제한 등 다층 격리를 갖고 있어 일반 사용에는 여전히 안전. 신뢰 안 되는 코드를 자동 실행시키는 워크플로우라면 sandbox 가 살아 있어야 함.
+
+**근본 해결 (TODO)**: OpenClaw upstream 에 호스트 경로 변환 옵션 추가 PR — `OPENCLAW_HOST_PATH_PREFIX` 같은 env 로 컨테이너 내부 경로를 호스트 경로로 자동 변환하는 로직.
 
 **케이스 B (macOS Docker Desktop 흔함)**: docker.sock 은 호스트에서는 `root:daemon`(GID=1) 인데 컨테이너 안에선 `root:root`(GID=0) 로 보임. 마운트는 있어도 node 사용자가 GID=0 그룹에 없으면 거부. v0.2.19+ 의 `step_sandbox` 는 `group_add` 에 `0` 과 호스트 GID 둘 다 추가.
 
