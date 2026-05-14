@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.9 — 2026-05-14](#v029--2026-05-14)
 - [v0.2.8 — 2026-05-14](#v028--2026-05-14)
 - [v0.2.7 — 2026-05-14](#v027--2026-05-14)
 - [v0.2.6 — 2026-05-14](#v026--2026-05-14)
@@ -14,6 +15,21 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.9 — 2026-05-14
+
+### New guide
+- **`docs/GUIDE-DISCORD-BOT.md`** — running OpenClaw as a Discord bot, end-to-end. Mirrors the Discord stage of the setup wizard but in much more depth: app creation, **Message Content Intent** (the most common first-time gotcha), OAuth2 URL Generator with the minimum-viable permission set, token paste vs external secret provider, first message test, and a troubleshooting section covering bot-offline, intent missing, slash commands not appearing, etc. Security section covers what a leaked token means and how to rotate. Bilingual TLDR + KO body with EN-friendly headings.
+
+### Cross-linking
+- README (KO + EN) Documentation Map: new 💬 row pointing to the guide.
+- README (KO + EN) wizard walkthrough table: stage **11 (Skills / plugins / channels)** now mentions Discord/Telegram/WhatsApp + links the new guide.
+- `docs/GUIDE-FIRST-USE.md` (KO + EN): the inline trail under `./openclaw setup` now mentions Discord stage and points at the new doc.
+- `docs/GUIDE-WEB-FETCH.md` Related-docs table: adds the Discord guide so users navigating between integration guides find it.
+
+No code change.
 
 ---
 

@@ -549,6 +549,7 @@ surf "summarize this paper" --sources url://https://arxiv.org/abs/2310.06825
 | [🐾 OpenClaw 기초](GUIDE-OPENCLAW.md) | 에이전트 구조·웹에서 가져오기 단락 |
 | [🎨 크리에이티브 파이프라인](GUIDE-CREATIVE-PIPELINE.md) | Pinterest → 나노바나나(4창) → Figma 자동 배치 |
 | [🎬 쇼츠 자동화](GUIDE-SHORTS-PIPELINE.md) | Pinterest → 미리캔버스 → CapCut → 9:16 MP4 |
+| [💬 Discord 봇 연동](GUIDE-DISCORD-BOT.md) | OpenClaw 를 Discord 봇으로 — 앱 생성·intent·invite·토큰·테스트·트러블슈팅 |
 | [🚑 트러블슈팅](TROUBLESHOOTING.md) | 흔한 오류와 해결 명령 |
 | [🧠 아키텍처](ARCHITECTURE.md) | 디스패처·멱등 설계·compose override |
 | [🤝 기여 가이드 (입문)](GUIDE-CONTRIBUTING.md) | 오타·번역·베타테스트도 환영 |

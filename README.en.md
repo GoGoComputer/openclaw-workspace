@@ -172,7 +172,7 @@ Exact order/wording depends on the OpenClaw build, but you'll generally see thes
 | 8b | **Ollama base URL** ⚠️ **trap** | Default `http://127.0.0.1:11434` (editable text field) | **Must change to →** `http://host.docker.internal:11434`. Inside the container `127.0.0.1` means the container itself, not the host — so the wizard can't reach your host Ollama. `host.docker.internal` is Docker's special hostname that points back to the host. `./openclaw setup` prints a yellow box about this before launching the wizard. |
 | 9 | **Workspace dir** | Where the agent reads/writes files | Default `~/.openclaw/workspace` (mirrored to `~/DEV/openclawAgent` on the host) — just press Enter. |
 | 10 | **Search provider** | Web-search backend (Tavily etc.) | **`skip`** or Enter — easy to add later by re-running `setup`. |
-| 11 | **Skills / plugins** | Optional extra abilities (image gen, voice, …) | Defaults or `skip` for the first run. |
+| 11 | **Skills / plugins / channels** | Optional extra abilities (image gen, voice, …) + channel integrations (Discord, Telegram, WhatsApp, …) | Defaults or `skip` for the first run. Discord bot integration has its own walkthrough → [💬 GUIDE-DISCORD-BOT](docs/GUIDE-DISCORD-BOT.md) |
 | 12 | **UI (Control Panel)** | Use the web Control Panel | **Yes** — it's already running at `127.0.0.1:18789`. |
 | 13 | **Tailscale** | `off \| serve \| funnel` | **`off`** unless you actually use Tailscale to share the gateway across machines. |
 | 14 | **Health check** | Auto-runs at the end | Just wait for ✓. |
@@ -309,6 +309,7 @@ shorts   run "moody travel landscapes"
 | 🌐 **Pulling stocks · news · FX from the web** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | Network toggle cycle, real-world prompts, official APIs, automation, troubleshooting. **Includes `surf` command — sandboxed Docker fetch → Markdown brief**. KO+EN |
 | 🎨 **Designer workflow automation (Pinterest → nano-banana → Figma)** | [docs/GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) | 4-step manual → one command. 4 parallel nano-banana windows for ~3.7× speedup. KO+EN |
 | 🎬 **Shorts automation (Pinterest → Miricanvas → CapCut)** | [docs/GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) | `shorts run "keyword"` for refs · 1080×1920 design · 9:16 MP4 export. Sandbox boundary kept; install instructions included. KO+EN |
+| 💬 **Run OpenClaw as a Discord bot** | [docs/GUIDE-DISCORD-BOT.md](docs/GUIDE-DISCORD-BOT.md) | Stand up the agent as a Discord bot — mention/DM/slash commands. Create app → Message Content Intent → OAuth2 invite → token paste → first test → security + troubleshooting. Mirrors the setup wizard's Discord stage. |
 | 👤 **General user** | [README.en.md](README.en.md) (this file) | Command catalog · `.env` · network isolation · FAQ |
 | 🇰🇷 **일반 사용자 (KO)** | [README.md](README.md) | Korean main README |
 | 🛡 **Security-minded** | [SECURITY.md](SECURITY.md) · [🔒 Security section](#-security-please-read) · [🔒 Network isolation](#-network-isolation-modes-explicit-outbound-kill-switch) | Threat model, vulnerability reporting |

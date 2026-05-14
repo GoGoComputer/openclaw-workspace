@@ -107,10 +107,12 @@ cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw setup
 # → 14단계 마법사 (보안 동의 → flow → mode → gateway 바인드/포트/인증 →
 #    daemon 설치 → provider 선택 [ollama 추천] → workspace → search →
-#    skills → UI → tailscale → health check) 가 컨테이너 안에서 진행
+#    skills/플러그인/채널[Discord 등] → UI → tailscale → health check)
+#    가 컨테이너 안에서 진행
 # → 결과는 ~/.openclaw/openclaw.json 에 저장
 # → 중간 Ctrl+C 안전, 답하기 싫은 항목은 Enter 로 기본값 유지
 # → 각 단계 권장 답안 표:  README.md '마법사가 차례로 묻는 단계' 펼치기 섹션
+# → Discord 봇 단계 상세 가이드:  docs/GUIDE-DISCORD-BOT.md
 
 # 2) 설정 확인 (변경 없음)
 ./openclaw setup status
@@ -340,12 +342,13 @@ cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw setup
 # → 14-step wizard (risk acknowledgment → flow → mode → gateway
 #    bind/port/auth → daemon → provider [pick `ollama` for local
-#    models] → workspace → search → skills → UI → tailscale → health)
-#    runs inside the container.
+#    models] → workspace → search → skills/plugins/channels [Discord
+#    etc.] → UI → tailscale → health) runs inside the container.
 # → Settings persist to ~/.openclaw/openclaw.json
 # → Ctrl+C is safe; Enter keeps any existing answer
-# → Recommended answer for each step: README.md "What the wizard asks"
+# → Recommended answer per stage: README.md "What the wizard asks"
 #   collapsible section
+# → Discord bot stage walkthrough: docs/GUIDE-DISCORD-BOT.md
 
 # 2) Inspect current configuration (read-only)
 ./openclaw setup status
