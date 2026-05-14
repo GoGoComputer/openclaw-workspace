@@ -105,9 +105,12 @@ cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 
 # 1) 첫 설정 (또는 재설정)
 ./openclaw setup
-# → 모델·gateway·인증·워크스페이스·플러그인 마법사가 컨테이너 안에서 진행
+# → 14단계 마법사 (보안 동의 → flow → mode → gateway 바인드/포트/인증 →
+#    daemon 설치 → provider 선택 [ollama 추천] → workspace → search →
+#    skills → UI → tailscale → health check) 가 컨테이너 안에서 진행
 # → 결과는 ~/.openclaw/openclaw.json 에 저장
 # → 중간 Ctrl+C 안전, 답하기 싫은 항목은 Enter 로 기본값 유지
+# → 각 단계 권장 답안 표:  README.md '마법사가 차례로 묻는 단계' 펼치기 섹션
 
 # 2) 설정 확인 (변경 없음)
 ./openclaw setup status
@@ -335,9 +338,14 @@ cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 
 # 1) First time (or any time you want to re-configure)
 ./openclaw setup
-# → model · gateway · auth · workspace · plugins wizard runs inside the container
-# → settings persist to ~/.openclaw/openclaw.json
+# → 14-step wizard (risk acknowledgment → flow → mode → gateway
+#    bind/port/auth → daemon → provider [pick `ollama` for local
+#    models] → workspace → search → skills → UI → tailscale → health)
+#    runs inside the container.
+# → Settings persist to ~/.openclaw/openclaw.json
 # → Ctrl+C is safe; Enter keeps any existing answer
+# → Recommended answer for each step: README.md "What the wizard asks"
+#   collapsible section
 
 # 2) Inspect current configuration (read-only)
 ./openclaw setup status

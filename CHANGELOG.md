@@ -32,7 +32,8 @@
 
 ### Documentation
 - README (KO + EN): command catalog adds `setup`; '첫 사용 / first use' section ② re-flowed around `./openclaw setup` → `./openclaw chat`; ③ documents the picker; dedicated chat section shows a sample picker menu.
-- GUIDE-FIRST-USE.md (KO + EN): Option B opens with `./openclaw setup` instead of a raw `docker compose run` chain; Option C documents the picker.
+- README (KO + EN): new collapsible **"마법사가 차례로 묻는 단계 / What the wizard asks"** table inside the `setup` discussion — 14 stages with recommended answers. Key callouts: stage #8 (`auth-choice = ollama`) lets users keep their already-installed local models without any API key, and stage #4 (`gateway-bind = loopback`) is the safest default. Links to upstream `docs.openclaw.ai/cli/onboard` for the full 50+ provider surface.
+- GUIDE-FIRST-USE.md (KO + EN): Option B opens with `./openclaw setup` instead of a raw `docker compose run` chain; Option C documents the picker. Inline stage list references the README walkthrough.
 - VERSION bumped 0.2.6 → 0.2.7.
 
 ---

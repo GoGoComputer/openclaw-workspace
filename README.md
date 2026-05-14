@@ -247,6 +247,40 @@ docker compose run --rm openclaw-cli agent --message "안녕"   # 한 줄 명령
 - **사전 점검** — Docker 데몬·OpenClaw 클론 존재 자동 확인
 - **종료 후 안내** — `./openclaw setup status` 로 확인, `./openclaw chat` 로 바로 채팅
 
+<details>
+<summary><b>📋 마법사가 차례로 묻는 단계 (펼치기) — 권장 답안 포함</b></summary>
+
+OpenClaw 본체 버전에 따라 단계 순서·문구는 약간 다를 수 있지만 대체로 다음 순서로 진행됩니다. 모두 Enter 로 기본값 사용 가능. 한 줄 한 줄 천천히 읽고 선택해도 안전합니다.
+
+| # | 단계 | 어떤 화면 | 권장 답안 |
+|---|---|---|---|
+| 1 | **보안 동의** (Risk acknowledgment) | `I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?` | **`Yes`** — 개인용 1대 1머신이면 안전. 공유/멀티유저 머신이면 추가 잠금 필요 (가이드 링크 참조). |
+| 2 | **Flow** | `Onboard flow: quickstart \| advanced \| manual` | **`quickstart`** — 권장. `advanced` 는 단계가 더 많고 `manual` 은 모든 값을 직접 입력. |
+| 3 | **Mode** | `local \| remote` | **`local`** — 같은 맥에서 사용. `remote` 는 원격 게이트웨이에 붙을 때. |
+| 4 | **Gateway bind** | `loopback \| tailnet \| lan \| auto \| custom` | **`loopback`** — `127.0.0.1` 만 노출 (가장 안전). LAN/외부 접근 필요할 때만 다른 선택. |
+| 5 | **Gateway port** | 기본 `18789` | **Enter** (그대로). 이미 다른 데서 쓰는 포트면 변경. |
+| 6 | **Gateway auth** | `token \| password` | **`token`** — 자동 생성된 비밀 토큰으로 보호. |
+| 7 | **Install daemon (service)** | 게이트웨이를 백그라운드 서비스로 자동 시작할지 | **Yes** 권장 (재부팅 후 자동 기동). 컨테이너 안에서만 돌리면 No. |
+| 8 | **Auth provider (모델 제공자)** | `ollama \| anthropic-api-key \| openai-api-key \| gemini-api-key \| huggingface-api-key \| custom \| skip` ... (50+ 옵션) | **`ollama`** ← 핵심. 이미 깔아둔 로컬 Ollama 모델을 그대로 사용 → API 키 불필요. 클라우드 모델을 쓰려면 해당 provider 선택 + API 키 입력. |
+| 9 | **Workspace dir** | 에이전트가 파일 작업할 디렉토리 | 기본 `~/.openclaw/workspace` (호스트의 `~/DEV/openclawAgent` 와 동기화됨) — Enter 추천. |
+| 10 | **Search provider** | 웹 검색 백엔드 (Tavily 등) | **`skip`** 또는 Enter — 나중에 `openclaw setup` 다시 돌려서 추가 가능. |
+| 11 | **Skills / 플러그인** | 추가 능력(이미지 생성, 음성 등) | 기본값 또는 `skip` — 처음엔 가볍게. |
+| 12 | **UI (Control Panel)** | 웹 UI 사용 여부 | **Yes** — 이미 `127.0.0.1:18789` 로 떠 있음. |
+| 13 | **Tailscale** | `off \| serve \| funnel` | **`off`** — 외부에서 접속 안 함. Tailscale 사용자만 다른 옵션. |
+| 14 | **Health check** | 모든 설정 후 자동 점검 | 자동 진행 — 끝나면 ✓ 표시. |
+
+**가장 중요한 두 단계:**
+- **8번 (모델 provider)**: `ollama` 선택하면 별도 키 불필요. 이미 `ollama list` 에 있는 모델 그대로 사용. 가장 흔한 첫 실행.
+- **4번 (Gateway bind)**: `loopback` 가 가장 안전. LAN/외부 노출 옵션은 보안 의미를 알고 선택하세요 ([🔒 보안 주의](#-보안-주의-꼭-읽으세요) 참조).
+
+**완료 후:**
+- 설정 저장 위치: `~/.openclaw/openclaw.json` (직접 편집 비권장 — 다시 마법사로 변경)
+- `./openclaw setup status` 로 핵심 키만 빠르게 확인
+- 바로 대화: `docker compose run --rm openclaw-cli tui` 또는 `./openclaw chat`
+
+상세 옵션 (50+ provider, advanced 플로우의 추가 단계 등): [OpenClaw 공식 docs `cli/onboard`](https://docs.openclaw.ai/cli/onboard)
+</details>
+
 > ⚠️ **`exec` 가 아니라 `run --rm`** — `openclaw-cli` 컨테이너의 entrypoint(`node dist/index.js`)는 인자 없이 뜨면 help 출력 후 즉시 종료(`Exited (1)`)됩니다. `./openclaw setup` 이 이 패턴을 내부적으로 처리. 직접 호출할 때도 항상 `run --rm` 을 쓰세요.
 >
 > 컨테이너 셸이 필요하면: `docker compose run --rm --entrypoint bash openclaw-cli`

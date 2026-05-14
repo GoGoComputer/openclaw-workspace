@@ -153,6 +153,40 @@ Why `./openclaw setup`:
 - **Pre-flight** — checks Docker daemon + OpenClaw clone before launching the wizard
 - **Hands off afterward** — `./openclaw setup status` to peek, `./openclaw chat` to chat right away
 
+<details>
+<summary><b>📋 What the wizard asks, step by step (recommended answers inside)</b></summary>
+
+Exact order/wording depends on the OpenClaw build, but you'll generally see these stages. Enter accepts the default on every prompt; you can re-run `./openclaw setup` anytime to change anything.
+
+| # | Stage | What you see | Recommended |
+|---|---|---|---|
+| 1 | **Risk acknowledgment** | `I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?` | **`Yes`** — fine for a single-user laptop. Shared/multi-user machines need additional lock-down (see the security section). |
+| 2 | **Flow** | `Onboard flow: quickstart \| advanced \| manual` | **`quickstart`** — recommended. `advanced` adds steps; `manual` makes you enter everything. |
+| 3 | **Mode** | `local \| remote` | **`local`** — running on this Mac. Use `remote` only if you're attaching to a gateway on another box. |
+| 4 | **Gateway bind** | `loopback \| tailnet \| lan \| auto \| custom` | **`loopback`** — binds only to `127.0.0.1`, safest. Pick something else only if you understand the LAN/public exposure. |
+| 5 | **Gateway port** | Defaults to `18789` | **Enter** to keep. Change only if `18789` is taken. |
+| 6 | **Gateway auth** | `token \| password` | **`token`** — auto-generates a secret. |
+| 7 | **Install daemon (service)** | Register gateway as a background service | **Yes** — auto-starts on reboot. `No` if you only want it inside the container. |
+| 8 | **Auth provider (model backend)** | `ollama \| anthropic-api-key \| openai-api-key \| gemini-api-key \| huggingface-api-key \| custom \| skip` ... (50+ options) | **`ollama`** ← the key choice. Uses the local models you've already pulled — no API key needed. Pick a cloud provider only if you want to call hosted models (and have a key). |
+| 9 | **Workspace dir** | Where the agent reads/writes files | Default `~/.openclaw/workspace` (mirrored to `~/DEV/openclawAgent` on the host) — just press Enter. |
+| 10 | **Search provider** | Web-search backend (Tavily etc.) | **`skip`** or Enter — easy to add later by re-running `setup`. |
+| 11 | **Skills / plugins** | Optional extra abilities (image gen, voice, …) | Defaults or `skip` for the first run. |
+| 12 | **UI (Control Panel)** | Use the web Control Panel | **Yes** — it's already running at `127.0.0.1:18789`. |
+| 13 | **Tailscale** | `off \| serve \| funnel` | **`off`** unless you actually use Tailscale to share the gateway across machines. |
+| 14 | **Health check** | Auto-runs at the end | Just wait for ✓. |
+
+**Two answers that matter most:**
+- **#8 (provider)** — `ollama` means "use my local models", no API key. The most common first-time choice.
+- **#4 (bind)** — `loopback` is safest. Any other choice exposes the gateway to the network; understand the security trade-off first (see [🔒 Security](#-security-please-read)).
+
+**After it finishes:**
+- Settings live in `~/.openclaw/openclaw.json` (don't hand-edit — re-run the wizard instead).
+- `./openclaw setup status` shows the top-level config keys.
+- Chat immediately: `docker compose run --rm openclaw-cli tui` or `./openclaw chat`.
+
+Full surface (50+ providers, advanced-flow extras): [OpenClaw upstream docs `cli/onboard`](https://docs.openclaw.ai/cli/onboard).
+</details>
+
 > ⚠️ **`run --rm`, not `exec`** — the `openclaw-cli` container's entrypoint (`node dist/index.js`) prints help and exits immediately on no-arg invocation (`docker ps -a` shows it as `Exited (1)`). `./openclaw setup` handles this internally; if you ever call it manually, always use `docker compose run --rm openclaw-cli <subcommand>`.
 >
 > Raw shell inside the container? `docker compose run --rm --entrypoint bash openclaw-cli`.
