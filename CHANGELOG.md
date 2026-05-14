@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.10 — 2026-05-14](#v0210--2026-05-14)
 - [v0.2.9 — 2026-05-14](#v029--2026-05-14)
 - [v0.2.8 — 2026-05-14](#v028--2026-05-14)
 - [v0.2.7 — 2026-05-14](#v027--2026-05-14)
@@ -15,6 +16,22 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.10 — 2026-05-14
+
+### New guide
+- **`docs/GUIDE-DAILY-USE.md`** — the daily on/off loop that comes *after* install + setup. Six scenario-driven sections (morning start, stepping away, shutting down for the night, resuming a saved session, "something looks wrong", weekly/monthly maintenance), plus a "what gets persisted across stop/shutdown" table, plus a side-by-side comparison of every shutdown variant (`./openclaw stop` vs in-TUI `Ctrl+D` vs `docker compose down` vs `down -v` vs `uninstall` vs `uninstall --purge`) with what each preserves and the matching restart command. Bilingual TLDR + KO body.
+
+### Cross-linking
+- README (KO + EN) Documentation Map: new 🔄 row pointing to the guide.
+- README (KO) pipeline table row 4 (Maintain): now links the daily-use guide alongside the existing command catalog and cleanup references.
+- `docs/GUIDE-FIRST-USE.md` "5단계 — 일상 운영" section: callout banner directing readers to the deeper GUIDE-DAILY-USE.
+- `docs/GUIDE-DISCORD-BOT.md` and `docs/GUIDE-WEB-FETCH.md` related-docs tables: include the daily-use guide so users navigating between integration/operations guides find it.
+- The daily-use guide's own related-docs table back-links FIRST-USE, DISCORD-BOT, WEB-FETCH, TROUBLESHOOTING, OPENCLAW, and the README's command catalog + idempotency + network-toggle sections.
+
+No code change.
 
 ---
 
