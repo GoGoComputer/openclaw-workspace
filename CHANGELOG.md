@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.8 — 2026-05-14](#v028--2026-05-14)
 - [v0.2.7 — 2026-05-14](#v027--2026-05-14)
 - [v0.2.6 — 2026-05-14](#v026--2026-05-14)
 - [v0.2.5 — 2026-05-14](#v025--2026-05-14)
@@ -16,7 +17,25 @@
 
 ---
 
-## v0.2.7 — 2026-05-14
+## v0.2.8 — 2026-05-14
+
+### Bug fix — setup wizard `Ollama not reachable` trap
+- The OpenClaw onboard wizard's "Ollama base URL" prompt is hardcoded to default `http://127.0.0.1:11434`. Inside the cli container, that resolves to the container itself — not the host — so the wizard dies with `Ollama could not be reached at http://127.0.0.1:11434` → `WizardCancelledError: Ollama not reachable` even when the host Ollama is fine. OpenClaw upstream reads no env var or CLI flag for this URL (verified by grepping `process.env.OLLAMA*` and the onboard option surface in `/app/dist`); the value can only be entered through the prompt.
+- **`./openclaw setup` now pre-flights this** — before launching the wizard, it spins a one-shot `--no-deps` container and curls `http://host.docker.internal:11434/api/tags`. On success it prints a yellow boxed warning telling the user the exact value to type at the prompt:
+  ```
+  ⚠  마법사 안에서 "Ollama base URL" 단계가 나오면 다음을 입력
+       http://host.docker.internal:11434
+     기본값으로 보이는 http://127.0.0.1:11434 는 컨테이너 자신을 가리켜서
+     호스트 Ollama 에 닿지 못합니다.
+  ```
+  On failure (Ollama not running on the host, or network is in `isolated` mode), it warns and offers to abort.
+- Post-run banner — if the wizard exits non-zero, setup.sh now suggests the URL fix specifically in addition to the generic "rerun to resume".
+
+### Documentation
+- README (KO + EN) wizard walkthrough table: added stage **8a (Ollama mode)** and **8b (Ollama base URL ⚠️ trap)** with the required `host.docker.internal` value. Promoted the URL trap to one of the "most important answers" callout.
+- README (KO + EN) FAQ: new entry "setup wizard `Ollama not reachable` — but my host Ollama is running" with the diagnosis, the one-line fix, and a verification command.
+- CHANGELOG v0.2.8.
+- VERSION 0.2.7 → 0.2.8.
 
 ### New commands
 - **`./openclaw setup`** — first-time / re-run OpenClaw onboard wizard, safely inside Docker. Wraps `docker compose run --rm openclaw-cli onboard` with pre-flight checks (clone exists · Docker daemon up), idempotent re-run confirmation (existing config detected → ask before re-running, Enter keeps any answer), and post-run hand-off to `./openclaw chat` or `tui`.

@@ -168,6 +168,8 @@ Exact order/wording depends on the OpenClaw build, but you'll generally see thes
 | 6 | **Gateway auth** | `token \| password` | **`token`** — auto-generates a secret. |
 | 7 | **Install daemon (service)** | Register gateway as a background service | **Yes** — auto-starts on reboot. `No` if you only want it inside the container. |
 | 8 | **Auth provider (model backend)** | `ollama \| anthropic-api-key \| openai-api-key \| gemini-api-key \| huggingface-api-key \| custom \| skip` ... (50+ options) | **`ollama`** ← the key choice. Uses the local models you've already pulled — no API key needed. Pick a cloud provider only if you want to call hosted models (and have a key). |
+| 8a | **Ollama mode** (only when provider=ollama) | `Cloud + Local \| Local only \| Cloud only` | **`Local only`** — uses just the host's local Ollama. `Cloud` requires an Ollama cloud account. |
+| 8b | **Ollama base URL** ⚠️ **trap** | Default `http://127.0.0.1:11434` (editable text field) | **Must change to →** `http://host.docker.internal:11434`. Inside the container `127.0.0.1` means the container itself, not the host — so the wizard can't reach your host Ollama. `host.docker.internal` is Docker's special hostname that points back to the host. `./openclaw setup` prints a yellow box about this before launching the wizard. |
 | 9 | **Workspace dir** | Where the agent reads/writes files | Default `~/.openclaw/workspace` (mirrored to `~/DEV/openclawAgent` on the host) — just press Enter. |
 | 10 | **Search provider** | Web-search backend (Tavily etc.) | **`skip`** or Enter — easy to add later by re-running `setup`. |
 | 11 | **Skills / plugins** | Optional extra abilities (image gen, voice, …) | Defaults or `skip` for the first run. |
@@ -175,8 +177,9 @@ Exact order/wording depends on the OpenClaw build, but you'll generally see thes
 | 13 | **Tailscale** | `off \| serve \| funnel` | **`off`** unless you actually use Tailscale to share the gateway across machines. |
 | 14 | **Health check** | Auto-runs at the end | Just wait for ✓. |
 
-**Two answers that matter most:**
+**Three answers that matter most:**
 - **#8 (provider)** — `ollama` means "use my local models", no API key. The most common first-time choice.
+- **#8b (Ollama base URL) ⚠️ trap** — leaving the default `http://127.0.0.1:11434` makes the wizard exit with `Ollama could not be reached at http://127.0.0.1:11434` → `WizardCancelledError: Ollama not reachable`. **Always change it to** `http://host.docker.internal:11434`. `./openclaw setup` pre-flights this and prints a yellow warning box before launch so you don't forget.
 - **#4 (bind)** — `loopback` is safest. Any other choice exposes the gateway to the network; understand the security trade-off first (see [🔒 Security](#-security-please-read)).
 
 **After it finishes:**
@@ -639,6 +642,34 @@ Easiest: `openclaw models add <name>` (auto-edits `.env` + pulls). To see what y
 <summary><b>I interrupted the install. What now?</b></summary>
 
 Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and only the rest runs. State file: `~/.openclaw-mgr/state`.
+</details>
+
+<details>
+<summary><b>Setup wizard exits with <code>Ollama not reachable</code> — but my host Ollama is running fine</b></summary>
+
+When the wizard reaches **"Ollama base URL"** and you accept the default `http://127.0.0.1:11434`, it dies with `Ollama could not be reached at http://127.0.0.1:11434` → `WizardCancelledError: Ollama not reachable`.
+
+Why: the wizard runs **inside a container**, where `127.0.0.1` resolves to the container itself, not the host. From inside the container, the host Ollama is reachable at `host.docker.internal:11434`.
+
+Fix — at that prompt, replace the default with **`http://host.docker.internal:11434`**:
+
+```
+Ollama base URL
+> http://host.docker.internal:11434       ← clear the 127.0.0.1 default and type this
+```
+
+`./openclaw setup` (v0.2.8+) pre-flights this and prints a yellow warning box about the trap before launching the wizard. If you missed it, just rerun `./openclaw setup` — it's idempotent.
+
+Verify:
+```bash
+# Can the container see the host Ollama?
+cd ~/DEV/openclaw
+docker compose run --rm --entrypoint sh openclaw-cli \
+  -c 'curl -sf http://host.docker.internal:11434/api/tags | head -c 80'
+# {"models":[...  ← OK if you see this
+```
+
+> Note: OpenClaw upstream doesn't honor any env var or CLI flag for this URL — it can only be entered via the wizard prompt. So `setup.sh` can't inject the right value; clear pre-flight guidance is the best we can do.
 </details>
 
 <details>
