@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.14 — 2026-05-14](#v0214--2026-05-14)
 - [v0.2.13 — 2026-05-14](#v0213--2026-05-14)
 - [v0.2.12 — 2026-05-14](#v0212--2026-05-14)
 - [v0.2.11 — 2026-05-14](#v0211--2026-05-14)
@@ -19,6 +20,48 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.14 — 2026-05-14
+
+### GUIDE-DISCORD-BOT §12 — situation-based Discord workflow catalog
+v0.2.12 added "how the bot works"; this release adds "in every situation, what do you actually type into Discord to make it do the thing". Eight scenario cards covering the bot-as-primary-interface modes — same format as GUIDE-DAILY-USE's scenario cards, but oriented around the Discord side.
+
+Each card has four parts: **when** · **what to type in Discord** · **what happens** · **limits**.
+
+  ① At the laptop — quick @mention vs TUI/chat trade-off (channel
+     history + team-shareable vs response speed + token cost).
+  ② Mobile-only — DM with file-write prompts ("create
+     ~/DEV/openclawAgent/daily-notes/2026-05-14.md and write …"),
+     with a "before you leave" 30-second host check.
+  ③ Team collaboration — public-channel summarization / code review
+     with fenced diffs; "use threads" recommendation; DM-vs-channel
+     privacy guidance.
+  ④ Workspace file ops — read/edit/append over the mounted
+     workspace; reminder that ~/Documents and friends are off-limits
+     by isolation design; large-file context-window caveat.
+  ⑤ System ops / DevOps — `doctor` results / log filtering / status
+     queries via the bot. Calls out the security trade-off of giving
+     the bot host-shell powers; recommends DM or a dedicated
+     `#ops-alerts` whitelist channel.
+  ⑥ Long-running task + completion ping — kick off, get pinged when
+     done; 2000-char limit caveat with auto-attach fallback.
+  ⑦ Scheduled / recurring — "every weekday 9am summarize yesterday's
+     daily-notes to #notes"; notes that scheduler support depends on
+     OpenClaw build, with a host-side cron fallback example.
+  ⑧ Cold-boot recovery — Discord-side test (`@bot 살아있어?`), the
+     fix sequence to run on the laptop, and a callout that "mobile
+     SSH (Tailscale + iSH/Termius) is the only escape if the laptop
+     itself is unreachable."
+
+Plus a one-screen **상황별 빠른 매칭 표** mapping (where/when) → (recommended trigger / channel / caveat) for instant lookup.
+
+### Cross-linking
+- GUIDE-DAILY-USE TL;DR: explicit pointer to §12 for users who want Discord as their primary interface.
+- README (KO + EN) Documentation Map: Discord row description now mentions the §12 8-case catalog so people scanning the map can tell that the guide goes well beyond setup.
+
+No code change.
 
 ---
 
