@@ -833,11 +833,32 @@ json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
 
 ### "봇이 응답으로 `Something went wrong while processing your request. Please try again, or use /new to start a fresh session.`"
 
-게이트웨이 로그에 다음이 보이면 `docker.sock` 마운트 누락:
+게이트웨이 로그를 보면 둘 중 하나입니다 — **마운트 누락**(v0.2.17 이전 회귀) 또는 **권한 거부**(v0.2.18 이전 회귀):
+
 ```bash
 ./openclaw logs | grep -i "Failed to inspect sandbox image"
-# → Error: Failed to inspect sandbox image: failed to connect to the docker
-#   API at unix:///var/run/docker.sock; ... no such file or directory
+# 케이스 A — 마운트 누락 (v0.2.17 에서 fix):
+#   Error: ... no such file or directory
+# 케이스 B — 권한 거부 (v0.2.19 에서 fix):
+#   Error: ... permission denied while trying to connect to the docker API
+```
+
+**케이스 B (macOS Docker Desktop 흔함)**: docker.sock 은 호스트에서는 `root:daemon`(GID=1) 인데 컨테이너 안에선 `root:root`(GID=0) 로 보임. 마운트는 있어도 node 사용자가 GID=0 그룹에 없으면 거부. v0.2.19+ 의 `step_sandbox` 는 `group_add` 에 `0` 과 호스트 GID 둘 다 추가.
+
+즉시 fix:
+```bash
+# sandbox compose 파일에 group_add: ["0", "1"] 박기
+python3 -c '
+open("/Users/mo/DEV/openclaw/docker-compose.sandbox.yml","w").write(
+  "services:\n  openclaw-gateway:\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    group_add:\n      - \"0\"\n      - \"1\"\n"
+)'
+
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw stop && ./openclaw start
+
+# 검증 (서버 버전이 나오면 OK)
+docker exec openclaw-openclaw-gateway-1 docker info --format '{{.ServerVersion}}'
+# → 29.x.x  같은 출력
 ```
 
 원인: `./openclaw stop && start` 또는 `network online/isolated --restart` 사이클 후 gateway 컨테이너 안에 `/var/run/docker.sock` 마운트가 빠진 상태. 봇이 메시지를 받으면 도구 실행을 위해 **sandbox 서브컨테이너**를 띄우려는데 socket 이 없어 실패.

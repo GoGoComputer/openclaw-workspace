@@ -503,13 +503,26 @@ step_sandbox() {
     SANDBOX_DEFERRED=1
     return 0
   fi
+  # 호스트에서 본 docker.sock 의 GID. macOS Docker Desktop 에선 컨테이너 안
+  # 마운트가 root:root 로 보여서 호스트 GID 만으론 부족 → 항상 "0" 도 같이
+  # 넣어 양쪽 호환. (자세한 이유: GUIDE-DAILY-USE 트러블슈팅 §
+  # "permission denied" 참조.)
   local gid
   gid=$(stat -f '%g' "$sock" 2>/dev/null || stat -c '%g' "$sock" 2>/dev/null || echo "")
   local sandbox_compose="$OPENCLAW_DIR/docker-compose.sandbox.yml"
-  printf 'services:\n  openclaw-gateway:\n    volumes:\n      - %s:/var/run/docker.sock\n' "$sock" > "$sandbox_compose"
-  if [ -n "$gid" ]; then
-    printf '    group_add:\n      - "%s"\n' "$gid" >> "$sandbox_compose"
-  fi
+  {
+    printf 'services:\n'
+    printf '  openclaw-gateway:\n'
+    printf '    volumes:\n'
+    printf '      - %s:/var/run/docker.sock\n' "$sock"
+    printf '    group_add:\n'
+    # 0 = root: macOS Docker Desktop 컨테이너 안 sock 가 root:root 로 보임 (필수)
+    printf '      - "0"\n'
+    # 호스트 GID (Linux 환경에선 docker/daemon 그룹) — 0 과 중복이면 무해
+    if [ -n "$gid" ] && [ "$gid" != "0" ]; then
+      printf '      - "%s"\n' "$gid"
+    fi
+  } > "$sandbox_compose"
 
   # 10-D. 샌드박스 포함 gateway 재기동
   local files="-f docker-compose.yml -f $sandbox_compose"

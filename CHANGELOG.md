@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.19 — 2026-05-14](#v0219--2026-05-14)
 - [v0.2.18 — 2026-05-14](#v0218--2026-05-14)
 - [v0.2.17 — 2026-05-14](#v0217--2026-05-14)
 - [v0.2.16 — 2026-05-14](#v0216--2026-05-14)
@@ -24,6 +25,39 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.19 — 2026-05-14
+
+### Bug fix — Discord bot still "Something went wrong" after v0.2.17 (`permission denied` on docker.sock)
+
+v0.2.17 fixed the docker.sock mount **missing**. After applying it, the error mutated:
+
+```
+v0.2.16-: Failed to inspect sandbox image: ... no such file or directory
+v0.2.17-: Failed to inspect sandbox image: ... permission denied while
+          trying to connect to the docker API at unix:///var/run/docker.sock
+```
+
+Diagnosis inside the running container:
+
+```
+$ docker exec openclaw-openclaw-gateway-1 sh -c 'ls -la /var/run/docker.sock; id'
+srw-rw---- 1 root root 0 May 13 13:55 /var/run/docker.sock
+uid=1000(node) gid=1000(node) groups=1000(node),1(daemon)
+```
+
+On the **host** the socket is `root:daemon` (GID=1), but **inside the container** (macOS Docker Desktop) it appears as `root:root` (GID=0). `install.sh step_sandbox` was reading the host GID with `stat -f '%g'`, which returns `1`, and emitting only `group_add: ["1"]`. The `node` user is a member of group `1(daemon)` but **not** group `0(root)`, so opening the socket from inside the container failed with permission denied.
+
+- **`install.sh step_sandbox` (cmd/install.sh)**: when writing `docker-compose.sandbox.yml`, always emit `group_add: ["0"]` first (root, required for macOS Docker Desktop), then the detected host GID if different. Now the container's `node` user ends up in `groups=1000(node),0(root),1(daemon)` and can talk to the socket regardless of platform.
+- **User's existing `~/DEV/openclaw/docker-compose.sandbox.yml`** was patched in place to the same `["0","1"]` shape. Verified post-restart: `docker exec ... docker info --format '{{.ServerVersion}}'` returns `29.4.0` from inside the gateway. Plugins list back to `7` with `discord`.
+
+### Documentation
+- **GUIDE-DAILY-USE.md** 트러블슈팅 표: new row for the `permission denied` variant with the manual patch one-liner.
+- **GUIDE-DISCORD-BOT.md** troubleshooting: the "Something went wrong" entry now distinguishes case A (`no such file`, v0.2.17 fix) vs case B (`permission denied`, v0.2.19 fix) and shows the immediate patch + verification command.
+
+VERSION 0.2.18 → 0.2.19.
 
 ---
 
