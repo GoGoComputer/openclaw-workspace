@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.18 — 2026-05-14](#v0218--2026-05-14)
 - [v0.2.17 — 2026-05-14](#v0217--2026-05-14)
 - [v0.2.16 — 2026-05-14](#v0216--2026-05-14)
 - [v0.2.15 — 2026-05-14](#v0215--2026-05-14)
@@ -23,6 +24,29 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.18 — 2026-05-14
+
+### GUIDE-OLLAMA.md — consolidated 🔌 켜기·끄기·재시작·자동시작 section
+User asked whether "how to turn on Ollama" was documented. It was — but **scattered across six files** (GUIDE-DAILY-USE Scenario 0 step 2, GUIDE-FIRST-USE troubleshooting row, GUIDE-MANUAL-INSTALL stage 3 table, TROUBLESHOOTING `bind: address already in use`, README network section, GUIDE-OLLAMA "어떻게 설치되나요?"). No single place compared the three host options or covered the on/off/restart/auto-start cycle end-to-end.
+
+Added a new dedicated section in GUIDE-OLLAMA.md right after "어떻게 설치되나요?":
+
+- **Three-way comparison table** — A) macOS app (`open -a Ollama`), B) `brew services start ollama`, C) one-shot `ollama serve &` — with columns for auto-restart behavior, menu-bar icon presence, recommended use case. Warning about port-11434 collision when two methods run simultaneously.
+- **🟢 켜기** — one command per method
+- **🔴 끄기** — graceful (`osascript -e 'quit app "Ollama"'`, `brew services stop`, `pkill -f "ollama serve"`) and emergency (`pkill -9 -f ollama`)
+- **🔄 재시작** — per-method restart one-liners
+- **⚙️ 자동 시작 설정** — Login Items GUI path + an `osascript` one-liner that registers `Ollama.app`. Plus the brew-services case which is auto-start by default.
+- **✅ 동작 확인** — `curl /api/tags`, `ollama list`, `ollama ps`, `lsof -iTCP:11434`
+- **🐛 자주 막히는 부분** — 6 entries (unsigned-developer warning on first open, bind-in-use, slow-first-request RAM-load, `OLLAMA_MODELS` relocation, container `host.docker.internal` reminder, isolated-mode block)
+
+### Cross-linking
+- GUIDE-DAILY-USE Scenario 0 step 2: callout pointing at the new consolidated section ("켜기/끄기/재시작/자동시작 종합").
+- README (KO) 📖 row in Documentation Map: description now mentions "🔌 켜기·끄기·재시작·자동시작 종합 섹션 — 3방식 비교, 자동 시작 등록, 충돌 진단" so users scanning the map see GUIDE-OLLAMA goes beyond "what is Ollama".
+
+VERSION 0.2.17 → 0.2.18. Docs only.
 
 ---
 

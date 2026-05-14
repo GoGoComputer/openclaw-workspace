@@ -56,6 +56,101 @@ ollama pull qwen2.5-coder:7b # 3) 추천 모델 다운 (~4.7GB)
 
 직접 깔아도 똑같이 동작합니다 (`brew install ollama && ollama pull <모델>`).
 
+### 🔌 Ollama 켜기 · 끄기 · 재시작 · 자동시작 (종합)
+
+macOS 에서 Ollama 데몬을 띄우는 **3가지 방식** — 각자 장단점 다름. 셋 다 결국 같은 일(포트 11434 HTTP 서버 실행)을 함:
+
+| 방식 | 명령 | 자동 재시작 | 메뉴바 아이콘 | 권장 사용처 |
+|---|---|---|---|---|
+| **A. macOS 앱** | `open -a Ollama` | 사용자가 로그인하면 (Login Items 등록 시) | ✓ 🦙 표시 | **일반 사용자 (권장)** |
+| **B. brew services** | `brew services start ollama` | Mac 부팅 시 자동 | ✗ | 헤드리스 서버 / 자동화 |
+| **C. 일회성** | `ollama serve &` | ✗ (셸 종료 시 죽음) | ✗ | 디버깅 · 빠른 테스트 |
+
+> 💡 **세 방식이 동시에 떠 있으면 충돌** — 포트 11434 중복 바인딩으로 두 번째 이후가 즉시 죽음. 한 방식만 골라 쓰세요.
+
+#### 🟢 켜기
+
+```bash
+# A. macOS 앱 (권장 — 메뉴바에 🦙 아이콘 보임)
+open -a Ollama
+
+# B. 항상 백그라운드로 (Mac 재부팅 시도 자동)
+brew services start ollama
+
+# C. 일회성 (이 셸이 살아있을 동안만)
+ollama serve &
+```
+
+#### 🔴 끄기
+
+```bash
+# A. macOS 앱 종료 (가장 깔끔)
+osascript -e 'quit app "Ollama"'
+
+# B. brew services 정지
+brew services stop ollama
+
+# C. 일회성으로 띄운 거 종료
+pkill -f "ollama serve"
+
+# 어느 방식이든 강제 종료 (응급)
+pkill -9 -f ollama
+```
+
+#### 🔄 재시작
+
+```bash
+# A. 앱 재시작 (모델이 RAM 에서 풀려 깨끗한 시작)
+osascript -e 'quit app "Ollama"' && sleep 2 && open -a Ollama
+
+# B. brew services 재시작
+brew services restart ollama
+
+# 어느 방식이든 강제 재시작 (응급)
+pkill -f ollama; sleep 2; open -a Ollama
+```
+
+#### ⚙️ Mac 켜질 때 자동 시작 설정
+
+**A 방식 (macOS 앱) 자동 시작:**
+1. 시스템 설정(System Settings) → 일반(General) → 로그인 항목(Login Items)
+2. "로그인 시 열기 (Open at Login)" 에 **Ollama.app 추가**
+3. 다음 부팅부터 메뉴바에 🦙 자동 표시
+
+또는 한 줄 명령:
+```bash
+osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Ollama.app", hidden:false}'
+```
+
+**B 방식 (brew services) 은 기본적으로 자동 시작** — `brew services start ollama` 한 번 하면 LaunchAgent 가 등록돼 매 부팅마다 자동 기동.
+
+#### ✅ 동작 확인 (켜졌는지 점검)
+
+```bash
+# HTTP API 응답
+curl -sf http://127.0.0.1:11434/api/tags >/dev/null && echo "✓ Ollama OK" || echo "✗ Ollama DOWN"
+
+# 어떤 모델 로드돼 있나
+ollama list                  # 깔린 모델 전체
+ollama ps                    # 지금 RAM 에 올라간 모델만
+
+# 어떤 프로세스가 11434 잡고 있나
+lsof -nP -iTCP:11434 -sTCP:LISTEN
+```
+
+#### 🐛 자주 막히는 부분
+
+| 증상 | 원인 / 해결 |
+|---|---|
+| `open -a Ollama` 했는데 메뉴바 아이콘 안 뜸 | 첫 실행이라 macOS 가 "확인되지 않은 개발자" 경고 — Finder → Applications → Ollama 우클릭 → 열기 한 번 |
+| `bind: address already in use` | 다른 방식이 이미 떠 있음 — `lsof -iTCP:11434` 로 PID 찾아 정리 |
+| 데몬은 떴는데 모델 응답이 30초+ 걸림 | 모델이 RAM 에 처음 로드 중 — 정상. 다음 요청부터 빠름 |
+| `~/.ollama/models` 위치를 다른 디스크로 옮기고 싶음 | `OLLAMA_MODELS` 환경변수 설정 + 데몬 재시작 |
+| 컨테이너에서 Ollama 가 안 보임 | `127.0.0.1:11434` 아니라 `host.docker.internal:11434` 로 호출해야 함 — [Ollama URL 함정 FAQ](../README.md) |
+| `isolated` 모드라 봇이 host Ollama 못 부름 | `./openclaw network online --restart` (이 가이드 § "Ollama 서버 라는 건?" 참조) |
+
+> 일상 사이클 (Mac 끔→켬, 자리 비움, 종료) 전체 흐름은 [GUIDE-DAILY-USE.md](GUIDE-DAILY-USE.md) — 특히 [시나리오 0 cold boot 의 2단계](GUIDE-DAILY-USE.md#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 가 Ollama 켜기·확인을 다룹니다.
+
 ### 모델 (Model) 이란?
 
 모델 = AI의 "두뇌 파일". 크기가 클수록 똑똑하지만 RAM/디스크를 더 먹습니다.

@@ -400,7 +400,7 @@ shorts   run "여행 감성 풍경"
 | 🪜 **완전 수동 설치 (공식 사이트에서 직접 다운)** | [docs/GUIDE-MANUAL-INSTALL.md](docs/GUIDE-MANUAL-INSTALL.md) | brew/스크립트 없이 Docker·Ollama·소스 직접 다운. 회사 IT 심사·GitHub 502 회피용. KO+EN 병기 |
 | 🆕 **처음 보는 사람 / 터미널 처음** | [docs/QUICKSTART-ko.md](docs/QUICKSTART-ko.md) | 터미널 여는 법부터 단계별로, 예시 출력 포함 |
 | 🇬🇧 **English first-timer** | [docs/QUICKSTART-en.md](docs/QUICKSTART-en.md) | Same as above, in English |
-| 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학) — KO+EN 병기 |
+| 📖 **단어가 낯설면 (Ollama · Docker · OpenClaw)** | [docs/GUIDE-OLLAMA.md](docs/GUIDE-OLLAMA.md) · [docs/GUIDE-DOCKER.md](docs/GUIDE-DOCKER.md) · [docs/GUIDE-OPENCLAW.md](docs/GUIDE-OPENCLAW.md) | 3분용 기초 가이드 3편 (구조·용어·철학). **GUIDE-OLLAMA 에는 🔌 켜기·끄기·재시작·자동시작 종합 섹션** — macOS 앱 / `brew services` / 일회성 `ollama serve` 3방식 비교, 자동 시작 등록, 충돌 진단 한 화면. KO+EN 병기 |
 | 🌐 **웹에서 코스피·뉴스·환율 가져오기** | [docs/GUIDE-WEB-FETCH.md](docs/GUIDE-WEB-FETCH.md) | 네트워크 토글 사이클·실전 프롬프트·공식 API 키·자동화·트러블슈팅. **`surf` 명령으로 샌드박스 도커 안에서 검색 → 마크다운 도구 포함**. KO+EN 병기 |
 | 🎨 **디자이너 워크플로우 자동화 (Pinterest → 나노바나나 → Figma)** | [docs/GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) | 4단계 수작업 → 1명령. 나노바나나 4창 병렬로 속도 ~3.7×. KO+EN 병기 |
 | 🎬 **쇼츠 자동화 (Pinterest → 미리캔버스 → CapCut)** | [docs/GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) | `shorts run "키워드"` 으로 레퍼런스·1080×1920 디자인·9:16 영상 export. 샌드박스 경계 유지 + 프로그램 설치 안내 포함. KO+EN |

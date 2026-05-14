@@ -148,6 +148,8 @@ curl -sf --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null && echo "Ollama
 ```
 
 > 모델은 **요청 시점에 RAM 로드**됩니다 — 부팅 직후엔 모델이 RAM 에 없을 수 있어요. 첫 메시지 응답이 5~15초 걸려도 정상 (이후 빨라짐).
+>
+> 💡 **Ollama 켜기/끄기/재시작/자동시작 종합** — 세 가지 방식(macOS 앱 / `brew services` / `ollama serve` 일회성) 비교, 자동 시작 설정, 충돌 해결 등 모두 한 곳에: [GUIDE-OLLAMA.md § 🔌 Ollama 켜기·끄기·재시작·자동시작](GUIDE-OLLAMA.md#-ollama-켜기--끄기--재시작--자동시작-종합).
 
 **3단계 — OpenClaw 컨테이너 자동 복구 확인 (보통 자동, 10~30초)**
 
