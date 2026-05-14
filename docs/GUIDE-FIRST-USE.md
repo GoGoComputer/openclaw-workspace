@@ -96,32 +96,39 @@ http://127.0.0.1:18789
 
 > 💡 OpenClaw 본체 버전에 따라 UI 가 내장되어 있을 수도, API 만 있을 수도 있습니다. UI 가 없으면 방식 B 를 쓰세요.
 
-### 방식 B — 컨테이너 안 CLI (가장 안정적)
+### 방식 B — 컨테이너 안 CLI (본체 OpenClaw 풀 기능)
+
+> ⚠️ `openclaw-cli` 컨테이너는 entrypoint 가 `node dist/index.js` 라서 인자 없이 뜨면 help 출력 후 **즉시 종료**합니다 (`docker ps -a` 에서 `Exited (1)`). 그래서 `docker compose exec openclaw-cli bash` 는 거의 항상 실패해요. 매번 새 일회용 컨테이너를 띄우는 **`docker compose run --rm`** 이 올바른 패턴.
 
 ```bash
 cd ~/DEV/openclaw
-docker compose exec openclaw-cli bash
+
+# 첫 실행: 대화형 설정 (모델 · gateway · workspace — 한 번만)
+docker compose run --rm openclaw-cli onboard
+
+# 이후: 터미널 UI 채팅 (gateway 에 연결)
+docker compose run --rm openclaw-cli tui
+
+# 한 줄 명령으로 직접 대화
+docker compose run --rm openclaw-cli agent --message "안녕. 너는 어떤 모델이야?"
 ```
 
-컨테이너 셸 안에서 (`node@xxxxxx:/workspace$` 같은 프롬프트):
+**컨테이너 안 셸이 필요하면** (드물게):
 ```bash
-claude                          # OpenClaw / Claude CLI 시작
+docker compose run --rm --entrypoint bash openclaw-cli
+# 셸 안에서: openclaw <subcommand>  (예: openclaw tui)
 ```
 
-대화 화면이 뜨면 **첫 프롬프트 예시**:
+**첫 프롬프트 예시** (`tui` 안에서):
 ```
-> 안녕. 너는 어떤 모델이야?
-> /workspace 안에 hello.py 라는 파일을 만들고 "Hello from OpenClaw" 를 출력하게 해줘
-> 방금 만든 파일을 실행해서 결과를 보여줘
-```
-
-빠져나오기:
-```
-Ctrl+D  또는  exit       # CLI 종료
-exit                       # 컨테이너 셸 종료 (컨테이너 자체는 계속 실행)
+안녕. 너는 어떤 모델이야?
+~/.openclaw/workspace 안에 hello.py 라는 파일을 만들고 "Hello from OpenClaw" 를 출력하게 해줘
+방금 만든 파일을 실행해서 결과를 보여줘
 ```
 
-> 🔒 컨테이너 안에서 일어나는 모든 일은 격리 — 호스트 (`~/Documents`, `~/.ssh` 등) 에는 접근 불가. 파일을 호스트와 공유하려면 `/workspace` 에 만드세요 (자동으로 `~/DEV/openclawAgent` 에 동기화).
+빠져나오기: `Ctrl+D` 또는 `/exit` (TUI 안에서). `run --rm` 이라 종료 시 컨테이너 자동 삭제 — 다음에 또 `docker compose run --rm openclaw-cli tui` 로 띄우면 됩니다.
+
+> 🔒 컨테이너 안에서 일어나는 모든 일은 격리 — 호스트 (`~/Documents`, `~/.ssh` 등) 에는 접근 불가. 파일을 호스트와 공유하려면 `~/.openclaw/workspace` (컨테이너 안) 에 만드세요 (호스트의 `~/DEV/openclawAgent` 와 자동 동기화).
 
 ### 방식 C — `./openclaw` 대화형 메뉴
 
@@ -172,15 +179,15 @@ nano ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr/.env
 ## 📂 4단계 — 작업 파일은 어디?
 
 ```
-컨테이너 안          ←→  호스트 (Finder 에서 보임)
-/workspace           ←→  ~/DEV/openclawAgent
-/home/node/.openclaw ←→  ~/.openclaw  (설정·세션·토큰 — 직접 편집 X)
+컨테이너 안                          ←→  호스트 (Finder 에서 보임)
+/home/node/.openclaw/workspace      ←→  ~/DEV/openclawAgent
+/home/node/.openclaw                ←→  ~/.openclaw  (설정·세션·토큰 — 직접 편집 X)
 ```
 
 ### 확인하기
 ```bash
-# 컨테이너에서 파일 만들기
-docker compose exec openclaw-cli bash -c 'echo "test" > /workspace/hello.txt'
+# 컨테이너에서 파일 만들기 (cli 컨테이너가 죽어 있으므로 exec 가 아니라 run --rm)
+docker compose run --rm --entrypoint sh openclaw-cli -c 'echo "test" > /home/node/.openclaw/workspace/hello.txt'
 
 # 호스트에서 즉시 보임
 ls ~/DEV/openclawAgent/hello.txt
@@ -191,7 +198,7 @@ cat ~/DEV/openclawAgent/hello.txt
 open ~/DEV/openclawAgent
 ```
 
-> 🔒 **컨테이너는 `/workspace` 밖으로 못 나갑니다** — 에이전트가 `~/Desktop` 이나 `~/Documents` 를 건드릴 수 없도록 마운트 자체가 안 되어 있습니다. 추가 폴더를 공유하고 싶으면 `~/DEV/openclawAgent` 안에 심볼릭 링크나 하위 폴더를 만드세요.
+> 🔒 **컨테이너는 `~/.openclaw/workspace` 밖으로 못 나갑니다** — 에이전트가 `~/Desktop` 이나 `~/Documents` 를 건드릴 수 없도록 마운트 자체가 안 되어 있습니다. 추가 폴더를 공유하고 싶으면 `~/DEV/openclawAgent` 안에 심볼릭 링크나 하위 폴더를 만드세요.
 
 ---
 
@@ -305,23 +312,37 @@ docker ps --format 'table {{.Names}}\t{{.Status}}' | grep openclaw
 
 **Option A — Browser UI**
 ```bash
+# Right after install the network is in 'isolated' — port publishing is off.
+./openclaw network online --restart
 open http://127.0.0.1:18789
 ```
-If the page is empty / 404 → the OpenClaw build you have is headless; use Option B.
+If the page is empty / black / "Safari Can't Connect" → this OpenClaw build's web UI is admin-only (Control Panel) and the chat lives in the CLI. Use Option B.
 
-**Option B — In-container CLI (most reliable)**
+**Option B — In-container CLI (full OpenClaw stack)**
 ```bash
 cd ~/DEV/openclaw
-docker compose exec openclaw-cli bash
-# inside the container:
-claude
+
+# First time: interactive setup (one-time)
+docker compose run --rm openclaw-cli onboard
+
+# Then: terminal UI chat
+docker compose run --rm openclaw-cli tui
 # > Hi. Which model are you?
-# > Create /workspace/hello.py that prints "Hello from OpenClaw"
+# > Create ~/.openclaw/workspace/hello.py that prints "Hello from OpenClaw"
 # > Run it and show the output
-# Ctrl+D to exit CLI, `exit` to leave the container shell
+# Ctrl+D / /exit to leave; the container is removed on exit (run --rm)
 ```
 
-**Option C — `./openclaw` interactive menu**
+> ⚠️ Use `run --rm`, not `exec`. The `openclaw-cli` container's entrypoint is `node dist/index.js`, which prints help and exits when invoked with no args (`docker ps -a` shows it as `Exited (1)`). `docker compose run --rm` spins up a fresh container per invocation, which is the correct pattern.
+
+**Option C — Terminal REPL chat (skip OpenClaw entirely)**
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw chat
+```
+Talks directly to host Ollama, auto-loads workspace personality files (`IDENTITY.md` / `SOUL.md` / `USER.md`). No setup, no container, no API key.
+
+**Option D — `./openclaw` interactive menu**
 ```bash
 cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw

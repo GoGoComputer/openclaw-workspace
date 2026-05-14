@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.6 — 2026-05-14](#v026--2026-05-14)
 - [v0.2.5 — 2026-05-14](#v025--2026-05-14)
 - [v0.2.4 — 2026-04-25](#v024--2026-04-25)
 - [v0.2.3 — 2026-04-25](#v023--2026-04-25)
@@ -11,6 +12,19 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.6 — 2026-05-14
+
+### Documentation correctness
+- **`docker compose exec openclaw-cli bash` → `docker compose run --rm openclaw-cli <subcommand>`** everywhere. The cli container's entrypoint is `node dist/index.js`, which prints help and exits when invoked with no args — so the container is in `Exited (1)` state and `exec` always fails. The correct pattern is `run --rm` per invocation. (README KO + EN, GUIDE-FIRST-USE.md, install.sh post-install banner.)
+- **`claude` → `openclaw tui` / `openclaw onboard` / `openclaw agent`**. The actual CLI binary inside the container is `openclaw` (`/usr/local/bin/openclaw` → `/app/openclaw.mjs`); `claude` does not exist on PATH. The previous instructions sent users into a dead end.
+- **In-container workspace path**: `/workspace` → `/home/node/.openclaw/workspace` (matches `OPENCLAW_WORKSPACE_DIR` env in `docker-compose.yml` and the actual mount).
+
+### Web UI honesty
+- **Isolated mode blocks web UI** — Docker's `internal: true` network also disables host → container port publishing (no docker-proxy spawned). Empirically confirmed via `docker inspect` showing requested but unrealized port bindings. The network-mode table now reports `isolated.WebUI` as ✗ with a callout; both README and `install.sh` post-install banner now lead with `./openclaw network online --restart` for browser access.
+- **Empty/black Control Panel page is normal** — this OpenClaw build's web UI is the admin Control Panel, not a chat interface. Added FAQ entries (KO + EN) directing users to `./openclaw chat`, `docker compose run --rm openclaw-cli tui`, or one-shot `agent`.
 
 ---
 

@@ -130,16 +130,26 @@ The most visual / approachable path. Safari or Chrome — either works. Do **not
 
 > Still "Safari can't connect"? Run `./openclaw doctor` and check `docker ps`. Ports should show `127.0.0.1:18789->18789/tcp`. If you see just `18789/tcp` (no `host:port->` prefix), you're still in `isolated`.
 
-### ② Container CLI
+### ② Container CLI (full OpenClaw stack)
 
-The most stable path. Drop into the isolated container shell and run `claude` directly.
+Use the OpenClaw CLI inside an isolated container. Full feature set — channel integrations (WhatsApp / Telegram), plugins, session management.
 
 ```bash
 cd ~/DEV/openclaw
-docker compose exec openclaw-cli bash
-# then, inside the container:
-claude
+
+# First time: interactive setup (model / gateway / workspace — once)
+docker compose run --rm openclaw-cli onboard
+
+# Then: terminal UI chat (attaches to the gateway)
+docker compose run --rm openclaw-cli tui
+
+# Or one-shot:
+docker compose run --rm openclaw-cli agent --message "hello"
 ```
+
+> ⚠️ **`run --rm`, not `exec`** — the `openclaw-cli` container's entrypoint is `node dist/index.js`, which prints help and exits immediately when invoked with no args (`docker ps -a` shows it as `Exited (1)`). That's why `docker compose exec openclaw-cli bash` almost always fails. The right pattern is `docker compose run --rm openclaw-cli <subcommand>`, which spins up a fresh container per invocation.
+>
+> Need a raw shell inside the container? `docker compose run --rm --entrypoint bash openclaw-cli`.
 
 ### ③ Terminal REPL chat
 
@@ -479,7 +489,7 @@ Docker and Ollama accumulate caches and unused images over time. One command to 
 
 ### What still **works** under `isolated`
 - `./openclaw chat` — talks to host Ollama directly (bypasses the container)
-- `docker compose exec openclaw-cli bash` → `claude` — CLI inside the container (independent of port publishing)
+- `docker compose run --rm openclaw-cli tui` — CLI inside the container (independent of port publishing)
 - Workspace file read/write
 - Models and code already inside the container
 
@@ -562,6 +572,29 @@ Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and
 </details>
 
 <details>
+<summary><b>Web UI page loads but the body is a black/empty screen — no chat panel</b></summary>
+
+If `http://127.0.0.1:18789` loads and the browser tab says `OpenClaw Control` but the page body is just a black empty screen — **this is not a bug**. This build's web UI is the **admin Control Panel**; it may not bundle a chat interface at all. GUIDE-FIRST-USE.md notes: "Depending on the OpenClaw build, the UI may be embedded or it may be API-only".
+
+**Three ways to actually chat:**
+
+```bash
+# ① Fastest — talks to host Ollama directly, no setup required
+./openclaw chat
+
+# ② Full OpenClaw stack — TUI chat after one-time onboard
+cd ~/DEV/openclaw
+docker compose run --rm openclaw-cli onboard      # one-time
+docker compose run --rm openclaw-cli tui          # every time
+
+# ③ One-shot
+docker compose run --rm openclaw-cli agent --message "hi"
+```
+
+⚠️ **`docker compose exec openclaw-cli bash` does not work** — the container's entrypoint (`node dist/index.js`) prints help and exits immediately, so `exec`'s target is never alive (`docker ps -a` shows `Exited (1)`). Always use **`run --rm`**.
+</details>
+
+<details>
 <summary><b>Web UI (<code>http://127.0.0.1:18789</code>) shows "Safari Can't Connect" even though containers are healthy</b></summary>
 
 If `./openclaw doctor` is all ✓ and `docker ps` shows the gateway as `(healthy)` but the browser can't reach it — almost always **isolated mode**. Docker's `internal: true` network also disables host → container port publishing, so `127.0.0.1:18789` is unreachable from the host.
@@ -581,7 +614,7 @@ open http://127.0.0.1:18789
 ./openclaw network isolated --restart
 ```
 
-Don't need the web UI? Then `isolated` is fine — `./openclaw chat` and `docker compose exec openclaw-cli bash → claude` both work regardless of port publishing.
+Don't need the web UI? Then `isolated` is fine — `./openclaw chat` and `docker compose run --rm openclaw-cli tui` both work regardless of port publishing.
 </details>
 
 <details>

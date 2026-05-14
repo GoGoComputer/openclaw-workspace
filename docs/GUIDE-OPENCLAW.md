@@ -139,12 +139,16 @@ Docker Volumes               # OpenClaw 의 세션·DB (영구 데이터)
 # 1) 헬스 체크 (가장 먼저)
 curl -s http://127.0.0.1:18789/healthz   # OK 나오면 살아 있음
 
-# 2) 컨테이너에 들어가서 CLI 로 대화 (가장 흔한 사용)
+# 2) 컨테이너 CLI 로 대화 (가장 흔한 사용)
 cd ~/DEV/openclaw
-docker compose exec openclaw-cli bash
-# 컨테이너 안에서:
-#   claude                          # OpenClaw/Claude CLI
-#   exit                            # 빠져나옴 (컨테이너는 계속 실행)
+docker compose run --rm openclaw-cli tui    # 터미널 UI 채팅 (gateway 에 연결)
+# 또는 첫 설정:
+# docker compose run --rm openclaw-cli onboard
+# 또는 한 줄:
+# docker compose run --rm openclaw-cli agent --message "안녕"
+#
+# ⚠ `exec` 가 아니라 `run --rm` — openclaw-cli 컨테이너의 entrypoint(`node dist/index.js`)는
+#   인자 없이 뜨면 help 출력 후 즉시 종료(`Exited (1)`)됩니다. 매번 새 컨테이너로 띄우세요.
 
 # 3) 로그 보기 (디버그·요청 추적)
 cd ~/DEV/openclawAgent/openclaw-workspace

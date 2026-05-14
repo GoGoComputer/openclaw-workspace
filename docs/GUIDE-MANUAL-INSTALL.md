@@ -2114,7 +2114,7 @@ lsof -nP -iTCP:11434 -sTCP:LISTEN            # Ollama
 | 잠깐 멈춤 (보존) | — | `docker compose stop` |
 | 재개 (보존된 것) | — | `docker compose start` |
 | 로그 보기 | `./openclaw logs` | `docker compose logs -f` |
-| 컨테이너 안 들어가기 | — | `docker compose exec openclaw-cli bash` |
+| 컨테이너 CLI 실행 | — | `docker compose run --rm openclaw-cli tui` (또는 `onboard`/`agent`). `exec`는 cli 가 즉시 종료형이라 실패 |
 | Docker 데몬 끄기 | (없음) | `osascript -e 'quit app "Docker"'` |
 | Docker 데몬 켜기 | (없음 — install 이 자동) | `open -a Docker` |
 | 부팅 시 자동 | Settings → "Start Docker Desktop when you sign in" 체크 | 동일 |
