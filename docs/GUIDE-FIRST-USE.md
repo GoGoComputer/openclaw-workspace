@@ -98,23 +98,31 @@ http://127.0.0.1:18789
 
 ### 방식 B — 컨테이너 안 CLI (본체 OpenClaw 풀 기능)
 
-> ⚠️ `openclaw-cli` 컨테이너는 entrypoint 가 `node dist/index.js` 라서 인자 없이 뜨면 help 출력 후 **즉시 종료**합니다 (`docker ps -a` 에서 `Exited (1)`). 그래서 `docker compose exec openclaw-cli bash` 는 거의 항상 실패해요. 매번 새 일회용 컨테이너를 띄우는 **`docker compose run --rm`** 이 올바른 패턴.
+**첫 설정은 `./openclaw setup` 한 줄.** OpenClaw 의 `onboard` 마법사를 Docker 안에서 안전하게 돌리는 래퍼입니다. 멱등 — 언제든 다시 실행해도 안전.
 
 ```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+
+# 1) 첫 설정 (또는 재설정)
+./openclaw setup
+# → 모델·gateway·인증·워크스페이스·플러그인 마법사가 컨테이너 안에서 진행
+# → 결과는 ~/.openclaw/openclaw.json 에 저장
+# → 중간 Ctrl+C 안전, 답하기 싫은 항목은 Enter 로 기본값 유지
+
+# 2) 설정 확인 (변경 없음)
+./openclaw setup status
+
+# 3) 이후 채팅
 cd ~/DEV/openclaw
-
-# 첫 실행: 대화형 설정 (모델 · gateway · workspace — 한 번만)
-docker compose run --rm openclaw-cli onboard
-
-# 이후: 터미널 UI 채팅 (gateway 에 연결)
-docker compose run --rm openclaw-cli tui
-
-# 한 줄 명령으로 직접 대화
-docker compose run --rm openclaw-cli agent --message "안녕. 너는 어떤 모델이야?"
+docker compose run --rm openclaw-cli tui                          # 터미널 UI 채팅
+docker compose run --rm openclaw-cli agent --message "안녕"   # 한 줄 명령
 ```
+
+> ⚠️ `openclaw-cli` 컨테이너는 entrypoint 가 `node dist/index.js` 라서 인자 없이 뜨면 help 출력 후 **즉시 종료**합니다 (`docker ps -a` 에서 `Exited (1)`). 그래서 `docker compose exec openclaw-cli bash` 는 항상 실패. 매번 새 일회용 컨테이너를 띄우는 **`docker compose run --rm`** 이 올바른 패턴이고, `./openclaw setup` 이 이걸 내부적으로 처리합니다.
 
 **컨테이너 안 셸이 필요하면** (드물게):
 ```bash
+cd ~/DEV/openclaw
 docker compose run --rm --entrypoint bash openclaw-cli
 # 셸 안에서: openclaw <subcommand>  (예: openclaw tui)
 ```
@@ -319,28 +327,35 @@ open http://127.0.0.1:18789
 If the page is empty / black / "Safari Can't Connect" → this OpenClaw build's web UI is admin-only (Control Panel) and the chat lives in the CLI. Use Option B.
 
 **Option B — In-container CLI (full OpenClaw stack)**
+
+The first-time setup is one command — `./openclaw setup` wraps OpenClaw's `onboard` wizard and runs it inside an isolated container. Re-runnable anytime.
+
 ```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+
+# 1) First time (or any time you want to re-configure)
+./openclaw setup
+# → model · gateway · auth · workspace · plugins wizard runs inside the container
+# → settings persist to ~/.openclaw/openclaw.json
+# → Ctrl+C is safe; Enter keeps any existing answer
+
+# 2) Inspect current configuration (read-only)
+./openclaw setup status
+
+# 3) Then chat
 cd ~/DEV/openclaw
-
-# First time: interactive setup (one-time)
-docker compose run --rm openclaw-cli onboard
-
-# Then: terminal UI chat
-docker compose run --rm openclaw-cli tui
-# > Hi. Which model are you?
-# > Create ~/.openclaw/workspace/hello.py that prints "Hello from OpenClaw"
-# > Run it and show the output
-# Ctrl+D / /exit to leave; the container is removed on exit (run --rm)
+docker compose run --rm openclaw-cli tui                          # terminal UI chat
+docker compose run --rm openclaw-cli agent --message "hi"   # one-shot
 ```
 
-> ⚠️ Use `run --rm`, not `exec`. The `openclaw-cli` container's entrypoint is `node dist/index.js`, which prints help and exits when invoked with no args (`docker ps -a` shows it as `Exited (1)`). `docker compose run --rm` spins up a fresh container per invocation, which is the correct pattern.
+> ⚠️ Use `run --rm`, not `exec`. The `openclaw-cli` container's entrypoint (`node dist/index.js`) prints help and exits when invoked with no args (`docker ps -a` shows it as `Exited (1)`). `./openclaw setup` handles this internally; for direct invocations always use `docker compose run --rm openclaw-cli <subcommand>`.
 
 **Option C — Terminal REPL chat (skip OpenClaw entirely)**
 ```bash
 cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
-./openclaw chat
+./openclaw chat                          # interactive model picker + auto personality
 ```
-Talks directly to host Ollama, auto-loads workspace personality files (`IDENTITY.md` / `SOUL.md` / `USER.md`). No setup, no container, no API key.
+Talks directly to host Ollama. The picker shows your installed models numbered — Enter for the default, or pick a number. Auto-loads workspace personality files (`IDENTITY.md` / `SOUL.md` / `USER.md`). No OpenClaw onboard required, no API key.
 
 **Option D — `./openclaw` interactive menu**
 ```bash

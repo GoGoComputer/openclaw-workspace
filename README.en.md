@@ -130,36 +130,62 @@ The most visual / approachable path. Safari or Chrome — either works. Do **not
 
 > Still "Safari can't connect"? Run `./openclaw doctor` and check `docker ps`. Ports should show `127.0.0.1:18789->18789/tcp`. If you see just `18789/tcp` (no `host:port->` prefix), you're still in `isolated`.
 
-### ② Container CLI (full OpenClaw stack)
+### ② Container CLI (full OpenClaw stack) — `setup` → `chat`
 
-Use the OpenClaw CLI inside an isolated container. Full feature set — channel integrations (WhatsApp / Telegram), plugins, session management.
+Use the OpenClaw CLI inside an isolated container. Full feature set — channel integrations (WhatsApp / Telegram), plugins, session management. **First-time setup is one command** — `./openclaw setup` wraps OpenClaw's `onboard` wizard and runs it safely inside Docker.
 
 ```bash
+# 1) First time (or any time you want to re-configure — idempotent)
+./openclaw setup
+
+# 2) Inspect current configuration (read-only)
+./openclaw setup status
+
+# 3) Once set up, full-stack chat via the container CLI
 cd ~/DEV/openclaw
-
-# First time: interactive setup (model / gateway / workspace — once)
-docker compose run --rm openclaw-cli onboard
-
-# Then: terminal UI chat (attaches to the gateway)
-docker compose run --rm openclaw-cli tui
-
-# Or one-shot:
-docker compose run --rm openclaw-cli agent --message "hello"
+docker compose run --rm openclaw-cli tui            # terminal UI chat
+docker compose run --rm openclaw-cli agent --message "hi"   # one-shot
 ```
 
-> ⚠️ **`run --rm`, not `exec`** — the `openclaw-cli` container's entrypoint is `node dist/index.js`, which prints help and exits immediately when invoked with no args (`docker ps -a` shows it as `Exited (1)`). That's why `docker compose exec openclaw-cli bash` almost always fails. The right pattern is `docker compose run --rm openclaw-cli <subcommand>`, which spins up a fresh container per invocation.
->
-> Need a raw shell inside the container? `docker compose run --rm --entrypoint bash openclaw-cli`.
+Why `./openclaw setup`:
+- **Isolated** — runs `docker compose run --rm openclaw-cli onboard`, nothing is installed on the host
+- **Re-runnable** — detects existing config, confirms before re-running; Enter keeps any answer
+- **Pre-flight** — checks Docker daemon + OpenClaw clone before launching the wizard
+- **Hands off afterward** — `./openclaw setup status` to peek, `./openclaw chat` to chat right away
 
-### ③ Terminal REPL chat
+> ⚠️ **`run --rm`, not `exec`** — the `openclaw-cli` container's entrypoint (`node dist/index.js`) prints help and exits immediately on no-arg invocation (`docker ps -a` shows it as `Exited (1)`). `./openclaw setup` handles this internally; if you ever call it manually, always use `docker compose run --rm openclaw-cli <subcommand>`.
+>
+> Raw shell inside the container? `docker compose run --rm --entrypoint bash openclaw-cli`.
+
+### ③ Terminal REPL chat — `./openclaw chat`
 
 Talk to the agent through host Ollama directly — no container, no web UI. The workspace personality files (`IDENTITY.md` · `SOUL.md` · `USER.md`, …) get auto-loaded into the system prompt.
 
 ```bash
-./openclaw chat                       # default model + auto personality
-./openclaw chat -m llama3.1:8b        # pick a model
+./openclaw chat                       # interactive model picker + auto personality
+./openclaw chat -m llama3.1:8b        # pick a model directly (skips the picker)
+./openclaw chat --no-pick             # skip the picker, use the .env default
 ./openclaw chat --no-system           # ignore personality, pure model
 ```
+
+**🎯 Interactive model picker** — without `-m`, the installed Ollama models are numbered and shown:
+
+```
+  Pick an installed Ollama model:
+     1) gemma4:26b                                              18.0 GB
+     2) llama3.1:8b-instruct-q4_K_M                              4.9 GB  ★ default
+     3) qwen2.5:3b-instruct                                      1.9 GB
+     4) solar-pro:latest                                        13.3 GB
+     ...
+
+  Enter number [default: 2]:
+```
+
+- Embedding models (`nomic-embed-text`, anything tagged `embed`) are skipped — they don't chat
+- Default (★): the first entry in `.env`'s `OLLAMA_MODELS` if it's installed; otherwise the first listed
+- Exactly one model installed? Auto-picked. None? Prints recommended `ollama pull` commands and exits.
+- Press Enter for the default, type a number, or get rejected for bad input
+- Non-interactive shells (`NONINTERACTIVE=1`, piped stdin, `--no-pick`, or `-m`) skip the picker automatically
 
 Slash commands (`/exit` `/reset` `/model` `/history` `/help`) and full details: see [💬 Terminal chat (`chat`)](#-terminal-chat-chat).
 
@@ -278,7 +304,8 @@ shorts   run "moody travel landscapes"
 | Command | Description |
 |---|---|
 | `./openclaw` (or `menu`) | Interactive menu (auto KO/EN) — pick a number to do anything |
-| `./openclaw chat [-m MODEL]` | Terminal REPL chat with the agent (host Ollama + auto-loads `IDENTITY`/`SOUL`/`USER`) |
+| `./openclaw setup [status]` | First-time / re-run OpenClaw onboard wizard, safely inside Docker (idempotent — re-runnable anytime) |
+| `./openclaw chat [-m MODEL]` | Terminal REPL chat with the agent (interactive model picker + auto-loads `IDENTITY`/`SOUL`/`USER`) |
 | `./openclaw doctor` | Diagnose installed/running state (✓/✗/⚠ table) |
 | `./openclaw install` | Idempotent install. Resumes after interruption |
 | `./openclaw start` | Start container |
@@ -300,11 +327,20 @@ shorts   run "moody travel landscapes"
 Talk to the agent directly via the host Ollama — **no container, no web UI** required. Pull a model and say "hi" immediately.
 
 ```bash
-./openclaw chat                          # default model + auto IDENTITY/SOUL/USER system prompt
-./openclaw chat -m llama3.1:8b           # pick a model
+./openclaw chat                          # interactive model picker + auto personality
+./openclaw chat -m llama3.1:8b           # pick a model directly (skips the picker)
+./openclaw chat --no-pick                # skip the picker, use the .env default
 ./openclaw chat --no-system              # ignore personality files, pure model
 ./openclaw chat --host http://127.0.0.1:11434   # custom Ollama host
 ```
+
+**🎯 Interactive model picker** — without `-m`, the script queries `ollama list` and shows a numbered menu:
+
+- Embedding models (`*-embed-*`) are filtered out — they can't chat
+- Default star (★): the first entry in `.env`'s `OLLAMA_MODELS` if it's installed
+- One installed model → auto-picked; zero installed → prints recommended `ollama pull` commands and exits
+- Press Enter for the default, type a number, or get rejected on bad input
+- Non-interactive contexts (`NONINTERACTIVE=1`, piped stdin, `--no-pick`, `-m`) skip the picker
 
 **Slash commands inside the REPL**
 

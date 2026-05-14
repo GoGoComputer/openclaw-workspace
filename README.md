@@ -224,36 +224,61 @@ open http://127.0.0.1:18789
 
 > **"Safari can't connect" 이 여전히** 뜨면 `./openclaw doctor` 로 게이트웨이 상태 확인. `docker ps` 로 포트가 `127.0.0.1:18789->18789/tcp` 형태로 publish 됐는지 확인 (단순히 `18789/tcp` 만 보이면 isolated 상태).
 
-### ② 컨테이너 CLI (본체 OpenClaw 사용)
+### ② 컨테이너 CLI (본체 OpenClaw 풀 기능) — `setup` → `chat`
 
-컨테이너 안 격리 환경에서 OpenClaw 본체 CLI 사용. 채널 연동(WhatsApp·Telegram)·플러그인·세션 관리 등 풀 기능.
+컨테이너 안 격리 환경에서 OpenClaw 본체 사용. 채널 연동(WhatsApp·Telegram)·플러그인·세션 관리 등 풀 기능. **첫 설정은 `./openclaw setup` 한 줄로** — OpenClaw 의 `onboard` 마법사를 Docker 안에서 안전하게 실행합니다.
 
 ```bash
+# 1) 첫 설정 (또는 언제든 재설정 — 멱등)
+./openclaw setup
+
+# 2) 설정 확인 (변경 없음, 현재 상태만 표시)
+./openclaw setup status
+
+# 3) 이후 풀 기능 컨테이너 CLI 로 채팅
 cd ~/DEV/openclaw
-
-# 첫 실행: 대화형 설정 (모델·게이트웨이·워크스페이스 한 번만)
-docker compose run --rm openclaw-cli onboard
-
-# 이후: 터미널 UI 로 채팅 (gateway 에 붙음)
-docker compose run --rm openclaw-cli tui
-
-# 또는 한 줄 명령
-docker compose run --rm openclaw-cli agent --message "안녕"
+docker compose run --rm openclaw-cli tui            # 터미널 UI 채팅
+docker compose run --rm openclaw-cli agent --message "안녕"   # 한 줄 명령
 ```
 
-> ⚠️ **`exec` 가 아니라 `run --rm`** — `openclaw-cli` 컨테이너의 entrypoint 가 `node dist/index.js` 라서 인자 없이 뜨면 help 출력 후 즉시 종료합니다 (`docker ps -a` 에서 `Exited (1)` 상태). 그래서 `docker compose exec` 는 거의 항상 실패. 매번 새 컨테이너로 띄우는 `docker compose run --rm` 이 올바른 사용 패턴입니다.
+`./openclaw setup` 의 장점:
+- **격리** — `docker compose run --rm openclaw-cli onboard` 로 컨테이너 안에서만 실행, 호스트에는 직접 설치 안 함
+- **재실행 가능** — 기존 설정이 있으면 확인 후 재시작. 답하기 싫은 항목은 Enter 로 기본값 유지
+- **사전 점검** — Docker 데몬·OpenClaw 클론 존재 자동 확인
+- **종료 후 안내** — `./openclaw setup status` 로 확인, `./openclaw chat` 로 바로 채팅
+
+> ⚠️ **`exec` 가 아니라 `run --rm`** — `openclaw-cli` 컨테이너의 entrypoint(`node dist/index.js`)는 인자 없이 뜨면 help 출력 후 즉시 종료(`Exited (1)`)됩니다. `./openclaw setup` 이 이 패턴을 내부적으로 처리. 직접 호출할 때도 항상 `run --rm` 을 쓰세요.
 >
 > 컨테이너 셸이 필요하면: `docker compose run --rm --entrypoint bash openclaw-cli`
 
-### ③ 터미널 REPL 채팅
+### ③ 터미널 REPL 채팅 — `./openclaw chat`
 
 호스트 Ollama 와 직접 대화 — 컨테이너·웹 UI 없이도 워크스페이스의 인격 파일(`IDENTITY.md` · `SOUL.md` · `USER.md` 등)을 자동 system prompt 로 로드.
 
 ```bash
-./openclaw chat                       # 기본 모델 + 인격 자동 로드
-./openclaw chat -m llama3.1:8b        # 모델 지정
+./openclaw chat                       # 인터랙티브 모델 picker + 인격 자동 로드
+./openclaw chat -m llama3.1:8b        # 모델 직접 지정 (picker 스킵)
+./openclaw chat --no-pick             # picker 끄고 .env 기본 모델 사용
 ./openclaw chat --no-system           # 인격 무시, 순수 모델
 ```
+
+**인터랙티브 모델 picker** — `-m` 없이 실행하면 설치된 Ollama 모델을 번호 매겨 표시:
+
+```
+  설치된 Ollama 모델 중 선택하세요:
+     1) gemma4:26b                                              18.0 GB
+     2) llama3.1:8b-instruct-q4_K_M                              4.9 GB  ★ default
+     3) qwen2.5:3b-instruct                                      1.9 GB
+     4) solar-pro:latest                                        13.3 GB
+     ...
+
+  번호 입력 [기본: 2, Enter 로 기본 사용]:
+```
+
+- 임베딩 모델(`nomic-embed-text` 등)은 채팅 부적합이라 자동 제외
+- 기본값: `.env` 의 `OLLAMA_MODELS` 첫 항목이 설치돼 있으면 그 모델
+- 모델이 1개뿐이면 자동 선택, 0개면 `ollama pull` 안내
+- 비대화형 환경(`NONINTERACTIVE=1`)에선 picker 자동 스킵
 
 REPL 안 슬래시 명령(`/exit` `/reset` `/model` `/history` `/help`)·자세한 동작은 [💬 터미널 채팅 (`chat`)](#-터미널-채팅-chat) 섹션 참조.
 
@@ -376,7 +401,8 @@ shorts   run "여행 감성 풍경"
 | 명령 | 한 줄 설명 |
 |---|---|
 | `./openclaw` (또는 `menu`) | 대화형 메뉴 (한국어/영어 자동) — 모든 작업을 번호로 선택 |
-| `./openclaw chat [-m MODEL]` | 터미널 REPL 로 에이전트와 채팅 (호스트 Ollama 직접 + `IDENTITY`/`SOUL`/`USER` 자동 로드) |
+| `./openclaw setup [status]` | OpenClaw 첫 설정/재설정 마법사 (`openclaw onboard` 를 Docker 안에서 안전 실행, 언제든 재실행 가능) |
+| `./openclaw chat [-m MODEL]` | 터미널 REPL 로 에이전트와 채팅 (인터랙티브 모델 picker + `IDENTITY`/`SOUL`/`USER` 자동 로드) |
 | `./openclaw doctor` | 현재 시스템/설치 상태 점검 (✓/✗/⚠ 표) |
 | `./openclaw install` | 부족한 부분만 자동 설치. 중간에 끊겨도 이어서 진행 |
 | `./openclaw start` | 컨테이너 시작 |
@@ -398,11 +424,20 @@ shorts   run "여행 감성 풍경"
 호스트 Ollama 만으로 워크스페이스의 에이전트와 즉시 대화할 수 있습니다. **컨테이너·웹 UI 없이도** 됩니다 — 모델 받자마자 바로 "안녕"이 가능합니다.
 
 ```bash
-./openclaw chat                          # 기본 모델 + IDENTITY/SOUL/USER 자동 system prompt
-./openclaw chat -m llama3.1:8b           # 모델 지정
+./openclaw chat                          # 인터랙티브 모델 picker + 인격 자동 로드
+./openclaw chat -m llama3.1:8b           # 모델 직접 지정 (picker 스킵)
+./openclaw chat --no-pick                # picker 끄고 .env 기본 모델 사용
 ./openclaw chat --no-system              # 인격 파일 무시, 순수 모델
 ./openclaw chat --host http://127.0.0.1:11434   # Ollama 호스트 변경
 ```
+
+**🎯 인터랙티브 모델 picker** — `-m` 없이 실행하면 `ollama list` 의 설치 모델을 번호 매겨 보여줍니다:
+
+- 임베딩 모델(`nomic-embed-text` · `*-embed-*` 등)은 채팅 부적합이라 **자동 제외**
+- 기본값(★): `.env` 의 `OLLAMA_MODELS` 첫 항목이 설치 목록에 있으면 그 모델
+- 모델이 **1개만** 있으면 묻지 않고 자동 선택, **0개** 면 `ollama pull` 추천 모델 안내 후 종료
+- Enter → 기본값 / 번호 입력 → 그 모델 / 잘못된 입력은 거절
+- 비대화형(`NONINTERACTIVE=1`, 파이프 stdin, `--no-pick`, 또는 `-m` 명시) 환경에서는 picker 자동 스킵
 
 **REPL 안 슬래시 명령**
 

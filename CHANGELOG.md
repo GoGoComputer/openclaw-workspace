@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.7 — 2026-05-14](#v027--2026-05-14)
 - [v0.2.6 — 2026-05-14](#v026--2026-05-14)
 - [v0.2.5 — 2026-05-14](#v025--2026-05-14)
 - [v0.2.4 — 2026-04-25](#v024--2026-04-25)
@@ -12,6 +13,27 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.7 — 2026-05-14
+
+### New commands
+- **`./openclaw setup`** — first-time / re-run OpenClaw onboard wizard, safely inside Docker. Wraps `docker compose run --rm openclaw-cli onboard` with pre-flight checks (clone exists · Docker daemon up), idempotent re-run confirmation (existing config detected → ask before re-running, Enter keeps any answer), and post-run hand-off to `./openclaw chat` or `tui`.
+- **`./openclaw setup status`** — read-only inspector: shows whether `~/.openclaw/openclaw.json` exists, last-modified time, and top-level config keys. Does not modify anything.
+
+### `./openclaw chat` upgrades
+- **Interactive model picker** — without `-m`, the script queries `ollama list` and prints a numbered menu of installed models with their sizes. Press Enter for the default (= `.env`'s `OLLAMA_MODELS` first entry if installed), or pick a number.
+  - Embedding models (`*-embed-*`, family `embed*`) are filtered out — they can't chat.
+  - Exactly one installed model → auto-picked. Zero installed → friendly `ollama pull` recommendations + exit.
+  - Non-interactive contexts (`NONINTERACTIVE=1`, piped stdin, `--no-pick`, or `-m`) skip the picker.
+- **`--no-pick`** flag — force the legacy "use `.env` default model" behavior.
+- Replaces the old "model X may not be installed, continue? [y/N]" warning with a real picker that shows what *is* installed.
+
+### Documentation
+- README (KO + EN): command catalog adds `setup`; '첫 사용 / first use' section ② re-flowed around `./openclaw setup` → `./openclaw chat`; ③ documents the picker; dedicated chat section shows a sample picker menu.
+- GUIDE-FIRST-USE.md (KO + EN): Option B opens with `./openclaw setup` instead of a raw `docker compose run` chain; Option C documents the picker.
+- VERSION bumped 0.2.6 → 0.2.7.
 
 ---
 

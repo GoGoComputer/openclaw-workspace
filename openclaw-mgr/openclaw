@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------
 # 사용법: ./openclaw <subcommand> [args...]
 # 서브커맨드: doctor | install | start | stop | logs | update |
-#             backup | restore | schedule | uninstall | chat |
+#             backup | restore | schedule | uninstall | chat | setup |
 #             help | version
 # Copyright 2026 박성모 Park Sungmo — MIT License
 # =============================================================================
@@ -13,7 +13,7 @@ set -euo pipefail
 OPENCLAW_MGR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 export OPENCLAW_MGR_DIR
 
-VERSION="0.2.6"
+VERSION="0.2.7"
 
 # .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
 # Auto-init: create .env from .env.example on first run — zero-config for beginners
@@ -65,7 +65,8 @@ openclaw — OpenClaw 셀프호스트 자동화 (macOS · Windows/WSL2)
 
 명령 / Commands:
   menu                대화형 메뉴 (한국어/영어) — Interactive menu
-  chat [-m MODEL]     터미널 REPL 로 에이전트와 채팅 — Talk to the agent (REPL)
+  setup [status]      OpenClaw 첫 설정/재설정 마법사 (Docker 안에서 안전 실행)
+  chat [-m MODEL]     터미널 REPL 로 에이전트와 채팅 (인터랙티브 모델 picker)
   doctor              현재 시스템/설치 상태를 점검 — Diagnose state
   install             부족한 부분만 자동 설치 — Auto-install missing parts
   start               OpenClaw 컨테이너 시작 — Start container
@@ -101,7 +102,7 @@ cmd="${1:-menu}"
 case "$cmd" in
   -h|--help|help) usage; exit 0 ;;
   -v|--version|version) printf 'openclaw-mgr %s\n' "$VERSION"; exit 0 ;;
-  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu|self-update|models|chat)
+  doctor|install|start|stop|logs|update|backup|restore|schedule|uninstall|clean|network|menu|self-update|models|chat|setup)
     script="$OPENCLAW_MGR_DIR/cmd/${cmd}.sh"
     [ -x "$script" ] || [ -f "$script" ] || die "내부 오류: $script 없음"
     # shellcheck disable=SC1090
