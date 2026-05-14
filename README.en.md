@@ -117,12 +117,18 @@ Pick whichever entry point fits.
 ### ① Browser web UI
 
 ```bash
+# Right after install, the network is in 'isolated' — the web UI is unreachable.
+# Open it first:
+./openclaw network online --restart
+
 open http://127.0.0.1:18789
 ```
 
 The most visual / approachable path. Safari or Chrome — either works. Do **not** include `open` in the address bar; `open` is a terminal command, not a URL.
 
-> If you see **"Safari can't connect" / "Empty reply"**, run `./openclaw doctor` first. Containers might be up but healthz might still be initializing — confirm with `docker compose ps` and look for `(healthy)`.
+> ⚠️ **Web UI is unreachable under `isolated` mode** — Docker's `internal: true` network also disables host → container port publishing (no docker-proxy). That's why `127.0.0.1:18789` shows "Safari Can't Connect" / "Empty reply" right after install. Fix: `./openclaw network online --restart`, then lock back down with `./openclaw network isolated --restart` when done.
+
+> Still "Safari can't connect"? Run `./openclaw doctor` and check `docker ps`. Ports should show `127.0.0.1:18789->18789/tcp`. If you see just `18789/tcp` (no `host:port->` prefix), you're still in `isolated`.
 
 ### ② Container CLI
 
@@ -453,19 +459,29 @@ Docker and Ollama accumulate caches and unused images over time. One command to 
 ./openclaw network isolated --restart      # close again ← keep this as the steady state
 ```
 
-| Mode | Outbound (container→internet) | Web UI (127.0.0.1) | host Ollama | When to use |
+| Mode | Outbound (container→internet) | Web UI (127.0.0.1:18789) | host Ollama | When to use |
 |---|---|---|---|---|
-| **`isolated`** 🔒 (default) | Fully blocked | ✓ | Blocked | Always — safe even if AI goes rogue |
-| **`online`** 🌐 | Allowed | ✓ | ✓ | Only briefly for install/update/model pulls |
+| **`isolated`** 🔒 (default) | Fully blocked | **Not reachable** ✗ | Blocked | Terminal-only workflow — maximum security |
+| **`online`** 🌐 | Allowed | ✓ | ✓ | **Web UI / install / update / model pulls** |
+
+> ⚠️ **Docker caveat**: when a container is connected only to an `internal: true` network, Docker also disables port publishing (no docker-proxy). So under `isolated` there's no path from the host to `127.0.0.1:18789` either. **If you want the web UI, flip to `online` first**: `./openclaw network online --restart`. Lock back down with `./openclaw network isolated --restart` once done.
 
 ### What `isolated` (default) **blocks**
 - All outbound DNS and IP traffic from inside the container.
+- **Host → container inbound (web UI ports)** — Docker also disables port publishing.
 - Therefore the following are blocked (flip to `online` if needed):
+  - **Browser web UI** (`http://127.0.0.1:18789`) — inbound also dropped
   - `pip install <pkg>`, `npm install`, `apt-get update`
   - `git clone https://github.com/...` and other GitHub/GitLab pulls
   - Hugging Face / pypi / docker registry downloads
-  - **host Ollama** (`host.docker.internal:11434`) — also blocked under isolated
+  - **host Ollama** (`host.docker.internal:11434`)
   - **Any data exfiltration attempt** (malicious prompt-injection "upload my files to X" is physically impossible)
+
+### What still **works** under `isolated`
+- `./openclaw chat` — talks to host Ollama directly (bypasses the container)
+- `docker compose exec openclaw-cli bash` → `claude` — CLI inside the container (independent of port publishing)
+- Workspace file read/write
+- Models and code already inside the container
 
 ### When this matters
 - **High-stakes security**: when an AI agent browses the web, downloads code, or installs packages, the entire fetch path is removed — nothing malicious can be pulled in.
@@ -543,6 +559,29 @@ Easiest: `openclaw models add <name>` (auto-edits `.env` + pulls). To see what y
 <summary><b>I interrupted the install. What now?</b></summary>
 
 Just rerun `./openclaw install`. Already-completed steps are marked `[skip]` and only the rest runs. State file: `~/.openclaw-mgr/state`.
+</details>
+
+<details>
+<summary><b>Web UI (<code>http://127.0.0.1:18789</code>) shows "Safari Can't Connect" even though containers are healthy</b></summary>
+
+If `./openclaw doctor` is all ✓ and `docker ps` shows the gateway as `(healthy)` but the browser can't reach it — almost always **isolated mode**. Docker's `internal: true` network also disables host → container port publishing, so `127.0.0.1:18789` is unreachable from the host.
+
+Diagnose:
+```bash
+docker ps --format '{{.Names}}\t{{.Ports}}' | grep gateway
+# Expected (online):    127.0.0.1:18789-18790->18789-18790/tcp
+# Broken (isolated):    18789-18790/tcp        ← not published
+```
+
+Fix — briefly flip to online:
+```bash
+./openclaw network online --restart
+open http://127.0.0.1:18789
+# (when done)
+./openclaw network isolated --restart
+```
+
+Don't need the web UI? Then `isolated` is fine — `./openclaw chat` and `docker compose exec openclaw-cli bash → claude` both work regardless of port publishing.
 </details>
 
 <details>

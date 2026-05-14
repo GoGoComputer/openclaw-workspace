@@ -551,16 +551,19 @@ printf '  %s./openclaw logs%s            컨테이너 로그 보기\n' "$C_BOLD"
 printf '  %s./openclaw schedule enable%s 매일 자동 업데이트 활성화\n' "$C_BOLD" "$C_RESET"
 printf '\n%s💬 첫 대화는 어떻게 하나요?%s\n' "$C_BOLD" "$C_RESET"
 printf '  → docs/GUIDE-FIRST-USE.md  (5분 안에 첫 프롬프트까지)\n'
-printf '\n  %s빠른 시작 두 가지 — 둘 중 하나를 고르세요%s\n' "$C_BOLD" "$C_RESET"
+printf '\n  %s빠른 시작 — 셋 중 하나를 고르세요%s\n' "$C_BOLD" "$C_RESET"
 printf '\n  ① 브라우저로 열기 (그래픽 UI):\n'
-printf '       터미널에서:  %sopen http://127.0.0.1:18789%s\n' "$C_BOLD" "$C_RESET"
-printf '       또는 Safari/Chrome 주소창에 직접:  %shttp://127.0.0.1:18789%s\n' "$C_BOLD" "$C_RESET"
+printf '       %s./openclaw network online --restart%s   ← isolated 상태에선 인바운드도 차단됨\n' "$C_BOLD" "$C_RESET"
+printf '       %sopen http://127.0.0.1:18789%s             또는 주소창에 직접 http://127.0.0.1:18789\n' "$C_BOLD" "$C_RESET"
+printf '       (작업 끝나면)  %s./openclaw network isolated --restart%s\n' "$C_BOLD" "$C_RESET"
 printf '       ⚠ 주소창에 "open " 까지 같이 붙여넣지 마세요. "open" 은 터미널 명령어입니다.\n'
-printf '\n  ② 컨테이너 안 CLI (가장 안정적):\n'
+printf '\n  ② 컨테이너 안 CLI (가장 안정적, 네트워크 모드 무관):\n'
 printf '       %scd ~/DEV/openclaw && docker compose exec openclaw-cli bash%s\n' "$C_BOLD" "$C_RESET"
 printf '       컨테이너 셸이 뜨면:  %sclaude%s\n' "$C_BOLD" "$C_RESET"
+printf '\n  ③ 터미널 REPL 채팅 (네트워크 모드 무관, 호스트 Ollama 직접):\n'
+printf '       %s./openclaw chat%s              # 워크스페이스의 IDENTITY/SOUL/USER 자동 로드\n' "$C_BOLD" "$C_RESET"
 printf '\n  ※ ①번이 "Safari can\047t connect" / "Empty reply" 가 뜨면\n'
-printf '       %s./openclaw doctor%s 로 게이트웨이 상태부터 확인하세요.\n' "$C_BOLD" "$C_RESET"
+printf '       isolated 상태일 가능성이 큽니다. %s./openclaw network online --restart%s 후 다시 시도.\n' "$C_BOLD" "$C_RESET"
 printf '\n%s📁 생성된 디렉토리%s\n' "$C_BOLD" "$C_RESET"
 printf '  %-34s %s\n' "OpenClaw 본체:" "$OPENCLAW_DIR"
 printf '  %-34s %s\n' "에이전트 파일 (Finder 에서 확인):" "$OPENCLAW_WORKSPACE_DIR"
