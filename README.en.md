@@ -19,6 +19,7 @@
 - [🎯 Right after install — first use](#-right-after-install--first-use)
   - [① Browser web UI](#-browser-web-ui)
   - [② Container CLI](#-container-cli)
+    - [🎯 Which model should you pick in the wizard? — RAM-based recommendations (v0.2.23+)](#-which-model-should-you-pick-in-the-wizard--ram-based-recommendations-v0223)
   - [③ Terminal REPL chat](#-terminal-repl-chat)
   - [Verify](#verify)
   - [🌐 Temporarily opening external network](#-temporarily-opening-external-network)
@@ -189,6 +190,37 @@ Exact order/wording depends on the OpenClaw build, but you'll generally see thes
 
 Full surface (50+ providers, advanced-flow extras): [OpenClaw upstream docs `cli/onboard`](https://docs.openclaw.ai/cli/onboard).
 </details>
+
+#### 🎯 Which model should you pick in the wizard? — RAM-based recommendations (v0.2.23+)
+
+When the wizard reaches step 8 (`ollama` → model name), pick one of these based on your laptop's RAM. **Smaller is NOT always better** — 3B-class models reply fast but consistently fail to follow direct commands ("delete X", "fill in Y", "remember Z") because the multi-step reasoning chain "user said delete → I have a delete tool → I should call it" is fragile at that scale. You'll see the bot looping back into conversation instead of actually doing the thing.
+
+| RAM | Primary pick (default) | Lightweight fallback (latency-first) | Heavy work |
+|---|---|---|---|
+| **8 GB**  | `qwen2.5:3b-instruct` (1.8 GB) | — | — |
+| **16 GB** | `qwen2.5:7b-instruct` (4.7 GB) | `qwen2.5:3b-instruct` (1.8 GB) | — |
+| **24 GB** | 🌟 **`gemma4:latest` (8.9 GB)** — vision + audio + thinking + tools | `qwen2.5:3b-instruct` | `gemma4:26b` (17 GB) via explicit call |
+| **32 GB+** | `gemma4:latest` or `qwen2.5-coder:14b` (8.4 GB) | `gemma4:latest` | `gemma4:26b`, `llama3.3:70b`, etc. |
+
+> **Why `gemma4:latest` for 24 GB?** Cold load 7.2 s / warm 0.27 s (far under OpenClaw's 120 s idle watchdog). Multimodal — images, audio, thinking, tools all native. Coexists with other apps on a 24 GB machine. Most importantly: **follows direct commands the 3B models drop on the floor.** Discord bot interactions like "delete this", "remember that", "fill in the file" Just Work.
+
+##### Lock your pick permanently — `OPENCLAW_FORCE_DEFAULT_MODEL`
+
+After the wizard, every future `./openclaw setup` run goes through the auto-optimizer ([three-tier policy](docs/GUIDE-DISCORD-BOT.md#default-모델을-영구-lock-하기-v0223)). To make your choice immutable, add one line to `.env`:
+
+```bash
+# openclaw-mgr/.env (copy from .env.example if it doesn't exist yet)
+OPENCLAW_FORCE_DEFAULT_MODEL="gemma4:latest"
+```
+
+With this set, every subsequent `./openclaw setup` · `update` · `restore` will **force** this model back to `models[0]`, regardless of what the wizard did or what OpenClaw's upstream hardcoded defaults try to inject. Change the line and re-run setup when you want to switch.
+
+Default behavior (env var unset):
+- ✅ Wizard-picked model has `tools` capability → **kept as-is** (your choice is respected)
+- ⚙️ Wizard-picked model has no `tools` (e.g., embedding-only) → **auto-swap to the smallest tools-capable model** (safety net)
+- ⚠️ No tools-capable model is registered at all → **warning only**, suggests `ollama pull gemma4:latest`
+
+Full flow and trade-offs in [📜 docs/GUIDE-DISCORD-BOT.md — case D](docs/GUIDE-DISCORD-BOT.md#케이스-d--모델이-너무-무거워-첫-응답-전에-watchdog-트리거-v021--v022-권장-모델-변경).
 
 > ⚠️ **`run --rm`, not `exec`** — the `openclaw-cli` container's entrypoint (`node dist/index.js`) prints help and exits immediately on no-arg invocation (`docker ps -a` shows it as `Exited (1)`). `./openclaw setup` handles this internally; if you ever call it manually, always use `docker compose run --rm openclaw-cli <subcommand>`.
 >
