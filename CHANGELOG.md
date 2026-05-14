@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.11 — 2026-05-14](#v0211--2026-05-14)
 - [v0.2.10 — 2026-05-14](#v0210--2026-05-14)
 - [v0.2.9 — 2026-05-14](#v029--2026-05-14)
 - [v0.2.8 — 2026-05-14](#v028--2026-05-14)
@@ -16,6 +17,22 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.11 — 2026-05-14
+
+### Bug fix — TUI/Discord `fetch failed` after fresh setup (`OLLAMA_DEFAULT_MODEL` trap)
+OpenClaw upstream injects a hardcoded `OLLAMA_DEFAULT_MODEL = "gemma4"` (no tag) into the configured models list during `onboard`, even when the user's actual installed model is `gemma4:26b`. The TUI then picks the no-tag entry as default → Ollama treats it as `gemma4:latest` (which doesn't exist) → every request fails with `fetch failed` / `LLM request failed: network connection error`. Network reachability (host.docker.internal, online mode) is irrelevant — the call dies at HTTP 404 from Ollama itself.
+
+- **`./openclaw setup` now post-prunes** — after `onboard` returns rc=0, setup.sh queries the host Ollama `/api/tags` and removes any `models.providers.ollama.models[].id` that isn't an actual installed tag. The pre-prune config is backed up to `~/.openclaw/openclaw.json.bak-<timestamp>` (perms 600). Skips silently if Ollama is unreachable (no destructive change when we can't verify). Prints `PRUNE_OK_DROPPED::<list>::<backup-path>` outcome with a friendly summary.
+- Same mechanism shape as v0.2.8's Ollama URL pre-flight: upstream offers no env/flag to disable the bogus default, so the wrapper detects and corrects after the fact rather than fighting the wizard mid-flow.
+
+### Documentation
+- **GUIDE-DAILY-USE.md** — troubleshooting table gets a `fetch failed` / `LLM request failed: network connection error` row. New subsection **"🔬 현재 어떤 모델을 쓰는지 — openclaw.json 점검"** with: 2-step diagnostic (`ollama list` vs config models), and three fixes ranked by preference — (A) rerun `./openclaw setup --skip-confirm` to trigger the auto-prune, (B) `ollama pull <name>` to make the bogus name actually exist, (C) manual JSON edit for emergencies.
+- **GUIDE-DISCORD-BOT.md** — troubleshooting gets "Bot Online but never replies / TUI says `fetch failed`" entry that cross-links the daily-use diagnostic (same root cause).
+- **README (KO) FAQ** — new entry "TUI/Discord 봇이 메시지에 답 안 함 — `fetch failed`" with the diagnostic one-liner, v0.2.11 quick fix, and link into the daily-use guide.
+- VERSION 0.2.8 → 0.2.11 (catching up to match prior unreleased doc-only bumps 0.2.9 / 0.2.10).
 
 ---
 

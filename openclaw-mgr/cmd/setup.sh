@@ -134,6 +134,93 @@ hr
 docker compose run --rm openclaw-cli onboard
 rc=$?
 
+# ── 후처리: 깨진 Ollama 모델 항목 자동 정리 ─────────────────────────────────
+# OpenClaw 본체가 onboard 중 OLLAMA_DEFAULT_MODEL("gemma4") 같은 하드코딩
+# 기본값을 모델 목록에 끼워 넣습니다. 사용자가 실제로 깐 모델은 'gemma4:26b'
+# 같은 태그 형태이므로 'gemma4' (태그 없음) 호출은 LLM request failed 로 떨어집니다.
+# 마법사가 끝난 뒤 openclaw.json 의 models[].id 중 실제 Ollama tag 목록에
+# 없는 것들을 제거합니다. 산출물 무결성 검증의 일반화된 형태.
+prune_bogus_ollama_models() {
+  local cfg="$OPENCLAW_CONFIG_DIR/openclaw.json"
+  [ -f "$cfg" ] || return 0
+
+  local stamp; stamp="$(date +%Y%m%d-%H%M%S)"
+  python3 - "$cfg" "$stamp" <<'PY'
+import json, os, sys, urllib.request, urllib.error
+cfg_path, stamp = sys.argv[1], sys.argv[2]
+
+# Fetch live ollama tags. If unreachable, skip silently — don't damage config.
+real = None
+for url in ("http://127.0.0.1:11434/api/tags", "http://host.docker.internal:11434/api/tags"):
+    try:
+        with urllib.request.urlopen(url, timeout=3) as r:
+            real = {m.get("name","") for m in json.load(r).get("models", [])}
+        break
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError):
+        continue
+if real is None:
+    print("PRUNE_SKIP_OLLAMA_UNREACHABLE")
+    sys.exit(0)
+
+with open(cfg_path) as f:
+    cfg = json.load(f)
+try:
+    models_arr = cfg["models"]["providers"]["ollama"]["models"]
+except (KeyError, TypeError):
+    print("PRUNE_SKIP_NO_OLLAMA_PROVIDER")
+    sys.exit(0)
+
+keep, dropped = [], []
+for m in models_arr:
+    mid = m.get("id", "")
+    if mid in real:
+        keep.append(m)
+    else:
+        dropped.append(mid)
+
+if not dropped:
+    print("PRUNE_OK_NOTHING_TO_PRUNE")
+    sys.exit(0)
+
+# Backup
+bak = f"{cfg_path}.bak-{stamp}"
+with open(bak, "w") as f:
+    json.dump(cfg, f, indent=2)
+os.chmod(bak, 0o600)
+
+cfg["models"]["providers"]["ollama"]["models"] = keep
+with open(cfg_path, "w") as f:
+    json.dump(cfg, f, indent=2)
+os.chmod(cfg_path, 0o600)
+
+print(f"PRUNE_OK_DROPPED::{','.join(dropped)}::{bak}")
+PY
+}
+
+if [ "$rc" = "0" ]; then
+  prune_result="$(prune_bogus_ollama_models 2>&1 | tail -1)"
+  case "$prune_result" in
+    PRUNE_OK_DROPPED::*)
+      dropped="${prune_result#PRUNE_OK_DROPPED::}"
+      dropped_models="${dropped%%::*}"
+      backup_path="${dropped#*::}"
+      ok "설정 정리: openclaw.json 에서 실제 설치되지 않은 모델 항목 제거"
+      info "  제거됨: ${C_BOLD}${dropped_models}${C_RESET}"
+      info "  (OpenClaw 의 OLLAMA_DEFAULT_MODEL 하드코딩 같은 가짜 기본값이 끼어든 흔적)"
+      info "  백업:    ${backup_path}"
+      ;;
+    PRUNE_OK_NOTHING_TO_PRUNE)
+      info "설정 정리: 모든 Ollama 모델 항목이 실제 설치된 모델과 일치"
+      ;;
+    PRUNE_SKIP_OLLAMA_UNREACHABLE)
+      warn "설정 정리 스킵: Ollama 가 응답 안 함 → 가짜 항목 검사 불가"
+      ;;
+    *)
+      : # silent on unknown — don't surface noise to user
+      ;;
+  esac
+fi
+
 hr
 if [ "$rc" = "0" ]; then
   ok "설정 마법사 완료."

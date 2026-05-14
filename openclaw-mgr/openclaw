@@ -13,7 +13,7 @@ set -euo pipefail
 OPENCLAW_MGR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 export OPENCLAW_MGR_DIR
 
-VERSION="0.2.8"
+VERSION="0.2.11"
 
 # .env 자동 초기화: .env 없으면 .env.example 에서 자동 생성 (cp 불필요, 첫 실행부터 동작)
 # Auto-init: create .env from .env.example on first run — zero-config for beginners

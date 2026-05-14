@@ -223,6 +223,10 @@ Discord 단계에서 마법사가 다음과 같이 묻습니다:
 - [ ] OpenClaw 게이트웨이 컨테이너가 떠 있는가? `docker compose ps`
 - [ ] 방화벽이 `discord.com`/`gateway.discord.gg` outbound 를 차단? (회사 네트워크 흔한 케이스)
 
+### "봇이 Online 인데 어떤 메시지에도 응답 안 함 — TUI 에서는 `fetch failed`"
+
+OpenClaw 의 설정에 등록된 **모델 이름이 실제 설치된 Ollama 모델과 다른** 케이스. OpenClaw 가 onboard 중 하드코딩 기본값 (`gemma4` 등 태그 없는 이름) 을 자동으로 모델 목록에 끼워 넣어 일어남. → [GUIDE-DAILY-USE: 현재 어떤 모델을 쓰는지](GUIDE-DAILY-USE.md#-현재-어떤-모델을-쓰는지--openclawjson-점검) 의 진단·해결 3단계 그대로 적용. 빠른 fix: `./openclaw setup --skip-confirm` (v0.2.11+ 자동 정리).
+
 ### "봇이 멘션엔 답하는데 일반 메시지엔 답 안 함"
 
 `Message Content Intent` 미활성. §3 다시 가서 켜고 **Save Changes**. 봇 자동 재연결 (또는 `./openclaw stop && ./openclaw start`).

@@ -838,6 +838,37 @@ brew services restart ollama
 </details>
 
 <details>
+<summary><b>TUI/Discord 봇이 메시지에 답 안 함 — <code>fetch failed</code> / <code>LLM request failed: network connection error</code></b></summary>
+
+네트워크는 정상(`./openclaw doctor` 다 ✓, host Ollama 응답 OK)인데 TUI 메시지마다 `fetch failed`, Discord 봇 Online 인데 응답 무 — **모델 이름 미스매치** 케이스입니다.
+
+OpenClaw 본체가 onboard 중 `OLLAMA_DEFAULT_MODEL = "gemma4"` 같은 **하드코딩된 가짜 기본값**을 모델 목록 맨 앞에 끼워 넣습니다. 사용자가 실제 깐 모델은 `gemma4:26b` 처럼 태그가 붙은 형태라 Ollama 가 `gemma4` 호출에 404 로 응답 → OpenClaw 에서는 `fetch failed`.
+
+진단:
+```bash
+ollama list                                              # 실제 설치된 이름들
+python3 -c 'import json; [print(m["id"]) for m in json.load(open("/Users/mo/.openclaw/openclaw.json"))["models"]["providers"]["ollama"]["models"]]'   # config 에 등록된 이름들
+# 1번엔 없고 2번에만 있는 항목 = 가짜
+```
+
+해결 (v0.2.11+, 가장 빠른 방법):
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+git pull
+./openclaw setup --skip-confirm
+# 마법사 후처리에서 'PRUNE_OK_DROPPED: gemma4' 같은 메시지 + 자동 백업
+# TUI 종료 후 다시 시작:  docker compose run --rm openclaw-cli tui
+```
+
+또는 가짜 이름을 진짜로 만들기:
+```bash
+ollama pull gemma4    # 'gemma4' = 'gemma4:latest' 가 실제로 받아짐 → 호출 성공
+```
+
+자세한 진단·세 가지 해결법: [GUIDE-DAILY-USE.md — 현재 어떤 모델을 쓰는지](docs/GUIDE-DAILY-USE.md#-현재-어떤-모델을-쓰는지--openclawjson-점검).
+</details>
+
+<details>
 <summary><b>setup 마법사가 <code>Ollama not reachable</code> 로 끊겨요 — 호스트엔 Ollama 가 떠 있는데도</b></summary>
 
 마법사가 묻는 **"Ollama base URL"** 단계에서 기본값 `http://127.0.0.1:11434` 그대로 두면 `Ollama could not be reached at http://127.0.0.1:11434` → `WizardCancelledError: Ollama not reachable` 로 강제 종료됩니다.

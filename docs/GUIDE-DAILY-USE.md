@@ -176,10 +176,68 @@ rm ~/.openclaw-mgr/state
 | 증상 | 원인 짚어보기 |
 |---|---|
 | 웹UI "Safari Can't Connect" | [isolated 모드 → online 으로](../README.md#-외부-네트워크-잠깐-켜기) |
-| TUI 에서 답이 안 옴 / 느림 | 모델이 너무 크다 — `./openclaw chat` 의 picker 로 가벼운 모델 선택 |
+| TUI 답이 안 옴: **`fetch failed`** / **`LLM request failed: network connection error`** | 컨테이너→Ollama 네트워크 자체는 OK 인데 **모델 이름이 실제 설치된 이름과 다름** (예: `gemma4` vs `gemma4:26b`). 아래 [현재 어떤 모델을 쓰는지 확인](#-현재-어떤-모델을-쓰는지--openclawjson-점검) 참조 |
+| TUI 에서 답이 안 옴 / 느림 (메시지는 가긴 감) | 모델이 너무 크다 — `./openclaw chat` 의 picker 로 가벼운 모델 선택 |
 | install 이 [skip] 만 띄움 | [state 파일 vs 실제 산출물 어긋남 FAQ](../README.md) |
 | chat 에서 "Ollama not reachable" | Ollama 앱 안 켜진 상태 — `open -a Ollama` |
-| Discord 봇 Offline | [GUIDE-DISCORD-BOT 트러블슈팅](GUIDE-DISCORD-BOT.md#-트러블슈팅) |
+| Discord 봇 Offline 또는 응답 무 | [GUIDE-DISCORD-BOT 트러블슈팅](GUIDE-DISCORD-BOT.md#-트러블슈팅) (네트워크 OK 인데 응답 없으면 위 모델 이름 케이스도 확인) |
+
+### 🔬 현재 어떤 모델을 쓰는지 — openclaw.json 점검
+
+TUI 가 `fetch failed` 만 띄우고 일반 채팅도 Discord 도 응답 없으면, 거의 100% **에이전트가 설정에 적힌 모델 이름으로 Ollama 를 호출했는데 그 이름이 실제 설치된 모델과 안 맞는** 케이스입니다. OpenClaw 본체가 onboard 중 `OLLAMA_DEFAULT_MODEL = "gemma4"` 같은 **하드코딩된 가짜 기본값**을 모델 목록 맨 앞에 끼워 넣기 때문 (사용자가 실제 깐 건 `gemma4:26b` 같이 태그가 있는 형태).
+
+빠른 진단:
+
+```bash
+# 1) 실제 설치된 모델 목록
+ollama list
+
+# 2) OpenClaw config 에 등록된 모델 목록
+python3 -c '
+import json
+cfg = json.load(open("/Users/mo/.openclaw/openclaw.json"))
+for m in cfg["models"]["providers"]["ollama"]["models"]:
+    print(f"  - {m[\"id\"]}")
+'
+
+# 둘을 비교 → 1번엔 없는데 2번엔 있는 항목 = 가짜
+```
+
+**해결법 세 가지** (선호 순):
+
+**A) `./openclaw setup` 다시 실행 (v0.2.11+)**
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw setup --skip-confirm
+# 마법사 완료 후 자동 후처리: 가짜 모델 항목을 백업 (~/.openclaw/openclaw.json.bak-...) 후 제거
+# "설정 정리: openclaw.json 에서 실제 설치되지 않은 모델 항목 제거" 메시지 확인
+```
+
+**B) 가짜 이름 그대로 두고 그 모델을 받기**
+```bash
+# 예: config 에 'gemma4' 가 있고 그게 default 라면, 그 이름으로 진짜 pull
+ollama pull gemma4
+# 이렇게 하면 'gemma4' = 'gemma4:latest' 가 실제로 설치돼 fetch 가 성공함
+```
+
+**C) 수동 편집 (긴급용)**
+```bash
+# 백업
+cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak
+
+# 파이썬으로 ollama list 와 안 맞는 항목 제거
+python3 - <<'PY'
+import json, urllib.request
+cfg = json.load(open("/Users/mo/.openclaw/openclaw.json"))
+real = {m["name"] for m in json.load(urllib.request.urlopen("http://127.0.0.1:11434/api/tags"))["models"]}
+ollama = cfg["models"]["providers"]["ollama"]
+ollama["models"] = [m for m in ollama["models"] if m["id"] in real]
+json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
+print("done")
+PY
+```
+
+세 방법 모두 후 **TUI 재시작 필수** — config 는 컨테이너 기동 시 한 번 읽힘. `Ctrl+D` 또는 `/exit` 로 TUI 빠져나오고 `docker compose run --rm openclaw-cli tui` 다시 시작.
 
 ---
 
