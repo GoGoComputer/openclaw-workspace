@@ -670,6 +670,81 @@ docker compose run --rm --entrypoint sh openclaw-cli \
 ```
 
 > Note: OpenClaw upstream doesn't honor any env var or CLI flag for this URL — it can only be entered via the wizard prompt. So `setup.sh` can't inject the right value; clear pre-flight guidance is the best we can do.
+
+<details>
+<summary>🔬 Technical background — reachability proof + why we can't auto-fix it</summary>
+
+**Direct `curl` from inside the cli container:**
+
+| URL | Reachable? | Why |
+|---|---|---|
+| `http://127.0.0.1:11434` (wizard default) | **✗ NOT REACHABLE** | Loopback inside the container points to the container itself |
+| `http://host.docker.internal:11434` (correct) | **✓ REACHABLE** | Docker Desktop's special hostname injected into containers; points back to the host machine |
+
+Reproduce:
+```bash
+cd ~/DEV/openclaw
+docker compose run --rm --entrypoint sh openclaw-cli -c '
+  curl -sf --max-time 3 http://127.0.0.1:11434/api/tags && echo OK_127 || echo FAIL_127;
+  curl -sf --max-time 3 http://host.docker.internal:11434/api/tags >/dev/null && echo OK_HDI || echo FAIL_HDI
+'
+# → FAIL_127
+#   OK_HDI
+```
+
+**No upstream escape hatch — evidence:**
+
+1. **No env var lookup** — grep `/app/dist` for `process.env.OLLAMA*`:
+   ```bash
+   docker compose run --rm --entrypoint sh openclaw-cli -c \
+     'grep -hroE "process\.env\.[A-Z_]*OLLAMA[A-Z_]*" /app/dist | sort -u'
+   # → (no output. No OLLAMA URL env lookup at all)
+   ```
+   `OLLAMA_API_KEY` is read but only for auth, not for the URL.
+
+2. **No CLI flag** — `onboard --help` doesn't include `--ollama-base-url`:
+   ```
+   --custom-base-url <url>    # only for the 'custom' provider, not ollama
+   --auth-choice ... ollama   # this picks ollama as the provider; doesn't set the URL
+   ```
+
+3. **Hardcoded prompt** — wizard source (`/app/dist/setup-CtbggUuv.js`):
+   ```js
+   async function promptForOllamaBaseUrl(prompter) {
+     return resolveOllamaApiBase((await prompter.text({
+       message: "Ollama base URL",
+       initialValue: "http://127.0.0.1:11434",   // ← hardcoded
+       placeholder: "http://127.0.0.1:11434",
+       validate: (value) => value?.trim() ? void 0 : "Required"
+     }) ?? "").trim().replace(/\/+$/, ""));
+   }
+   ```
+   The `OLLAMA_DEFAULT_BASE_URL` is also a plain constant (`/app/dist/defaults-JS7ic3Yx.js`):
+   ```js
+   const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434";
+   ```
+
+**Conclusion**: no env var, no CLI flag, and the prompt's `initialValue` is hardcoded — so `setup.sh` has no way to inject the correct URL before the wizard launches. v0.2.8's fix is the best alternative: **pre-flight reachability check + a loud yellow warning box** telling the user the exact value to type.
+
+**What `setup.sh` actually does before launching the wizard** (`cmd/setup.sh` v0.2.8):
+
+```
+1) docker compose run --rm --no-deps openclaw-cli curl http://host.docker.internal:11434/api/tags
+   → response OK  → host_ollama_ok=1
+   → response NOK → host_ollama_ok=0
+2) If OK, print a yellow box:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ ⚠  When the wizard reaches "Ollama base URL", enter:        │
+   │    http://host.docker.internal:11434                         │
+   │ The default http://127.0.0.1:11434 points at the container  │
+   │ itself, not the host — so it can't reach your local Ollama. │
+   └─────────────────────────────────────────────────────────────┘
+3) If NOK, warn + confirm (Ollama down, or network is in isolated mode)
+4) docker compose run --rm openclaw-cli onboard
+5) If the wizard exits non-zero, the closing banner explicitly suggests
+   the URL fix in addition to the generic "rerun to resume" hint.
+```
+</details>
 </details>
 
 <details>

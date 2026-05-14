@@ -861,6 +861,80 @@ docker compose run --rm --entrypoint sh openclaw-cli \
 ```
 
 > 참고: OpenClaw 본체는 이 URL 을 환경변수/CLI 플래그로 받지 않고 마법사 안에서만 입력 가능합니다. 그래서 setup.sh 가 자동 주입할 수는 없고, **명확히 안내하는 게 최선**.
+
+<details>
+<summary>🔬 기술 배경 (펼치기) — 도달성 비교 + upstream 우회 불가 증거</summary>
+
+**컨테이너 안에서 직접 curl 한 결과:**
+
+| URL | 도달성 | 이유 |
+|---|---|---|
+| `http://127.0.0.1:11434` (마법사 기본값) | **✗ NOT REACHABLE** | 컨테이너 안의 loopback 은 컨테이너 자신을 가리킴 |
+| `http://host.docker.internal:11434` (정답) | **✓ REACHABLE** | Docker Desktop 이 컨테이너에 자동 주입하는 특수 호스트명, 호스트 머신을 가리킴 |
+
+직접 재현:
+```bash
+cd ~/DEV/openclaw
+docker compose run --rm --entrypoint sh openclaw-cli -c '
+  curl -sf --max-time 3 http://127.0.0.1:11434/api/tags && echo OK_127 || echo FAIL_127;
+  curl -sf --max-time 3 http://host.docker.internal:11434/api/tags >/dev/null && echo OK_HDI || echo FAIL_HDI
+'
+# → FAIL_127
+#   OK_HDI
+```
+
+**OpenClaw 본체에 우회로 없음 — 검증 흔적:**
+
+1. **env 변수 검사** — `/app/dist` 전체에서 `process.env.OLLAMA*` 검색
+   ```bash
+   docker compose run --rm --entrypoint sh openclaw-cli -c \
+     'grep -hroE "process\.env\.[A-Z_]*OLLAMA[A-Z_]*" /app/dist | sort -u'
+   # → (출력 없음. OLLAMA URL 관련 env 검사 없음)
+   ```
+   참고로 `OLLAMA_API_KEY` 만 읽지만 이건 인증용이지 URL 무관.
+
+2. **CLI 플래그 검사** — `onboard --help` 출력에 `--ollama-base-url` 같은 플래그가 있는지
+   ```
+   --custom-base-url <url>    # 있긴 한데 'custom' provider 전용
+   --auth-choice ... ollama   # 'ollama' 는 provider 선택 옵션일 뿐, URL 지정 아님
+   ```
+   Ollama 전용 base URL 플래그 **없음**.
+
+3. **하드코딩 출처** — 마법사 프롬프트 정의 (`/app/dist/setup-CtbggUuv.js`)
+   ```js
+   async function promptForOllamaBaseUrl(prompter) {
+     return resolveOllamaApiBase((await prompter.text({
+       message: "Ollama base URL",
+       initialValue: "http://127.0.0.1:11434",   // ← 하드코딩
+       placeholder: "http://127.0.0.1:11434",
+       validate: (value) => value?.trim() ? void 0 : "Required"
+     }) ?? "").trim().replace(/\/+$/, ""));
+   }
+   ```
+   `OLLAMA_DEFAULT_BASE_URL` 도 단순 상수 (`/app/dist/defaults-JS7ic3Yx.js`):
+   ```js
+   const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434";
+   ```
+
+**결론**: env 변수도 플래그도 없고 prompt initialValue 가 하드코딩이므로, `setup.sh` 가 마법사 시작 전에 값을 주입할 방법이 없습니다. 그래서 v0.2.8 의 fix 는 **사전 점검 + 화면에 큰 경고 박스**로 사용자에게 정확한 입력값을 알려주는 방식.
+
+**setup.sh 가 마법사 띄우기 전 실제로 하는 일** (`cmd/setup.sh` v0.2.8):
+
+```
+1) docker compose run --rm --no-deps openclaw-cli curl http://host.docker.internal:11434/api/tags
+   → 응답 OK 면 host_ollama_ok=1, NOK 면 0
+2) 응답 OK → 노란색 박스 출력:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ ⚠  마법사 안에서 "Ollama base URL" 단계가 나오면 다음을 입력 │
+   │    http://host.docker.internal:11434                         │
+   │ 기본값으로 보이는 http://127.0.0.1:11434 는 컨테이너 자신을  │
+   │ 가리켜서 호스트 Ollama 에 닿지 못합니다.                     │
+   └─────────────────────────────────────────────────────────────┘
+3) 응답 NOK → warn + confirm 후 진행 (Ollama 꺼져 있거나 isolated 모드)
+4) docker compose run --rm openclaw-cli onboard 실행
+5) 마법사가 non-zero 로 끝나면 종료 메시지에 URL 수정 힌트 표시
+```
+</details>
 </details>
 
 <details>
