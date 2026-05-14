@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.15 — 2026-05-14](#v0215--2026-05-14)
 - [v0.2.14 — 2026-05-14](#v0214--2026-05-14)
 - [v0.2.13 — 2026-05-14](#v0213--2026-05-14)
 - [v0.2.12 — 2026-05-14](#v0212--2026-05-14)
@@ -20,6 +21,30 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.15 — 2026-05-14
+
+### Stitching cold-boot ↔ Discord into one end-to-end story
+v0.2.13 covered "laptop off → on" in GUIDE-DAILY-USE. v0.2.14 covered "from Discord, what do you type in each situation" in GUIDE-DISCORD-BOT §12. Both were thorough, but the user had to manually stitch the two together — there was no single place that showed the actual hour-by-hour flow of *laptop off → power on → Discord all day → power off*.
+
+**New `GUIDE-DISCORD-BOT §12 ⓪ — 통합 시나리오`** — a 9-station timeline (09:00 cold boot → 09:01 bot availability ping → 09:15 mobile away → 11:00 team channel → 13:00 lunch stop → 14:30 workspace file ops → 16:00 long task → 18:00 ops check → 22:00 shutdown) where each station carries:
+
+- The host-side action (`./openclaw doctor`, `network online --restart`, `stop`, etc.)
+- The Discord-side action (DM / mention / channel / slash command)
+- Links into both GUIDE-DAILY-USE scenarios and the ①~⑧ detail cards in this same §12
+
+Two reference tables under the timeline:
+- **One-line matrix** (시간 / 상황 / 노트북 / Discord / 자세히 링크) for at-a-glance scanning
+- **Common stuck-points** (7 hour-keyed gotchas) — bot offline despite host OK / mac sleep dropping container / wrong channel responding / file path off-workspace / OOM during long task / no host-shell perms / Docker auto-start not configured
+
+### Cross-linking
+- GUIDE-DAILY-USE Scenario 0 step 5: explicit callout linking the integrated scenario right where users finish cold-boot verification.
+- GUIDE-DISCORD-BOT §12 prelude + TOC: ⓪ surfaces as the recommended entry point before drilling into ①~⑧.
+- README (KO + EN) Documentation Map: 💬 row description now mentions ⓪ as a flagship "9-hour timeline" so the map signals the integrated walkthrough exists.
+
+VERSION 0.2.14 → 0.2.15 (docs-only).
 
 ---
 
