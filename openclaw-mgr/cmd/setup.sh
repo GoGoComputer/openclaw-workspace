@@ -198,28 +198,34 @@ PY
 }
 
 # ── 자동 default 모델 최적화 ──────────────────────────────────────────────────
-# Why this exists (v0.2.22):
+# Why this exists (v0.2.22 → v0.2.23):
 # OpenClaw 의 onboard 마법사는 사용자가 마지막으로 선택한 모델을 그대로 [0] 에
 # 두는데, 그게 24GB RAM 노트북에선 너무 무거운 (예: gemma4:26b, llama3.1:70b)
 # 경우가 흔합니다. 첫 메시지에 모델 로딩 55+초 → OpenClaw idle watchdog 2분
 # 트리거 → Discord 봇이 timeout. 사용자 입장에선 "왜 응답 안 함" 으로 보임.
 #
 # 이 함수는 prune 직후 실행되며:
-#   1) Ollama /api/show 로 각 등록 모델의 capabilities·size 조회
-#   2) 'tools' capability 있는 모델만 후보로 (도구 호출 가능)
-#   3) 후보 중 size 가 가장 작은 것을 models[0] 으로 정렬
-#   4) 모든 후보의 compat.supportsTools = true 박기 (defensive)
+#   1) $OPENCLAW_FORCE_DEFAULT_MODEL 이 set 됐고 그 모델이 등록돼 있으면
+#      → 그걸 [0] 으로 강제. 자동 정렬 스킵 (v0.2.23+).
+#      예: OPENCLAW_FORCE_DEFAULT_MODEL=gemma4:latest 하면 setup 다시 실행해도
+#      안 흔들림. 사용자 명시 선택 영구 lock.
+#   2) 강제가 없으면 → Ollama /api/show 로 각 모델의 capabilities·size 조회
+#   3) 현재 models[0] 이 이미 tools-capable 이면 그대로 둠 — 명시적 선택 존중
+#      (v0.2.23 회귀 fix: 사용자가 골라둔 모델을 size 만 보고 갈아치우지 않음)
+#   4) 현재 models[0] 이 tools 못 쓰는 경우에만 가장 작은 tools-capable 로 교체
+#   5) 모든 tool-capable 후보의 compat.supportsTools = true 박기 (defensive)
 #
 # embedding 전용 모델(`nomic-embed-text` 등)·tools 미지원 모델 (`tinyllama` 등)
-# 은 자동으로 후순위로 밀려나고, 가장 작고 빠른 tool-capable 모델이 default.
+# 은 후보 풀에서 자동 제외.
 optimize_default_ollama_model() {
   local cfg="$OPENCLAW_CONFIG_DIR/openclaw.json"
   [ -f "$cfg" ] || return 0
 
-  python3 - "$cfg" <<'PY'
+  python3 - "$cfg" "${OPENCLAW_FORCE_DEFAULT_MODEL:-}" <<'PY'
 import json, sys, urllib.request, urllib.error
 
 cfg_path = sys.argv[1]
+forced   = sys.argv[2] if len(sys.argv) > 2 else ""
 
 def probe(url, body=None):
     req = urllib.request.Request(
@@ -264,45 +270,72 @@ for m in arr:
     size = tags.get(mid, {}).get("size", 1 << 62)  # unknown → sort last
     enriched.append((m, mid, caps, size))
 
-# Candidates that can call tools (so Discord/agent actually works).
+# Stamp compat.supportsTools on every tool-capable entry (defensive, idempotent).
+def stamp_compat(enriched):
+    changed = False
+    for (m, mid, caps, sz) in enriched:
+        if "tools" in caps:
+            if m.setdefault("compat", {}).get("supportsTools") is not True:
+                m["compat"]["supportsTools"] = True
+                changed = True
+    return changed
+
+def gb_of(mid):
+    return tags.get(mid, {}).get("size", 0) / 1024**3
+
+old_first = arr[0].get("id", "")
+
+# ── Policy 1 (v0.2.23): if user set OPENCLAW_FORCE_DEFAULT_MODEL, lock it. ──
+if forced:
+    forced_entry = next((m for m in arr if m.get("id") == forced), None)
+    if forced_entry is None:
+        # Forced model not registered — leave config alone and report.
+        print(f"OPT_SKIP_FORCED_NOT_REGISTERED::{forced}")
+        sys.exit(0)
+    forced_caps = next((c for (m, mid, c, sz) in enriched if mid == forced), set())
+    if "tools" not in forced_caps:
+        print(f"OPT_WARN_FORCED_NO_TOOLS::{forced}")
+        # still honor the user's choice, just warn.
+    if old_first != forced:
+        others = [m for m in arr if m.get("id") != forced]
+        cfg["models"]["providers"]["ollama"]["models"] = [forced_entry] + others
+        stamp_compat(enriched)
+        with open(cfg_path, "w") as f:
+            json.dump(cfg, f, indent=2)
+        print(f"OPT_OK_FORCED::{old_first}::{gb_of(old_first):.1f}::{forced}::{gb_of(forced):.1f}")
+        sys.exit(0)
+    if stamp_compat(enriched):
+        with open(cfg_path, "w") as f:
+            json.dump(cfg, f, indent=2)
+    print(f"OPT_OK_FORCED_ALREADY::{forced}")
+    sys.exit(0)
+
+# ── Policy 2: respect existing models[0] if it's tools-capable. ──────────────
+# v0.2.23 회귀 fix: 사용자가 명시적으로 골라둔 모델을 size 만 보고 갈아치우지 않음.
+# 한 번 사용자가 결정해서 [0] 으로 옮긴 모델은 그게 tool 호출 가능한 한 그대로 둠.
+old_first_caps = next((c for (m, mid, c, sz) in enriched if mid == old_first), set())
+if "tools" in old_first_caps:
+    if stamp_compat(enriched):
+        with open(cfg_path, "w") as f:
+            json.dump(cfg, f, indent=2)
+    print(f"OPT_OK_RESPECT_USER_CHOICE::{old_first}")
+    sys.exit(0)
+
+# ── Policy 3: models[0] can't call tools → auto-pick lightest tool-capable. ──
 tool_capable = [(m, mid, caps, sz) for (m, mid, caps, sz) in enriched if "tools" in caps]
 if not tool_capable:
     print("OPT_SKIP_NO_TOOL_CAPABLE_MODEL")
     sys.exit(0)
 
-# Sort: tool-capable + smallest first, then everything else by original order.
 tool_capable.sort(key=lambda t: t[3])
 chosen = tool_capable[0]
-old_first = arr[0].get("id", "")
 new_first = chosen[1]
-
-if new_first == old_first:
-    # Already optimal — only stamp compat flags and exit.
-    changed = False
-    for (m, mid, caps, sz) in enriched:
-        if "tools" in caps and m.setdefault("compat", {}).get("supportsTools") is not True:
-            m["compat"]["supportsTools"] = True
-            changed = True
-    if changed:
-        with open(cfg_path, "w") as f:
-            json.dump(cfg, f, indent=2)
-    print(f"OPT_OK_ALREADY_OPTIMAL::{new_first}")
-    sys.exit(0)
-
-# Rebuild array: chosen first, then everything else in original order.
 others_in_order = [e[0] for e in enriched if e[1] != new_first]
-new_arr = [chosen[0]] + others_in_order
-for (m, mid, caps, sz) in enriched:
-    if "tools" in caps:
-        m.setdefault("compat", {})["supportsTools"] = True
-
-cfg["models"]["providers"]["ollama"]["models"] = new_arr
+cfg["models"]["providers"]["ollama"]["models"] = [chosen[0]] + others_in_order
+stamp_compat(enriched)
 with open(cfg_path, "w") as f:
     json.dump(cfg, f, indent=2)
-
-old_gb = (tags.get(old_first, {}).get("size", 0) / 1024**3)
-new_gb = (tags.get(new_first, {}).get("size", 0) / 1024**3)
-print(f"OPT_OK_REORDERED::{old_first}::{old_gb:.1f}::{new_first}::{new_gb:.1f}")
+print(f"OPT_OK_REORDERED::{old_first}::{gb_of(old_first):.1f}::{new_first}::{gb_of(new_first):.1f}")
 PY
 }
 
@@ -329,24 +362,48 @@ if [ "$rc" = "0" ]; then
       ;;
   esac
 
-  # 자동 default 모델 최적화 (가장 작고 tool 호출 가능한 모델을 [0] 으로)
+  # 자동 default 모델 최적화
+  #   1) $OPENCLAW_FORCE_DEFAULT_MODEL set 됐으면 그걸 강제
+  #   2) 아니면 현재 [0] 이 tools-capable 이면 그대로 존중
+  #   3) 아니면 가장 작은 tools-capable 모델로 swap
   opt_result="$(optimize_default_ollama_model 2>&1 | tail -1)"
   case "$opt_result" in
+    OPT_OK_FORCED::*)
+      payload="${opt_result#OPT_OK_FORCED::}"
+      old_id="${payload%%::*}";       rest="${payload#*::}"
+      old_gb="${rest%%::*}";          rest="${rest#*::}"
+      new_id="${rest%%::*}";          new_gb="${rest#*::}"
+      ok "default 모델 강제 (\$OPENCLAW_FORCE_DEFAULT_MODEL): ${C_BOLD}${old_id}${C_RESET} (${old_gb}GB) → ${C_BOLD}${new_id}${C_RESET} (${new_gb}GB)"
+      info "  사용자가 .env 또는 셸에서 ${C_BOLD}OPENCLAW_FORCE_DEFAULT_MODEL=${new_id}${C_RESET} 으로 lock 함 — 자동 정렬 스킵."
+      ;;
+    OPT_OK_FORCED_ALREADY::*)
+      info "default 모델: ${C_BOLD}${opt_result#OPT_OK_FORCED_ALREADY::}${C_RESET} (\$OPENCLAW_FORCE_DEFAULT_MODEL 로 lock — 이미 정확)"
+      ;;
+    OPT_WARN_FORCED_NO_TOOLS::*)
+      warn "강제 모델 ${C_BOLD}${opt_result#OPT_WARN_FORCED_NO_TOOLS::}${C_RESET} 은 'tools' capability 없음 — Discord/agent 가 도구 못 씀."
+      info "  의도한 거면 그대로 두지만, Discord 봇이 도구 호출 못 함을 알아 두세요."
+      ;;
+    OPT_SKIP_FORCED_NOT_REGISTERED::*)
+      forced_id="${opt_result#OPT_SKIP_FORCED_NOT_REGISTERED::}"
+      warn "\$OPENCLAW_FORCE_DEFAULT_MODEL=${C_BOLD}${forced_id}${C_RESET} 인데 openclaw.json 에 등록 안 됨."
+      info "  먼저 ${C_BOLD}./openclaw models add ${forced_id}${C_RESET} 또는 onboard 마법사로 추가."
+      ;;
+    OPT_OK_RESPECT_USER_CHOICE::*)
+      info "default 모델: ${C_BOLD}${opt_result#OPT_OK_RESPECT_USER_CHOICE::}${C_RESET} (사용자 선택 유지, tools-capable 확인됨)"
+      ;;
     OPT_OK_REORDERED::*)
       payload="${opt_result#OPT_OK_REORDERED::}"
       old_id="${payload%%::*}";       rest="${payload#*::}"
       old_gb="${rest%%::*}";          rest="${rest#*::}"
       new_id="${rest%%::*}";          new_gb="${rest#*::}"
       ok "default 모델 자동 최적화: ${C_BOLD}${old_id}${C_RESET} (${old_gb}GB) → ${C_BOLD}${new_id}${C_RESET} (${new_gb}GB)"
-      info "  Why: 24GB RAM 노트북에선 첫 응답 ≤2분 안에 들어와야 OpenClaw 의 idle watchdog 가 안 자름."
-      info "  무거운 모델은 그대로 등록돼 있으니 ${C_BOLD}@openclaw use ${old_id}${C_RESET} 처럼 명시 호출 가능."
-      ;;
-    OPT_OK_ALREADY_OPTIMAL::*)
-      info "default 모델: ${C_BOLD}${opt_result#OPT_OK_ALREADY_OPTIMAL::}${C_RESET} (이미 최적)"
+      info "  Why: 현재 default 가 tools 호출 못 함 → Discord/agent 동작 안 함. 가장 작은 tool-capable 모델로 swap."
+      info "  특정 모델로 lock 하고 싶으면 ${C_BOLD}OPENCLAW_FORCE_DEFAULT_MODEL=<id>${C_RESET} 을 .env 에."
       ;;
     OPT_SKIP_NO_TOOL_CAPABLE_MODEL)
       warn "Ollama 모델 중 'tools' capability 있는 게 하나도 없음 — Discord/agent 가 도구 못 씀."
-      info "  추천: ${C_BOLD}ollama pull qwen2.5:3b-instruct${C_RESET}  (1.8GB, tool 호출 잘함)"
+      info "  추천: ${C_BOLD}ollama pull gemma4:latest${C_RESET}  (8.9GB, vision/audio/tools/thinking)"
+      info "       또는 ${C_BOLD}ollama pull qwen2.5:3b-instruct${C_RESET}  (1.8GB, 가벼움)"
       ;;
     OPT_SKIP_OLLAMA_UNREACHABLE|OPT_SKIP_NO_OLLAMA_PROVIDER|OPT_SKIP_TRIVIAL|*)
       : # silent — 위 prune 가 이미 비슷한 메시지를 띄웠을 것

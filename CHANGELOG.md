@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.23 — 2026-05-15](#v0223--2026-05-15)
 - [v0.2.22 — 2026-05-15](#v0222--2026-05-15)
 - [v0.2.21 — 2026-05-15](#v0221--2026-05-15)
 - [v0.2.20 — 2026-05-14](#v0220--2026-05-14)
@@ -28,6 +29,97 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.23 — 2026-05-15
+
+### Discord case G + respect user's explicit model choice
+
+After v0.2.22 auto-picked `qwen2.5:3b-instruct` (the lightest tool-capable model), the Discord bot responded fast but **stopped following direct user commands**:
+
+```
+user:    @openclaw bootstrap 끝났으니 BOOTSTRAP.md 지워줘
+bot:     Understood, the BOOTSTRAP.md file has been read and the workspace is now ready to proceed.
+         Let's start by creating or updating our IDENTITY.md. We can then move on with any other bootstrap steps.
+         Would you like me to create a new IDENTITY.md file or update an existing one?
+         …  (file is NOT deleted; bot loops back into onboarding chat)
+```
+
+This is **case G** — a separate failure mode from cases A–F. The bot is fast, tool-call format is correct, the watchdog doesn't fire — the model just **can't decide to call a tool in response to an unambiguous user instruction**. 3B-class models are weak at the multi-step reasoning chain "user said delete → I have a delete tool → I should call it" and instead fall back to conversational politeness.
+
+#### Two-part fix
+
+**1) Recommend `gemma4:latest` over `qwen2.5:3b-instruct` on 24GB+ RAM machines**
+
+`gemma4:latest` benchmarks on this MacBook Pro:
+
+```
+$ time curl -s http://127.0.0.1:11434/api/chat \
+    -d '{"model":"gemma4:latest","messages":[{"role":"user","content":"hi"}],"stream":false}'
+{"model":"gemma4:latest","message":{"role":"assistant","content":"Hello! How can I help you today? 😊"}…
+real    0m7.18s   ← cold load
+
+$ time curl -s … (second call)
+real    0m0.27s   ← warm
+```
+
+7.2s cold / 0.27s warm — well under the 120s idle watchdog. Plus vision + audio + thinking + tools capabilities native. Instruction-following is in a different league from 3B models on direct commands.
+
+`qwen2.5:3b-instruct` is still recommended on 8GB–16GB machines where the 8.9GB cost of `gemma4:latest` is too much, with the explicit caveat that direct commands ("delete X", "fill in Y") may need rephrasing as a request.
+
+**2) New env var `OPENCLAW_FORCE_DEFAULT_MODEL` — pin the user's choice**
+
+`./openclaw setup` v0.2.22 auto-resorted by size. If a user explicitly moved `gemma4:latest` to `models[0]`, the next `setup` run would silently overwrite it back to `qwen2.5:3b-instruct`. Fixed by giving `optimize_default_ollama_model()` a three-tier policy:
+
+| Priority | Condition | Action |
+|---|---|---|
+| 1 | `$OPENCLAW_FORCE_DEFAULT_MODEL` is set and that model is registered | Force it to `models[0]`. Skip auto-sort entirely. |
+| 2 | Current `models[0]` is tools-capable | Leave it alone. Respect user's explicit choice. |
+| 3 | Current `models[0]` is NOT tools-capable (e.g., embedding-only, tinyllama) | Swap to the smallest tools-capable model. |
+
+For the live user's setup, added to `openclaw-mgr/.env`:
+
+```bash
+# === Locked default model (added 2026-05-15) ===
+OPENCLAW_FORCE_DEFAULT_MODEL="gemma4:latest"
+```
+
+#### Files changed
+
+- `openclaw-mgr/cmd/setup.sh`:
+  - `optimize_default_ollama_model()` now takes a forced-model arg from `$OPENCLAW_FORCE_DEFAULT_MODEL`
+  - Replaced "always sort by size" with the three-tier policy above
+  - Refactored repeated `compat.supportsTools` stamping into `stamp_compat()` helper
+  - Added new outcome codes: `OPT_OK_FORCED`, `OPT_OK_FORCED_ALREADY`, `OPT_WARN_FORCED_NO_TOOLS`, `OPT_SKIP_FORCED_NOT_REGISTERED`, `OPT_OK_RESPECT_USER_CHOICE`
+- `openclaw-mgr/.env.example`: documented `OPENCLAW_FORCE_DEFAULT_MODEL` with a recommended-values table
+- `docs/GUIDE-DISCORD-BOT.md`: case D RAM table updated (`gemma4:latest` is new 24GB+ default), new "default 모델을 영구 lock 하기" subsection
+- `docs/GUIDE-DAILY-USE.md`: case D row updated; new row for case G (instruction-following regression on 3B models)
+- `openclaw-mgr/openclaw` / `openclaw-mgr/openclaw.ps1`: VERSION → 0.2.23
+
+#### Side note — BOOTSTRAP.md deletion is now a manual step
+
+The model wouldn't delete `~/.openclaw/workspace/BOOTSTRAP.md` even when asked, so it was deleted directly on the host. Because the workspace dir is bind-mounted from `~/.openclaw/workspace/` into `/home/node/.openclaw/workspace/`, `rm` on the host is immediately visible to OpenClaw without restart. This pattern (host-side cleanup of onboarding artifacts) deserves its own subsection in a future docs update.
+
+#### Verified
+
+```
+$ ./openclaw setup status
+…
+✓ default 모델: gemma4:latest ($OPENCLAW_FORCE_DEFAULT_MODEL 로 lock — 이미 정확)
+
+$ docker logs openclaw-openclaw-gateway-1 | grep 'agent model'
+[gateway] agent model: ollama/gemma4:latest
+
+$ docker logs openclaw-openclaw-gateway-1 | grep 'logged in to discord'
+[discord] logged in to discord as 1477667959601369139 (openclaw)
+```
+
+#### Carried TODO
+
+- Upstream PR for `OPENCLAW_HOST_PATH_PREFIX` (v0.2.20 — would let sandbox.mode go back to `non-main`)
+- `./openclaw chat --warm-default` flag (v0.2.22)
+- (new) `./openclaw cleanup-bootstrap` command that safely deletes `BOOTSTRAP.md` from the workspace and prints a confirmation — automate the host-side cleanup pattern this version introduced
 
 ---
 

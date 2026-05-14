@@ -963,20 +963,37 @@ cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw setup --skip-confirm   # 자동으로 가장 작은 tools-capable 모델을 [0] 로
 ```
 
-RAM 가이드 (v0.2.22 갱신):
-| RAM | 권장 default | 무거운 모델은 |
-|---|---|---|
-| 8GB | `qwen2.5:3b-instruct` (1.8GB) | — (단일 모델 권장) |
-| 16GB | `qwen2.5:3b-instruct` (1.8GB) | `llama3.1:8b-instruct-q4_K_M` 명시 호출만 |
-| 24GB | `qwen2.5:3b-instruct` (1.8GB) default ; 무거운 작업은 `qwen2.5-coder:7b` 명시 | `gemma4:26b`/`gemma4:latest` 워밍업 필수, DM 으로만 |
-| 32GB+ | `qwen2.5-coder:14b` (8.4GB) 또는 `llama3.1:8b` | `gemma4:26b` 도 OK |
+RAM 가이드 (v0.2.23 갱신 — `gemma4:latest` 추천 상향, instruction-following 가중치):
+| RAM | 권장 default | 가벼운 대안 (응답 속도 우선) | 무거운 작업 |
+|---|---|---|---|
+| 8GB | `qwen2.5:3b-instruct` (1.8GB) | — | — (단일 모델 권장) |
+| 16GB | `qwen2.5:7b-instruct` (4.7GB) | `qwen2.5:3b-instruct` (1.8GB) | — |
+| **24GB** | **`gemma4:latest` (8.9GB)** — 추천 | `qwen2.5:3b-instruct` (1.8GB) | `gemma4:26b`(17GB) 워밍업 후 명시 호출 |
+| 32GB+ | `gemma4:latest` 또는 `qwen2.5-coder:14b` (8.4GB) | `gemma4:latest` | `gemma4:26b`, `llama3.3:70b` 등 |
 
-> **왜 `qwen2.5:3b` 가 default 권장?**
-> - 1.8GB → 모든 macOS RAM 등급에서 RAM 압박 없음
-> - `tools` capability 네이티브 (Ollama `/api/show` 로 확인됨)
-> - 첫 로드 ~3초, 워밍업 후 1.6초 — OpenClaw idle watchdog (120초) 와 큰 격차
-> - 한국어·영어 둘 다 잘함, 일상 Discord 명령엔 충분
-> - 무거운 작업만 `@openclaw use gemma4:26b 사주풀이…` 식으로 명시 호출하면 됨
+> **왜 24GB 추천이 v0.2.22 의 `qwen2.5:3b` → v0.2.23 의 `gemma4:latest` 로 올라갔나?**
+> - `qwen2.5:3b` 는 빠르긴 한데 **instruction-following 한계 명확** — 사용자가 "BOOTSTRAP.md 지워줘" 같은 직접 명령을 내려도 도구 호출 결정 못 하고 대화로 빠짐.
+> - `gemma4:latest` (8.9GB) 는 cold 7.2초 / warm 0.27초 → watchdog 한참 아래. + vision+audio+thinking+tools 다 지원해서 능력 격차가 큼.
+> - 24GB 노트북에선 `gemma4:latest` 가 RAM 압박 없고 instruction-following 도 좋아 일상 명령에 잘 반응.
+> - `qwen2.5:3b` 는 "응답 속도 절대 우선" 또는 16GB 이하 노트북에서.
+
+#### default 모델을 영구 lock 하기 (v0.2.23+)
+
+`./openclaw setup` 다시 실행해도 자동 최적화가 사용자 선택을 갈아치우지 못하게 하려면 `.env` 에:
+
+```bash
+# openclaw-mgr/.env 또는 ~/.openclaw-mgr/.env
+OPENCLAW_FORCE_DEFAULT_MODEL="gemma4:latest"
+```
+
+이게 set 돼 있으면:
+- `./openclaw setup` 의 `optimize_default_ollama_model()` 함수가 이 모델을 무조건 [0] 으로 보장
+- size 기준 자동 정렬 스킵
+- 다음 setup 실행 시 `default 모델: gemma4:latest ($OPENCLAW_FORCE_DEFAULT_MODEL 로 lock — 이미 정확)` 로그 출력
+
+비워 두면 (`OPENCLAW_FORCE_DEFAULT_MODEL=""`):
+- 현재 [0] 이 tools-capable 이면 그대로 둠 (사용자 명시 선택 존중)
+- [0] 이 tools 못 쓰는 모델이면 가장 작은 tools-capable 로 swap (회귀 방지)
 
 **케이스 E — `plugin-runtime-deps/openclaw-unknown-<hash>/` 가 부분 설치된 채로 남음 (v0.2.21)**: OpenClaw 가 컨테이너 안에서 자기 버전을 못 읽거나 (`process.env.OPENCLAW_VERSION` 비어 있음), upstream 의 plugin-sdk autoinstall 가 중간에 끊겼거나, host-paths 실험 후 디렉토리가 어긋난 상태. 결과적으로 `~/.openclaw/plugin-runtime-deps/openclaw-unknown-<hash>/` 디렉토리가 만들어졌는데 그 안에 `text-runtime.js` · `account-core.js` 같은 핵심 모듈이 빠져 있음. Discord 채널은 부팅까진 되는데, 첫 메시지가 와서 도구를 실행하려는 순간 모듈 못 찾고 채널이 죽음.
 

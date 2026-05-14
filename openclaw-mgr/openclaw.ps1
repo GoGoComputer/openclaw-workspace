@@ -20,7 +20,7 @@ param(
 
 . "$PSScriptRoot\lib-win\common.ps1"
 
-$Version = '0.2.22'
+$Version = '0.2.23'
 
 # help / version 은 OS 무관하게 동작 (Linux pwsh 환경에서도 사용법 확인 가능).
 # 그 외 실 명령(install/start/...) 은 각 case 에서 Assert-Windows 로 차단.
