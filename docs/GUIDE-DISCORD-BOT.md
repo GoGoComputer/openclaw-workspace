@@ -912,45 +912,71 @@ docker inspect openclaw-openclaw-gateway-1 \
 
 원래는 install 의 `step_sandbox` 가 `docker-compose.sandbox.yml` 을 만들어 처음엔 마운트가 들어가는데, 그 이후 stop/start 또는 lockdown 이 호출되면 sandbox 오버레이가 빠지는 게 v0.2.16 까지의 회귀였음. v0.2.17 에서 `start.sh` 와 `step_lockdown` 둘 다 sandbox 오버레이를 자동 포함하도록 수정.
 
-**케이스 D — 모델이 너무 무거워 첫 응답 전에 watchdog 트리거 (v0.2.21)**: sandbox 가 떴고 docker.sock 권한도 있고 호스트 경로도 해결됐는데, **Ollama 가 모델 첫 로딩에 너무 오래 걸려** OpenClaw 의 idle watchdog 이 "응답이 멎었다" 고 판단하고 채널을 종료. 24GB RAM 노트북에서 `gemma4:26b` (17GB) 첫 로드 55+초 — Discord 봇 한 번의 메시지 처리 안에 못 끝남.
+**케이스 D — 모델이 너무 무거워 첫 응답 전에 watchdog 트리거 (v0.2.21 → v0.2.22 권장 모델 변경)**: sandbox 가 떴고 docker.sock 권한도 있고 호스트 경로도 해결됐는데, **Ollama 가 모델 첫 로딩 + 응답 생성에 너무 오래 걸려** OpenClaw 의 idle watchdog (2분) 이 채널을 종료. v0.2.21 에서 `llama3.1:8b-instruct-q4_K_M` (4.6GB) 으로 default 를 바꿨지만 24GB RAM 노트북에서 **system prompt + workspace 7개 .md + 도구 정의 + q4 양자화 컴비네이션**으로 2분 안에 도구 호출까지 못 끝내는 회귀 발생. v0.2.22 의 권장은 **`qwen2.5:3b-instruct` (1.8GB)** — 워밍업 후 1.6초 응답, tool calling 잘 알려짐.
 
-증상:
+증상 (D 의 2차 회귀 — 모델이 부분 출력만 토해내고 끊김):
 ```bash
-./openclaw logs | grep -iE "timed out|idle-timeout"
-# [agent] agent/embedded Profile ollama:default timed out
-# [llm] llm-idle-timeout: ollama/llama3.1:70b produced no reply before the idle watchdog
+./openclaw logs | grep -iE "timed out|idle-timeout|surface_error"
+# [agent/embedded] Profile ollama:default timed out. Trying next account...
+# [agent/embedded] [llm-idle-timeout] ollama/llama3.1:8b-instruct-q4_K_M produced no reply before the idle watchdog
+# [agent/embedded] embedded run failover decision: ... decision=surface_error reason=timeout
 ```
 
-즉시 fix — 가벼운 모델을 config 첫 항목으로 옮기기 (배열 순서가 default 결정):
+증상의 부산물 — Discord 봇이 평문 JSON 을 뱉음 (한때 별개 버그 "case F" 로 의심됐지만 실은 D 의 timeout 직전 부분 출력):
+```
+{"name": "read", "parameters": {"path":"/home/node/.openclaw/workspace/IDENTITY.md"}}
+```
+모델이 도구 호출을 만들다 만 채로 watchdog 가 끊어서 OpenClaw 의 JSON 파서가 incomplete object 를 평문으로 전달.
+
+즉시 fix (v0.2.22 — `./openclaw setup` 자동 적용. 수동으로 하려면):
 ```bash
+# 1) qwen2.5:3b-instruct 워밍업 (없으면 pull 먼저)
+ollama list | grep -q '^qwen2.5:3b-instruct' || ollama pull qwen2.5:3b-instruct
+curl -s -X POST http://127.0.0.1:11434/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"qwen2.5:3b-instruct","messages":[{"role":"user","content":"hi"}],"stream":false}' \
+  >/dev/null
+
+# 2) default 모델 변경 + compat.supportsTools 박기
 python3 -c '
 import json
 p = "/Users/mo/.openclaw/openclaw.json"
 cfg = json.load(open(p))
 m = cfg["models"]["providers"]["ollama"]["models"]
-pref = "llama3.1:8b-instruct-q4_K_M"   # 4.9GB, 첫 로드 후 2.6초
+pref = "qwen2.5:3b-instruct"
 cfg["models"]["providers"]["ollama"]["models"] = (
     [x for x in m if x["id"] == pref] + [x for x in m if x["id"] != pref]
 )
+for x in cfg["models"]["providers"]["ollama"]["models"]:
+    x.setdefault("compat", {})["supportsTools"] = True
 json.dump(cfg, open(p, "w"), indent=2)
 print("default model →", pref)
 '
 
-# 사전 워밍업 — 한 번 부르면 RAM 에 캐시돼 다음부턴 ~2초
-curl -X POST http://127.0.0.1:11434/api/generate \
-  -d '{"model":"llama3.1:8b-instruct-q4_K_M","prompt":"hi","stream":false}' \
-  -H 'Content-Type: application/json' >/dev/null 2>&1
-
+# 3) 재시작
 cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw stop && ./openclaw start
 ```
 
-RAM 가이드:
+또는 v0.2.22+ 에서는 그냥:
+```bash
+./openclaw setup --skip-confirm   # 자동으로 가장 작은 tools-capable 모델을 [0] 로
+```
+
+RAM 가이드 (v0.2.22 갱신):
 | RAM | 권장 default | 무거운 모델은 |
 |---|---|---|
-| 16GB | `llama3.1:8b-instruct-q4_K_M` (4.9GB) | DM 으로만 명시 호출 |
-| 24GB | `llama3.1:8b-instruct-q4_K_M` 또는 `qwen2.5-coder:14b` (8.4GB) | `gemma4:26b` 도 가능하지만 워밍업 필수 |
-| 32GB+ | `qwen2.5-coder:14b`, `gemma4:26b` 둘 다 OK | — |
+| 8GB | `qwen2.5:3b-instruct` (1.8GB) | — (단일 모델 권장) |
+| 16GB | `qwen2.5:3b-instruct` (1.8GB) | `llama3.1:8b-instruct-q4_K_M` 명시 호출만 |
+| 24GB | `qwen2.5:3b-instruct` (1.8GB) default ; 무거운 작업은 `qwen2.5-coder:7b` 명시 | `gemma4:26b`/`gemma4:latest` 워밍업 필수, DM 으로만 |
+| 32GB+ | `qwen2.5-coder:14b` (8.4GB) 또는 `llama3.1:8b` | `gemma4:26b` 도 OK |
+
+> **왜 `qwen2.5:3b` 가 default 권장?**
+> - 1.8GB → 모든 macOS RAM 등급에서 RAM 압박 없음
+> - `tools` capability 네이티브 (Ollama `/api/show` 로 확인됨)
+> - 첫 로드 ~3초, 워밍업 후 1.6초 — OpenClaw idle watchdog (120초) 와 큰 격차
+> - 한국어·영어 둘 다 잘함, 일상 Discord 명령엔 충분
+> - 무거운 작업만 `@openclaw use gemma4:26b 사주풀이…` 식으로 명시 호출하면 됨
 
 **케이스 E — `plugin-runtime-deps/openclaw-unknown-<hash>/` 가 부분 설치된 채로 남음 (v0.2.21)**: OpenClaw 가 컨테이너 안에서 자기 버전을 못 읽거나 (`process.env.OPENCLAW_VERSION` 비어 있음), upstream 의 plugin-sdk autoinstall 가 중간에 끊겼거나, host-paths 실험 후 디렉토리가 어긋난 상태. 결과적으로 `~/.openclaw/plugin-runtime-deps/openclaw-unknown-<hash>/` 디렉토리가 만들어졌는데 그 안에 `text-runtime.js` · `account-core.js` 같은 핵심 모듈이 빠져 있음. Discord 채널은 부팅까진 되는데, 첫 메시지가 와서 도구를 실행하려는 순간 모듈 못 찾고 채널이 죽음.
 

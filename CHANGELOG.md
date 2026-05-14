@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.22 — 2026-05-15](#v0222--2026-05-15)
 - [v0.2.21 — 2026-05-15](#v0221--2026-05-15)
 - [v0.2.20 — 2026-05-14](#v0220--2026-05-14)
 - [v0.2.19 — 2026-05-14](#v0219--2026-05-14)
@@ -27,6 +28,115 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.22 — 2026-05-15
+
+### Discord case D regression: `llama3.1:8b-instruct-q4_K_M` is still too heavy → auto-pick the lightest tool-capable model
+
+After v0.2.21 swapped `gemma4:26b` (17GB, 55s cold-load) → `llama3.1:8b-instruct-q4_K_M` (4.6GB), the Discord bot **still** hit the 2-minute idle watchdog repeatedly:
+
+```
+[agent/embedded] Profile ollama:default timed out. Trying next account...
+[llm-idle-timeout] ollama/llama3.1:8b-instruct-q4_K_M produced no reply before the idle watchdog
+[agent/embedded] embedded run failover decision: stage=assistant decision=surface_error reason=timeout
+```
+
+**A second symptom appeared and was briefly misdiagnosed as a separate bug ("case F")**: instead of the generic "Something went wrong" reply, the bot would emit a literal incomplete tool-call JSON to the user channel:
+
+```
+{"name": "read", "parameters": {"path":"/home/node/.openclaw/workspace/IDENTITY.md"}}
+```
+
+Root cause is the same as case D: the model starts building a tool-call object, the watchdog cuts the lane mid-generation, and OpenClaw's tool-call parser sees an incomplete `{...}` object and falls back to emitting it as plain text. Confirmed by switching to a faster model — the JSON-bleed disappears entirely because the model now completes the tool call inside the watchdog window.
+
+#### Why 4.6GB is still too heavy on 24GB RAM
+
+The Discord bot's first message processing isn't just "load model + reply"; it's:
+
+1. Load model into RAM (cold) — 30~55s for an 8B q4 model
+2. Process system prompt (workspace bootstrap chain: BOOTSTRAP.md, IDENTITY.md, SOUL.md, USER.md, AGENTS.md, HEARTBEAT.md, TOOLS.md = 7 files)
+3. Process tool schema definitions (gateway exposes dozens of tools)
+4. Generate the first response token
+5. Generate enough output for OpenClaw to parse a tool call
+
+Steps 1–3 alone can already approach 2 minutes on q4 8B + 24GB RAM with other apps running. Step 4–5 push it over the watchdog deadline.
+
+#### Fix — `qwen2.5:3b-instruct` as the new default + automated model ranking
+
+```bash
+$ time curl -s -X POST http://127.0.0.1:11434/api/chat \
+    -H 'Content-Type: application/json' \
+    -d '{"model":"qwen2.5:3b-instruct","messages":[{"role":"user","content":"hi"}],"stream":false}' \
+    | head -c 100
+{"model":"qwen2.5:3b-instruct","message":{"role":"assistant","content":"Hello! How can I help you today?"...
+
+real    0m1.67s
+```
+
+1.67 seconds end-to-end, including a warm load. The full Discord onboard conversation (IDENTITY/SOUL setup) now completes in ~3–5 seconds per message instead of timing out.
+
+`qwen2.5:3b-instruct` is the new recommended default because:
+
+- 1.8GB — comfortable on 8GB MacBooks, no contention with other apps on 24GB
+- `"tools"` capability declared in Ollama's `/api/show` (verified by `OPENCLAW`'s `supportsToolsMeta` check at `dist/scan-jROPTmBi.js`)
+- Cold load ~3s, warm load ~1.6s — both well under the 120s watchdog
+- Multilingual (KO/EN strong), suitable for daily Discord commands
+- Heavy work (sajupul-ee, coding, vision) can still target `gemma4:26b`/`qwen2.5-coder:14b` via explicit `@openclaw use <model> …` syntax
+
+#### Automation: `cmd/setup.sh` now ranks models post-onboard
+
+New function `optimize_default_ollama_model()` runs immediately after `prune_bogus_ollama_models()` during `./openclaw setup`. It:
+
+1. Queries `/api/show` for every registered model to get `capabilities` + `size`
+2. Filters to models declaring `"tools"` capability
+3. Sorts by file size ascending
+4. Moves the smallest tool-capable model to `models[0]` (which OpenClaw uses as default)
+5. Sets `compat.supportsTools = true` on every tool-capable entry (defensive, in case future OpenClaw versions check this field strictly)
+
+```bash
+$ ./openclaw setup --skip-confirm
+…
+✓ 설정 정리: openclaw.json 에서 실제 설치되지 않은 모델 항목 제거
+✓ default 모델 자동 최적화: llama3.1:8b-instruct-q4_K_M (4.6GB) → qwen2.5:3b-instruct (1.8GB)
+  Why: 24GB RAM 노트북에선 첫 응답 ≤2분 안에 들어와야 OpenClaw 의 idle watchdog 가 안 자름.
+  무거운 모델은 그대로 등록돼 있으니 @openclaw use llama3.1:8b-instruct-q4_K_M 처럼 명시 호출 가능.
+```
+
+If Ollama is unreachable, no tools-capable model is installed, or only one model is registered, the function emits a silent skip code and leaves the config untouched.
+
+#### Docs
+
+- `docs/GUIDE-DISCORD-BOT.md` case D section: rewritten with the new RAM-to-model table (8GB/16GB/24GB/32GB+), explicit "why qwen2.5:3b" callout, and the v0.2.22 one-command fix (`./openclaw setup --skip-confirm`)
+- `docs/GUIDE-DAILY-USE.md` troubleshooting matrix: case D row updated with new default; new row added explaining the JSON-bleed symptom (formerly "case F") as a D-byproduct, not a separate bug
+- `CHANGELOG` (this file)
+
+#### Files changed
+
+- `openclaw-mgr/cmd/setup.sh` — added `optimize_default_ollama_model()` (~75 LOC python heredoc) + invocation block (~20 LOC)
+- `openclaw-mgr/openclaw` — `VERSION="0.2.22"`
+- `openclaw-mgr/openclaw.ps1` — `$Version = '0.2.22'`
+- `docs/GUIDE-DISCORD-BOT.md`, `docs/GUIDE-DAILY-USE.md`, `CHANGELOG.md`
+
+#### Verified on the live setup
+
+```
+[gateway] agent model: ollama/qwen2.5:3b-instruct
+[gateway] ready (7 plugins: acpx, bonjour, browser, device-pair, discord, phone-control, talk-voice; 5.8s)
+[discord] logged in to discord as 1477667959601369139 (openclaw)
+
+# Discord screenshot — bot responds in ~5s with full coherent BOOTSTRAP onboarding flow:
+# > Hello, 묘냥. I've read the instructions in BOOTSTRAP.md...
+# > Your name: ...  Your nature: ...  Your vibe: ...  Your emoji: ...
+# > Here's an example of what IDENTITY.md could look like: ```...```
+```
+
+#### Carried TODO (now smaller)
+
+- Upstream PR for `OPENCLAW_HOST_PATH_PREFIX` (would let sandbox.mode go back from `off` → `non-main` and restore defense-in-depth — see v0.2.20)
+- Add a `./openclaw chat` flag `--warm-default` that auto-pings the default model before opening the prompt (mirrors what `setup.sh` post-hook now does)
+- Document the watchdog timeout knob (if any exists in `openclaw.json`) as a workaround for users on >32GB RAM who want to keep a heavier default
 
 ---
 

@@ -197,6 +197,115 @@ print(f"PRUNE_OK_DROPPED::{','.join(dropped)}::{bak}")
 PY
 }
 
+# ── 자동 default 모델 최적화 ──────────────────────────────────────────────────
+# Why this exists (v0.2.22):
+# OpenClaw 의 onboard 마법사는 사용자가 마지막으로 선택한 모델을 그대로 [0] 에
+# 두는데, 그게 24GB RAM 노트북에선 너무 무거운 (예: gemma4:26b, llama3.1:70b)
+# 경우가 흔합니다. 첫 메시지에 모델 로딩 55+초 → OpenClaw idle watchdog 2분
+# 트리거 → Discord 봇이 timeout. 사용자 입장에선 "왜 응답 안 함" 으로 보임.
+#
+# 이 함수는 prune 직후 실행되며:
+#   1) Ollama /api/show 로 각 등록 모델의 capabilities·size 조회
+#   2) 'tools' capability 있는 모델만 후보로 (도구 호출 가능)
+#   3) 후보 중 size 가 가장 작은 것을 models[0] 으로 정렬
+#   4) 모든 후보의 compat.supportsTools = true 박기 (defensive)
+#
+# embedding 전용 모델(`nomic-embed-text` 등)·tools 미지원 모델 (`tinyllama` 등)
+# 은 자동으로 후순위로 밀려나고, 가장 작고 빠른 tool-capable 모델이 default.
+optimize_default_ollama_model() {
+  local cfg="$OPENCLAW_CONFIG_DIR/openclaw.json"
+  [ -f "$cfg" ] || return 0
+
+  python3 - "$cfg" <<'PY'
+import json, sys, urllib.request, urllib.error
+
+cfg_path = sys.argv[1]
+
+def probe(url, body=None):
+    req = urllib.request.Request(
+        url,
+        data=(json.dumps(body).encode() if body else None),
+        headers={"Content-Type": "application/json"} if body else {},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=3) as r:
+            return json.load(r)
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError):
+        return None
+
+# Find a working Ollama base URL.
+base = None
+for u in ("http://127.0.0.1:11434", "http://host.docker.internal:11434"):
+    if probe(u + "/api/tags") is not None:
+        base = u
+        break
+if base is None:
+    print("OPT_SKIP_OLLAMA_UNREACHABLE")
+    sys.exit(0)
+
+with open(cfg_path) as f:
+    cfg = json.load(f)
+try:
+    arr = cfg["models"]["providers"]["ollama"]["models"]
+except (KeyError, TypeError):
+    print("OPT_SKIP_NO_OLLAMA_PROVIDER")
+    sys.exit(0)
+if len(arr) <= 1:
+    print("OPT_SKIP_TRIVIAL")
+    sys.exit(0)
+
+# Get size + capabilities for each entry.
+tags = {m["name"]: m for m in probe(base + "/api/tags").get("models", [])}
+enriched = []
+for m in arr:
+    mid = m.get("id", "")
+    info = probe(base + "/api/show", {"name": mid}) or {}
+    caps = set(info.get("capabilities", []))
+    size = tags.get(mid, {}).get("size", 1 << 62)  # unknown → sort last
+    enriched.append((m, mid, caps, size))
+
+# Candidates that can call tools (so Discord/agent actually works).
+tool_capable = [(m, mid, caps, sz) for (m, mid, caps, sz) in enriched if "tools" in caps]
+if not tool_capable:
+    print("OPT_SKIP_NO_TOOL_CAPABLE_MODEL")
+    sys.exit(0)
+
+# Sort: tool-capable + smallest first, then everything else by original order.
+tool_capable.sort(key=lambda t: t[3])
+chosen = tool_capable[0]
+old_first = arr[0].get("id", "")
+new_first = chosen[1]
+
+if new_first == old_first:
+    # Already optimal — only stamp compat flags and exit.
+    changed = False
+    for (m, mid, caps, sz) in enriched:
+        if "tools" in caps and m.setdefault("compat", {}).get("supportsTools") is not True:
+            m["compat"]["supportsTools"] = True
+            changed = True
+    if changed:
+        with open(cfg_path, "w") as f:
+            json.dump(cfg, f, indent=2)
+    print(f"OPT_OK_ALREADY_OPTIMAL::{new_first}")
+    sys.exit(0)
+
+# Rebuild array: chosen first, then everything else in original order.
+others_in_order = [e[0] for e in enriched if e[1] != new_first]
+new_arr = [chosen[0]] + others_in_order
+for (m, mid, caps, sz) in enriched:
+    if "tools" in caps:
+        m.setdefault("compat", {})["supportsTools"] = True
+
+cfg["models"]["providers"]["ollama"]["models"] = new_arr
+with open(cfg_path, "w") as f:
+    json.dump(cfg, f, indent=2)
+
+old_gb = (tags.get(old_first, {}).get("size", 0) / 1024**3)
+new_gb = (tags.get(new_first, {}).get("size", 0) / 1024**3)
+print(f"OPT_OK_REORDERED::{old_first}::{old_gb:.1f}::{new_first}::{new_gb:.1f}")
+PY
+}
+
 if [ "$rc" = "0" ]; then
   prune_result="$(prune_bogus_ollama_models 2>&1 | tail -1)"
   case "$prune_result" in
@@ -217,6 +326,30 @@ if [ "$rc" = "0" ]; then
       ;;
     *)
       : # silent on unknown — don't surface noise to user
+      ;;
+  esac
+
+  # 자동 default 모델 최적화 (가장 작고 tool 호출 가능한 모델을 [0] 으로)
+  opt_result="$(optimize_default_ollama_model 2>&1 | tail -1)"
+  case "$opt_result" in
+    OPT_OK_REORDERED::*)
+      payload="${opt_result#OPT_OK_REORDERED::}"
+      old_id="${payload%%::*}";       rest="${payload#*::}"
+      old_gb="${rest%%::*}";          rest="${rest#*::}"
+      new_id="${rest%%::*}";          new_gb="${rest#*::}"
+      ok "default 모델 자동 최적화: ${C_BOLD}${old_id}${C_RESET} (${old_gb}GB) → ${C_BOLD}${new_id}${C_RESET} (${new_gb}GB)"
+      info "  Why: 24GB RAM 노트북에선 첫 응답 ≤2분 안에 들어와야 OpenClaw 의 idle watchdog 가 안 자름."
+      info "  무거운 모델은 그대로 등록돼 있으니 ${C_BOLD}@openclaw use ${old_id}${C_RESET} 처럼 명시 호출 가능."
+      ;;
+    OPT_OK_ALREADY_OPTIMAL::*)
+      info "default 모델: ${C_BOLD}${opt_result#OPT_OK_ALREADY_OPTIMAL::}${C_RESET} (이미 최적)"
+      ;;
+    OPT_SKIP_NO_TOOL_CAPABLE_MODEL)
+      warn "Ollama 모델 중 'tools' capability 있는 게 하나도 없음 — Discord/agent 가 도구 못 씀."
+      info "  추천: ${C_BOLD}ollama pull qwen2.5:3b-instruct${C_RESET}  (1.8GB, tool 호출 잘함)"
+      ;;
+    OPT_SKIP_OLLAMA_UNREACHABLE|OPT_SKIP_NO_OLLAMA_PROVIDER|OPT_SKIP_TRIVIAL|*)
+      : # silent — 위 prune 가 이미 비슷한 메시지를 띄웠을 것
       ;;
   esac
 fi
