@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.12 — 2026-05-14](#v0212--2026-05-14)
 - [v0.2.11 — 2026-05-14](#v0211--2026-05-14)
 - [v0.2.10 — 2026-05-14](#v0210--2026-05-14)
 - [v0.2.9 — 2026-05-14](#v029--2026-05-14)
@@ -17,6 +18,26 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.12 — 2026-05-14
+
+### GUIDE-DISCORD-BOT.md — major expansion (setup-only → setup + daily-use)
+The original guide stopped at "your bot is online and replied once". This release adds five new sections covering everyday operation, plus a one-screen cheat sheet:
+
+- **§7 봇과 대화하는 4가지 방법** — @mention / DM / slash commands (`/agent ask`, `/agent reset`, etc.) / channel whitelist auto-respond. Per-trigger semantics: context length, when threads are useful, DM privacy.
+- **§8 자주 쓰는 프롬프트 패턴** — one-liners, long-text summarization (with Discord's 2000-char limit caveat), code review with fenced diffs, workspace-aware prompts ("read MEMORY.md and …"), thread-based continued conversation, `/reset`, in-Discord model switching.
+- **§9 채널·서버별 동작 조정** — table of six tuning knobs (autoChannels / muteChannels / channelModels / channelPersonas / allowedGuilds / maxInputChars) with a concrete JSON example showing per-channel model assignment. Includes the "Copy Channel ID" walkthrough.
+- **§10 워크스페이스·인격을 봇으로 끌어오기** — how IDENTITY/SOUL/USER/AGENTS/MEMORY auto-load into the bot's system prompt (same as `./openclaw chat`); editing those files reflects on the next message without restart; using the bot itself to append to MEMORY.md mid-conversation; multimodal attachments.
+- **§11 봇 행동 관리** — temporary mute (Discord-side vs `./openclaw stop`), permanent kick/ban, multi-server operation (same token vs separate bots), daily on/off pattern linked to GUIDE-DAILY-USE, disabling Discord while keeping the rest of OpenClaw.
+- **🎯 명령·인터랙션 cheat sheet** — two compact tables (Discord-side actions, host-side commands) so users don't have to scroll the guide for everyday lookups.
+
+### Cross-linking
+- README (KO + EN) Documentation Map: the 💬 row description now lists what's actually inside (setup + daily-use sections + cheat sheet + troubleshooting cases) instead of just "create bot, invite, paste token".
+- `docs/GUIDE-DAILY-USE.md` related-docs entry expands the description to point at the new §7–§11.
+
+No code change.
 
 ---
 

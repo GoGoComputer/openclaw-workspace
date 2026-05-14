@@ -301,7 +301,7 @@ PY
 | 문서 | 무엇이 있나 |
 |---|---|
 | [▶ 설치 후 첫 사용 가이드](GUIDE-FIRST-USE.md) | 이 가이드의 **앞 단계** — install 직후 5분 안에 첫 대화까지 |
-| [💬 Discord 봇 운영](GUIDE-DISCORD-BOT.md) | 봇으로 운영할 때의 일상 사이클·트러블슈팅 |
+| [💬 Discord 봇 운영](GUIDE-DISCORD-BOT.md) | 봇으로 운영할 때의 일상 사이클·트러블슈팅. **§7–§11 일상 사용법** (트리거 4종 · 자주 쓰는 프롬프트 · 채널별 모델/인격 · cheat sheet) |
 | [🌐 웹에서 정보 가져오기](GUIDE-WEB-FETCH.md) | 일상에 `surf` 명령으로 뉴스·코스피 가져오는 패턴 |
 | [🚑 트러블슈팅](TROUBLESHOOTING.md) | 시나리오 5 더 자세한 진단 |
 | [🐾 OpenClaw 기초](GUIDE-OPENCLAW.md) | 에이전트 구조·세션·메모리 |

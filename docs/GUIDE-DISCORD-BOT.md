@@ -21,6 +21,12 @@
 - [4. OAuth2 URL Generator 로 서버에 초대](#4-oauth2-url-generator-로-서버에-초대)
 - [5. OpenClaw 에 토큰 등록](#5-openclaw-에-토큰-등록)
 - [6. 첫 테스트](#6-첫-테스트)
+- [7. 봇과 대화하는 4가지 방법](#7-봇과-대화하는-4가지-방법)
+- [8. 자주 쓰는 프롬프트 패턴](#8-자주-쓰는-프롬프트-패턴)
+- [9. 채널·서버별 동작 조정](#9-채널·서버별-동작-조정)
+- [10. 워크스페이스·인격을 봇으로 끌어오기](#10-워크스페이스인격을-봇으로-끌어오기)
+- [11. 봇 행동 관리 (mute · disable · 다중 서버)](#11-봇-행동-관리-mute--disable--다중-서버)
+- [🎯 명령·인터랙션 cheat sheet](#-명령인터랙션-cheat-sheet)
 - [🔒 보안 주의](#-보안-주의-꼭-읽으세요)
 - [🛠 트러블슈팅](#-트러블슈팅)
 - [🔗 관련 문서](#-관련-문서)
@@ -193,6 +199,265 @@ Discord 단계에서 마법사가 다음과 같이 묻습니다:
 응답이 오면 끝. 안 오면 → [트러블슈팅](#-트러블슈팅).
 
 **슬래시 명령 (선택):** `applications.commands` scope 도 부여했다면 채널 입력창에서 `/` 입력 시 봇의 명령이 자동 완성으로 뜹니다. OpenClaw 가 정의한 명령(예: `/agent ask`)을 클릭해서 사용.
+
+---
+
+## 7. 봇과 대화하는 4가지 방법
+
+봇이 메시지에 "반응할지/안 할지" 는 **트리거** 가 결정합니다. Discord 봇 표준 + OpenClaw 가 더한 옵션:
+
+### A. @멘션 (가장 흔함)
+
+서버 채널에서:
+```
+@OpenClaw-Mo 오늘 회의록 3줄 요약해줘
+```
+- 봇이 자기 mention 을 받으면 즉시 그 메시지를 처리. 채널 안 다른 잡담엔 반응 안 함.
+- 채널의 다른 사람과 대화 흐름을 안 깨려면 **답글(Reply)** 로 멘션하는 게 깔끔.
+- 봇이 답할 때 자동으로 원 메시지를 reply 로 묶는 동작은 OpenClaw 설정에 따라 다름 — `~/.openclaw/openclaw.json` 의 `channels.discord.reply` 옵션.
+
+### B. DM (1:1 — 가장 사적인 채널)
+
+봇 프로필 클릭 → **Message** → 평문 입력. 매번 멘션 안 해도 모든 메시지에 응답.
+- 채널 권한·서버 정책 무관 — Discord 가 직접 라우팅.
+- 컨텍스트도 가장 길게 유지 (DM 별 세션 자동 생성).
+- 비밀 작업, 토큰 입력, 개인 메모 작업 같은 거 권장 위치.
+
+> 봇이 DM 을 보내지/받지 못하면? 서버 Privacy Settings → "Allow direct messages from server members" 가 켜져 있어야 함. 봇 자체에 별도 DM 권한 설정은 없음 (Discord 가 사용자 단위 설정).
+
+### C. 슬래시 명령 (`/`)
+
+OAuth scope 에 `applications.commands` 가 있으면 채널 입력창에서 `/` 만 누르면 자동완성:
+
+```
+/agent ask        질문: <텍스트>
+/agent summarize  대상: <메시지 또는 URL>
+/agent reset      현재 세션 컨텍스트 초기화
+/agent model      모델 전환 (admin 만)
+```
+- 실제 명령 목록은 OpenClaw 버전·활성화한 플러그인에 따라 다름. `/` + 봇 이름 검색해서 봐주세요.
+- 슬래시 명령은 **각 매개변수가 별도 입력 필드** 로 분리돼 오타·따옴표 실수 없음. 긴 텍스트는 멘션·DM 이 편함.
+- 첫 등록은 봇이 서버에 합류한 직후 ~10분 안에 자동. 자동완성에 안 뜨면 [트러블슈팅](#-트러블슈팅) 참조.
+
+### D. 채널 화이트리스트 (자동 응답)
+
+특정 채널을 봇 전용으로 지정해서 **멘션 없이도 모든 메시지에 응답**.
+
+```bash
+# OpenClaw 설정에서 채널 ID 등록 (서버에서 채널 우클릭 → "Copy Channel ID")
+# 마법사로:
+./openclaw setup        # Discord 단계에서 'auto-respond channels' 항목
+
+# 또는 직접 편집:
+~/.openclaw/openclaw.json  →  channels.discord.autoChannels: ["123456789012345678"]
+```
+- 봇 전용 채널 (예: `#ai-chat`, `#bot-lab`) 운영에 편함.
+- 다른 멤버도 자유롭게 봇과 대화 가능 → 봇 부하·메시지량 주의.
+
+---
+
+## 8. 자주 쓰는 프롬프트 패턴
+
+OpenClaw 가 IDENTITY/SOUL/USER/AGENTS/MEMORY 를 system prompt 로 자동 로드하니, Discord 에서도 같은 인격 그대로 호출됩니다. 자주 쓰는 형태:
+
+### 한 줄 질문
+```
+@bot 오늘 코스피 종가 어디서 확인하지?
+```
+
+### 회의록·긴 텍스트 요약 (스레드 추천)
+```
+@bot 아래 텍스트 핵심 3줄 + 액션 아이템만 뽑아줘
+[긴 텍스트 붙여넣기]
+```
+> Discord 메시지 길이 제한: 2,000자. 더 길면 봇이 자동으로 잘라서 받음 (또는 스레드/파일 첨부 권장).
+
+### 코드 리뷰
+```
+@bot 이 diff 잠재적 버그·성능 이슈 짚어줘
+```
+````
+```diff
++ 코드 ...
+- 코드 ...
+```
+````
+
+### 워크플로우 트리거 (도구 결합)
+```
+@bot ~/DEV/openclawAgent/MEMORY.md 안에서 "디스코드" 키워드 찾아서 정리해줘
+```
+- 봇이 컨테이너 안 워크스페이스(`/home/node/.openclaw/workspace`, 호스트 `~/DEV/openclawAgent`) 에 접근 가능 — 파일을 그대로 읽음.
+- 호스트 임의 경로(`~/Documents` 등) 는 안 닿음 (격리 의도).
+
+### 한 컨텍스트로 연속 대화 (스레드)
+
+채널에서 메시지에 마우스 오버 → **"Create Thread"** → 봇과 스레드 안에서 계속 대화.
+- 봇이 스레드를 별도 세션으로 인식 → 다른 멤버 잡담과 분리.
+- 메인 채널 흐름을 안 깨면서 길게 대화 가능.
+
+### 컨텍스트 초기화
+
+```
+@bot /reset             또는    /agent reset
+```
+- 현재 세션의 대화 히스토리만 삭제, 인격(IDENTITY 등) 은 유지.
+- DM 에서도 동일.
+
+### 모델 즉시 전환 (admin)
+```
+/agent model gemma4:26b
+/agent model llama3.1:8b-instruct-q4_K_M
+```
+- 무거운 모델이 너무 느리면 가벼운 걸로, 한국어 약하면 EXAONE/Solar 로.
+- 채널마다 다른 모델을 두는 건 §9 참조.
+
+---
+
+## 9. 채널·서버별 동작 조정
+
+대규모 서버, 또는 봇을 여러 용도로 쓰면 채널·서버마다 다르게 동작하도록 설정 가능. 핵심 매개변수:
+
+| 항목 | 어디서 | 효과 |
+|---|---|---|
+| **자동 응답 채널** | `channels.discord.autoChannels` | 멘션 없이도 모든 메시지에 응답 (§7 D) |
+| **금지 채널** | `channels.discord.muteChannels` | 멘션돼도 무시 (예: `#admin-only`) |
+| **채널별 모델** | `channels.discord.channelModels` | `#general` 은 `gemma4:26b`, `#code` 는 `qwen2.5-coder:7b` 처럼 분리 |
+| **채널별 인격** | `channels.discord.channelPersonas` | 워크스페이스의 다른 IDENTITY 파일을 채널별로 매핑 (예: `#kr-team` 은 한국어 톤, `#en-team` 은 영어 톤) |
+| **서버별 화이트리스트** | `channels.discord.allowedGuilds` | 봇이 동작할 서버 ID 제한. 다른 서버에 초대돼도 무시 |
+| **메시지 길이 컷** | `channels.discord.maxInputChars` | 너무 긴 입력은 자동 거절 (DDoS·비용 방지) |
+
+설정 방법 두 가지:
+1. `./openclaw setup` 마법사 → Discord 단계의 advanced 항목
+2. `~/.openclaw/openclaw.json` 직접 편집 후 `./openclaw stop && ./openclaw start`
+
+**예: 코드 채널만 코딩 모델, 일반 채널은 가벼운 모델:**
+```json
+"channels": {
+  "discord": {
+    "channelModels": {
+      "1234567890123456": "qwen2.5-coder:7b",
+      "9876543210987654": "llama3.1:8b-instruct-q4_K_M"
+    }
+  }
+}
+```
+(채널 ID: Discord 에서 우클릭 → "Copy Channel ID". 개발자 모드 켜야 보임 — Settings → Advanced → Developer Mode.)
+
+---
+
+## 10. 워크스페이스·인격을 봇으로 끌어오기
+
+`./openclaw chat` 에서 자동 로드되는 인격 파일이 **Discord 봇에서도 그대로 작동**합니다. 봇은 컨테이너 안 워크스페이스 마운트(`~/DEV/openclawAgent`)를 보고 다음을 system prompt 로 묶음:
+
+- `IDENTITY.md` — 봇의 이름·말투·종족
+- `SOUL.md` — 가치·태도·금지선 (예: "장난 받아주되 모욕은 정중히 거절")
+- `USER.md` — 당신에 대한 메모 (호칭·역할·관심사)
+- `AGENTS.md` — 작업 규칙 (예: "코드 답변엔 항상 unit test 도 같이")
+- `MEMORY.md` — 장기 기억 (대화 도중 추가 가능)
+
+### 워크스페이스 파일 수정 → 봇 즉시 반영
+```bash
+# 호스트에서 IDENTITY 수정
+nano ~/DEV/openclawAgent/IDENTITY.md
+
+# 봇이 다음 메시지부터 바로 반영 (재시작 불필요 — 매 호출 시 파일 다시 읽음)
+```
+> 대규모 변경은 새 세션부터 적용. 진행 중 대화는 기존 인격 그대로. `/reset` 으로 즉시 적용도 가능.
+
+### Discord 에서 메모를 워크스페이스에 적기
+```
+@bot 이거 기억해줘: 매주 월요일 9시 회의록 자동 요약해서 #notes 에 올리기. MEMORY.md 에 'recurring/monday-summary' 항목으로 저장.
+```
+- 봇이 도구 사용 권한 있으면 직접 `~/DEV/openclawAgent/MEMORY.md` 에 append.
+- 그 다음 세션부터 자동으로 system prompt 에 포함 → "지난번에 말씀하신 월요일 요약…"
+
+### 파일·이미지 첨부 (사용 가능 시)
+
+OpenClaw 가 attachment 지원하는 경우:
+- Discord 에서 파일 첨부(드래그) + 멘션 → 봇이 파일 내용 읽음
+- 이미지 멀티모달 모델(예: `llava:7b`) 이면 봇이 이미지 설명 가능
+- 한도: Discord 자체 25 MB (Nitro 면 더 큼)
+
+---
+
+## 11. 봇 행동 관리 (mute · disable · 다중 서버)
+
+### 잠깐 조용히 시키기 (Discord 측 기능)
+
+- 채널 설정 → "Mute @OpenClaw-Mo" — 그 채널에서만 알림 차단(봇 자체는 동작). 또는 봇 역할 권한에서 Send Messages 일시 제거.
+- 봇이 폭주(루프 응답 등) 하면 빠른 응급: `./openclaw stop` (봇 자체를 끔).
+
+### 영구적으로 채널·서버에서 빼기
+
+- 채널: 봇 역할 권한에서 해당 채널 View 권한 제거.
+- 서버: 봇 멤버 우클릭 → "Kick" 또는 "Ban". OpenClaw 측에서도 `channels.discord.allowedGuilds` 에서 해당 서버 ID 제거 권장.
+
+### 다중 서버 운영
+
+같은 봇 토큰으로 여러 서버 동시 운영 가능 — §4 의 OAuth invite URL 만 다시 열어서 다른 서버 선택.
+- 모든 서버가 같은 OpenClaw 인스턴스의 컨텍스트 공유 (메모리·인격 동일).
+- 서버별로 다른 인격이 필요하면 `channels.discord.channelPersonas` (§9) 또는 **봇 자체를 따로 만들기** (Discord Developer Portal 에서 새 앱·새 토큰).
+
+### 임시 끄고 켜기 — 매일 패턴
+
+```bash
+# 봇 잠깐 끄기 (점심·회의 중)
+./openclaw stop
+
+# 다시 켜기
+./openclaw start
+# Discord 봇은 자동 재연결 (gateway 의 reconnect 로직)
+```
+
+자세한 일상 on/off 사이클: [GUIDE-DAILY-USE.md](GUIDE-DAILY-USE.md).
+
+### 영구 비활성 (Discord 만 빼고 OpenClaw 는 유지)
+
+```bash
+./openclaw setup    # 마법사의 Discord 단계에서 토큰을 빈 값으로 입력
+```
+또는:
+```bash
+python3 -c '
+import json
+cfg = json.load(open("/Users/mo/.openclaw/openclaw.json"))
+cfg.setdefault("channels", {}).pop("discord", None)
+json.dump(cfg, open("/Users/mo/.openclaw/openclaw.json", "w"), indent=2)
+'
+./openclaw stop && ./openclaw start
+```
+
+---
+
+## 🎯 명령·인터랙션 cheat sheet
+
+가장 자주 쓰는 것만 한 화면에:
+
+| 하고 싶은 것 | Discord 에서 | 효과 |
+|---|---|---|
+| 봇 부르기 | `@OpenClaw-Mo <메시지>` | 멘션만 → 그 메시지 처리 |
+| 1:1 대화 | DM 열고 평문 입력 | 매번 멘션 불필요, 컨텍스트 가장 길게 유지 |
+| 슬래시 명령 | `/` 누르고 자동완성 선택 | 매개변수가 필드별 분리 (긴 텍스트는 멘션 권장) |
+| 컨텍스트 초기화 | `/reset` 또는 `@bot /reset` | 인격은 유지, 대화 히스토리만 삭제 |
+| 모델 전환 | `/agent model <name>` (admin) | 즉시 다음 응답부터 새 모델 |
+| 스레드 대화 | 메시지 → "Create Thread" → 입력 | 메인 채널 안 흐트러뜨림 |
+| 봇 무시하기 | 채널 설정 → Mute / 봇 역할 권한 | Discord 측 처리 (OpenClaw 무관) |
+| 봇 일시 정지 | `./openclaw stop` (호스트) | 모든 서버에서 즉시 Offline |
+| 봇 재시작 | `./openclaw start` (호스트) | 자동 재연결 |
+| 토큰 노출 응급 | Discord Portal → Reset Token → `./openclaw setup` | 옛 토큰 즉시 무효화 + 재발급 |
+| Discord 로그 | `./openclaw logs \| grep -i discord` | 채널 등록·메시지 흐름 점검 |
+| 봇 응답 안 함 | [트러블슈팅](#-트러블슈팅) | 8케이스 매핑 |
+
+호스트(터미널) 측 자주 쓰는 명령:
+
+| 명령 | 효과 |
+|---|---|
+| `./openclaw start` / `stop` | 봇 포함 전체 컨테이너 on/off |
+| `./openclaw doctor` | gateway·Discord 채널 연결 상태 |
+| `./openclaw logs \| grep -i discord` | Discord 관련 로그만 추출 |
+| `./openclaw setup` | 토큰 갱신 / 채널 설정 변경 (멱등) |
+| `./openclaw chat` | 봇 없이 호스트 Ollama 와 즉시 대화 (디버깅용) |
 
 ---
 
