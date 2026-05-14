@@ -405,7 +405,7 @@ shorts   run "여행 감성 풍경"
 | 🎨 **디자이너 워크플로우 자동화 (Pinterest → 나노바나나 → Figma)** | [docs/GUIDE-CREATIVE-PIPELINE.md](docs/GUIDE-CREATIVE-PIPELINE.md) | 4단계 수작업 → 1명령. 나노바나나 4창 병렬로 속도 ~3.7×. KO+EN 병기 |
 | 🎬 **쇼츠 자동화 (Pinterest → 미리캔버스 → CapCut)** | [docs/GUIDE-SHORTS-PIPELINE.md](docs/GUIDE-SHORTS-PIPELINE.md) | `shorts run "키워드"` 으로 레퍼런스·1080×1920 디자인·9:16 영상 export. 샌드박스 경계 유지 + 프로그램 설치 안내 포함. KO+EN |
 | 💬 **Discord 봇으로 OpenClaw 운영** | [docs/GUIDE-DISCORD-BOT.md](docs/GUIDE-DISCORD-BOT.md) | **셋업** (앱 생성 → Message Content Intent → OAuth2 invite → 토큰 등록 → 첫 테스트) **+ 일상 사용** (트리거 4종: 멘션/DM/슬래시/자동응답 · 자주 쓰는 프롬프트 패턴 · 채널별 모델·인격 분리 · 워크스페이스 파일 인용 · mute/disable/다중 서버 · cheat sheet) **+ 보안 7항목 + 트러블슈팅 8케이스**. KO 본문. |
-| 🔄 **매일 켜고 끄는 법 (일상 사용)** | [docs/GUIDE-DAILY-USE.md](docs/GUIDE-DAILY-USE.md) | install 끝낸 이후의 사이클 — 매일 아침 켜기 / 자리 비울 때 / 컴퓨터 끄기 / 대화 이어가기 / 뭔가 이상할 때 / 주기 유지보수. 종료 방법별 비교 표 (`./openclaw stop` vs `docker compose down` vs `uninstall`). |
+| 🔄 **매일 켜고 끄는 법 (일상 사용)** | [docs/GUIDE-DAILY-USE.md](docs/GUIDE-DAILY-USE.md) | install 끝낸 이후의 사이클 — **시나리오 0 ~ 6**: 🆕 cold boot (전원 완전 종료→켜기, 5단계 + 1분 검증 체크리스트, 자동/수동 매트릭스) / 일상 시작 / 자리 비움 / 종료 3단계 (Level 1 macOS 만 vs Level 2 컨테이너 stop vs Level 3 Docker 까지) / 대화 이어가기 / 트러블슈팅 / 유지보수. 종료 방법별 비교 표 (`./openclaw stop` vs `docker compose down` vs `uninstall`). |
 | 👤 **일반 사용자** | [README.md](README.md) (이 문서) | 명령 카탈로그·`.env`·네트워크 격리·FAQ |
 | 🇬🇧 **General user (EN)** | [README.en.md](README.en.md) | Full English equivalent of this README |
 | 🩺 **진단 항목별 상세 가이드** | [docs/TROUBLESHOOTING.md — doctor 상세 항목별 가이드](docs/TROUBLESHOOTING.md#doctor-항목별-상세-가이드) | OS · RAM · 디스크 · Xcode CLT · Docker 데몬 · 포트 충돌 · compose 보안 경고(`docker.sock`) 각각에 대한 의미·자동·수동 해결 |

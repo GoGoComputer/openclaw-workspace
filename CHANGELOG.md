@@ -2,6 +2,7 @@
 
 ## 📖 목차 / Contents
 
+- [v0.2.13 — 2026-05-14](#v0213--2026-05-14)
 - [v0.2.12 — 2026-05-14](#v0212--2026-05-14)
 - [v0.2.11 — 2026-05-14](#v0211--2026-05-14)
 - [v0.2.10 — 2026-05-14](#v0210--2026-05-14)
@@ -18,6 +19,26 @@
 - [v0.1.9 — 2025-07-xx](#v019--2025-07-xx)
 - [v0.1.8 — 2025-07-xx](#v018--2025-07-xx)
 - [v0.1.7](#v017)
+
+---
+
+## v0.2.13 — 2026-05-14
+
+### GUIDE-DAILY-USE.md — full cold-boot walkthrough
+The previous "Scenario 1" treated everything as if Docker, Ollama, and the containers were already running. After a real power-off → power-on, none of that is guaranteed. This release adds:
+
+- **Scenario 0 — Cold boot** (new). Detailed step-by-step for the case where the Mac was completely shut down:
+  - **Auto-vs-manual matrix** — for each component (Docker Desktop, Ollama menu bar, host models, OpenClaw containers, network mode, config files, workspace, Discord bot, web UI, TUI sessions) lists whether it auto-resumes, and what to do otherwise.
+  - **5-step procedure** with timing — Docker daemon (30–60s wait loop one-liner) → Ollama probe → OpenClaw container auto-recovery check → network-mode review → start chatting (chat / TUI / web UI / Discord).
+  - **1-minute verification checklist** — four ✓/✗ probes that confirm each layer, plus a one-liner condensation: `docker info && curl ollama && docker ps | grep openclaw && echo ALL OK`.
+  - **Common cold-boot gotchas table** — Docker still updating, Exited containers, Ollama app not up yet, last mode was isolated → web UI broken, Discord bot still reconnecting, fetch-failed model mismatch.
+- **Scenario 1 — refactored** to the "warm" case (Mac woke from sleep, everything still up). Now points at Scenario 0 when starting from a true cold state.
+- **Scenario 3 — expanded into 3 shutdown levels**: Level 1 (just macOS shutdown, 90% case), Level 2 (`./openclaw stop` then shutdown — multi-day idle), Level 3 (`stop` + `quit Docker` — long-term + RAM reclaim). Each with explicit commands and the matching restart cost. Includes pre-shutdown checklist (Discord activity, network mode persistence, backup) and a direct link back to Scenario 0.
+
+### Documentation map
+- README (KO + EN): the 🔄 row description now enumerates the scenario list (cold boot, warm start, three shutdown levels, etc.) instead of a vague "morning start, shutdown".
+
+VERSION 0.2.12 → 0.2.13 (docs-only).
 
 ---
 

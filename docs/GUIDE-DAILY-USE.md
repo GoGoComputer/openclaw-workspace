@@ -15,9 +15,10 @@
 ## 📖 목차 / Contents
 
 - [⚡ TL;DR — 가장 자주 쓰는 6개 명령](#-tldr--가장-자주-쓰는-6개-명령)
-- [🌅 시나리오 1 — 매일 아침 컴퓨터 켰을 때](#-시나리오-1--매일-아침-컴퓨터-켰을-때)
+- [🆕 시나리오 0 — 컴퓨터 완전히 껐다 켰을 때 (cold boot)](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot)
+- [🌅 시나리오 1 — 일상 시작 (Mac 슬립 해제 / 터미널 새로 열기)](#-시나리오-1--일상-시작-mac-슬립-해제--터미널-새로-열기)
 - [☕ 시나리오 2 — 잠깐 자리 비울 때](#-시나리오-2--잠깐-자리-비울-때)
-- [🌙 시나리오 3 — 컴퓨터 끄기 전](#-시나리오-3--컴퓨터-끄기-전)
+- [🌙 시나리오 3 — 컴퓨터 끄기 전 (full shutdown)](#-시나리오-3--컴퓨터-끄기-전-full-shutdown)
 - [💬 시나리오 4 — 이전 대화 이어가기](#-시나리오-4--이전-대화-이어가기)
 - [🐛 시나리오 5 — 뭔가 이상할 때](#-시나리오-5--뭔가-이상할-때)
 - [🔧 시나리오 6 — 주기적 유지보수](#-시나리오-6--주기적-유지보수)
@@ -53,29 +54,159 @@ TUI/chat **안에서** 빠져나오는 법:
 - TUI 안에서: `Ctrl+D` 또는 입력창에 `/exit`
 - chat REPL 안에서: `/exit`, `/quit`, `/q`, 또는 `Ctrl+D`
 
+**컴퓨터 완전히 껐다 켠 직후라면** → 곧장 [🆕 시나리오 0 (cold boot)](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 로. 5단계 + 1분 검증 체크리스트.
+
 ---
 
-## 🌅 시나리오 1 — 매일 아침 컴퓨터 켰을 때
+## 🆕 시나리오 0 — 컴퓨터 완전히 껐다 켰을 때 (cold boot)
+
+전원이 완전히 꺼졌다가 켜진 직후. 아무것도 떠 있지 않은 가장 보수적인 상태에서 채팅 가능 상태까지 가는 전체 경로.
+
+### 자동으로 일어나는 일 vs 사용자가 할 일
+
+| 구성요소 | 자동? | 비고 |
+|---|---|---|
+| Docker Desktop | ⚙️ 자동 (설정한 경우) / 수동 | "Start Docker Desktop when you sign in" 체크 권장 |
+| Ollama (메뉴바) | ✓ 자동 | macOS Ollama 앱이 알아서 메뉴바에 뜸 |
+| 호스트 LLM 모델 (`ollama list`) | ✓ 보존 | 다시 받을 필요 없음 |
+| OpenClaw 컨테이너 (`gateway`/`cli`) | ⚙️ Docker 가 뜨면 **자동 복구** | compose 의 `restart: unless-stopped` 정책 |
+| 네트워크 모드 (`isolated` / `online`) | ✓ 보존 | `~/.openclaw-mgr/network-mode` 에 마지막 값 저장 |
+| OpenClaw 설정 (`~/.openclaw/openclaw.json`) | ✓ 보존 | 모델·인증·Discord 토큰 등 그대로 |
+| 워크스페이스 (`~/DEV/openclawAgent/`) | ✓ 보존 | IDENTITY/SOUL/USER/MEMORY 그대로 |
+| Discord 봇 | ⚙️ 컨테이너 뜨면 자동 재연결 | gateway healthy 후 30~60초 안에 Online |
+| 웹 UI (`127.0.0.1:18789`) | ⚙️ **isolated 면 차단** | online 이어야 접근 가능 — Docker 의 port publishing 동작 [GUIDE-DAILY-USE 종료 시 보존](#-종료-시-무엇이-보존되나) 참조 |
+| chat REPL / TUI 세션 | ✗ 매번 새로 | 프로세스라 종료 후 재실행 필요 |
+
+→ **이상적 시나리오**: Docker 자동 시작 + 마지막 모드가 `online` 이었다면, 부팅 후 1~2분 안에 모든 게 그냥 떠 있음. 사용자는 `./openclaw chat` 또는 브라우저만 열면 됨.
+
+### 단계별 절차 (보수적 — 매 단계 검증)
+
+**1단계 — Docker 데몬 띄우기 (30초 ~ 1분)**
 
 ```bash
-# 1) Docker Desktop 자동 시작 설정이 되어 있으면 1번은 자동
-#    아니면 Applications → Docker 더블클릭
+# Docker Desktop 자동 시작이 설정돼 있으면 이미 떠 있을 것 — 메뉴바 🐳 아이콘 확인
+# 안 보이면 수동으로:
 open -a Docker
-# (30초~1분 대기 — 메뉴바 🐳 아이콘이 안정될 때까지)
 
-# 2) OpenClaw 컨테이너 시작
-cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
-./openclaw start
-
-# 3) 채팅 시작 (편한 거 선택)
-./openclaw chat                                   # 빠른 채팅 (호스트 Ollama 직접)
-# 또는
-cd ~/DEV/openclaw && docker compose run --rm openclaw-cli tui   # 본체 TUI
+# 데몬 응답 대기 (보통 30~60초)
+until docker info >/dev/null 2>&1; do printf '.'; sleep 2; done; echo " Docker ready"
 ```
 
-> 💡 **Docker Desktop 자동 시작**: Docker → Settings → "Start Docker Desktop when you sign in to your computer" 체크. 한 번만 설정하면 매일 1번 단계 생략.
+> 첫 부팅 후 1분이 지나도 🐳 아이콘이 회전 중이면 Docker Desktop 자체가 업데이트 / 설정 다이얼로그 띄우는 중일 수 있음. 메뉴바 아이콘 클릭해서 상태 확인.
+
+**2단계 — Ollama 확인 (보통 자동, 5초)**
+
+```bash
+# 메뉴바에 🦙 아이콘이 보이면 OK. 아니면:
+open -a Ollama
+
+# API 응답 확인
+curl -sf --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null && echo "Ollama ready" || echo "Ollama DOWN"
+```
+
+> 모델은 **요청 시점에 RAM 로드**됩니다 — 부팅 직후엔 모델이 RAM 에 없을 수 있어요. 첫 메시지 응답이 5~15초 걸려도 정상 (이후 빨라짐).
+
+**3단계 — OpenClaw 컨테이너 자동 복구 확인 (보통 자동, 10~30초)**
+
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw doctor
+
+# 빨리 보고 싶으면:
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep openclaw
+# openclaw-openclaw-gateway-1   Up 1 minute (healthy)   127.0.0.1:18789-18790->18789-18790/tcp
+```
+
+`Up (healthy)` 가 보이면 OK. **`Up (unhealthy)` 또는 컨테이너 자체가 안 보이면:**
+```bash
+./openclaw start    # 멱등 — 이미 떠 있어도 안전
+```
+
+**4단계 — 네트워크 모드 확인**
+
+```bash
+./openclaw network status
+# 현재 네트워크 모드: isolated  ← 마지막 종료 시 그 상태
+```
+
+- **`online`** → 웹 UI 도 접근 가능, Discord 도 응답
+- **`isolated`** → 웹 UI 차단, host Ollama 도 컨테이너→호스트 차단 (다만 `./openclaw chat` 은 호스트 직접 호출이라 OK)
+
+웹 UI 가 필요하면 잠깐 켜기:
+```bash
+./openclaw network online --restart
+```
+
+**5단계 — 채팅 시작**
+
+```bash
+# 가장 빠름 — 호스트 Ollama 직접, 인격 자동 로드
+./openclaw chat
+
+# 본체 OpenClaw TUI — 풀 기능 (세션 영구 저장)
+cd ~/DEV/openclaw && docker compose run --rm openclaw-cli tui
+
+# 웹 UI (online 모드일 때만)
+open http://127.0.0.1:18789
+
+# Discord 봇 — 자동으로 다시 Online (gateway 가 healthy 면 30~60초 안에)
+```
+
+### ✅ 1분 부팅 검증 체크리스트
+
+전부 통과하면 끝. 하나라도 X 면 그 단계로 돌아가 진단.
+
+```bash
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+
+docker info >/dev/null 2>&1 && echo "✓ Docker"   || echo "✗ Docker — open -a Docker"
+curl -sf --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null && echo "✓ Ollama" || echo "✗ Ollama — open -a Ollama"
+docker ps --format '{{.Names}}' | grep -q openclaw-openclaw-gateway && echo "✓ Gateway 컨테이너" || echo "✗ Gateway — ./openclaw start"
+./openclaw doctor 2>&1 | grep -q "모두 정상" && echo "✓ Doctor: 모두 정상" || echo "⚠ Doctor: 항목 확인 필요"
+```
+
+한 줄로:
+```bash
+docker info >/dev/null 2>&1 && curl -sf http://127.0.0.1:11434/api/tags >/dev/null && docker ps | grep -q openclaw && echo "✅ ALL OK — ready to chat" || echo "⚠ 단계별 점검 필요"
+```
+
+### 자주 막히는 cold-boot 케이스
+
+| 증상 | 짚어볼 곳 |
+|---|---|
+| Docker 가 1분 넘게 안 뜸 | macOS 업데이트 직후라 Docker 가 업데이트 중. 메뉴바 아이콘 확인 |
+| 컨테이너가 Exited 상태 | 마지막 종료가 비정상. `./openclaw start` |
+| `./openclaw chat` 이 `Ollama not reachable` | Ollama 앱이 아직 안 뜸. `open -a Ollama` 후 5초 |
+| 웹 UI "Safari Can't Connect" | 마지막 상태가 isolated. `./openclaw network online --restart` |
+| Discord 봇 Offline 인 채로 | gateway 가 아직 안정화 중. 1~2분 더 기다리거나 `./openclaw logs \| grep -i discord` 로 재연결 시도 확인 |
+| TUI 가 `fetch failed` | 모델 이름 미스매치 (드물게 cold-boot 후 발생) → [§ 현재 어떤 모델을 쓰는지](#-현재-어떤-모델을-쓰는지--openclawjson-점검) |
+
+---
+
+## 🌅 시나리오 1 — 일상 시작 (Mac 슬립 해제 / 터미널 새로 열기)
+
+전원을 끄지 않았고 (슬립이거나 그냥 자리만 비웠던) Docker·Ollama·컨테이너가 다 살아있는 상태에서 다시 작업 시작. **이게 가장 흔한 케이스** — cold boot 보다 훨씬 빠름.
+
+```bash
+# 곧장 채팅 시작
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
+./openclaw chat                                   # 호스트 Ollama 직접 (가장 빠름)
+
+# 또는 본체 TUI
+cd ~/DEV/openclaw && docker compose run --rm openclaw-cli tui
+
+# 또는 웹 UI (online 모드 + 컨테이너 healthy 면)
+open http://127.0.0.1:18789
+```
+
+이상하면 한 줄 진단:
+```bash
+./openclaw doctor
+```
+
+> 💡 **Docker Desktop 자동 시작 추천**: Docker → Settings → "Start Docker Desktop when you sign in to your computer" 체크. cold boot 마다 매뉴얼 실행 안 해도 됨.
 >
-> 💡 **컨테이너가 이미 떠 있는 경우**: `./openclaw start` 는 멱등이라 안전. "이미 실행 중" 메시지 후 종료.
+> 💡 **컨테이너가 이미 떠 있는 경우**: `./openclaw start` 는 멱등이라 매번 호출해도 안전. "이미 실행 중" 메시지 후 즉시 종료.
 
 ---
 
@@ -97,22 +228,64 @@ docker compose run --rm openclaw-cli tui --session <id>
 
 ---
 
-## 🌙 시나리오 3 — 컴퓨터 끄기 전
+## 🌙 시나리오 3 — 컴퓨터 끄기 전 (full shutdown)
 
+전원을 완전히 끌 때 (밤에 가방 넣기, 출장 전 등). [시나리오 0 (cold boot)](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 의 역방향.
+
+### 권장 종료 순서 (느슨 → 강함)
+
+**Level 1 — 그냥 macOS 종료 (가장 흔함)**
 ```bash
-# 1) 진행 중인 TUI/chat 종료
-#    - TUI:   Ctrl+D 또는 /exit
-#    - chat:  /exit
+# 진행 중인 TUI/chat 종료
+#   - TUI:   Ctrl+D 또는 /exit
+#   - chat:  /exit
+# → macOS 종료 (Cmd+Q 로 Docker 빠져나오기는 불필요)
+```
+- macOS 가 모든 앱·컨테이너 안전 종료
+- Docker 의 `restart: unless-stopped` 정책 덕에 다음 부팅 시 자동 복구
+- **이걸로 충분합니다.** 90% 케이스에 권장.
 
-# 2) (선택) 컨테이너 정지 — 데이터는 그대로 보존됨
+**Level 2 — 컨테이너 명시 정지 (며칠 안 쓸 때)**
+```bash
+# 1) TUI/chat 종료
+# 2) 컨테이너만 깨끗이 정지 (데이터·이미지 보존)
+cd ~/DEV/openclawAgent/openclaw-workspace/openclaw-mgr
 ./openclaw stop
-
 # 3) macOS 종료
 ```
+- 다음 부팅 시 컨테이너가 "Stopped" 상태로 시작 — `./openclaw start` 한 번 필요
+- 메모리·CPU 자원 확실히 회수
 
-**`./openclaw stop` 을 꼭 해야 하나요?**
+**Level 3 — Docker Desktop 까지 끄기 (장기 미사용·RAM 절약)**
+```bash
+# 1) TUI/chat 종료
+./openclaw stop                                    # 컨테이너 정지
+osascript -e 'quit app "Docker"'                   # Docker Desktop 까지 종료
+# 2) macOS 종료
+```
+- Docker Desktop 의 Linux VM 까지 종료 → RAM ~2 GB 해방
+- 다음 부팅 시 [시나리오 0](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 1~2단계부터 다시
+
+### 종료 전 권장 체크 (선택)
+
+```bash
+# 1) Discord 봇이 메시지 처리 중인가? — 진행 중이면 잠깐 기다리기
+./openclaw logs | tail -10
+
+# 2) 현재 네트워크 모드 확인 — 부팅 후 그대로 복구됨
+./openclaw network status
+# isolated 면 다음 부팅 시 웹UI 막혀 있을 거라는 점만 기억
+
+# 3) 최근 작업물 백업 (큰 변경이 있었다면)
+./openclaw backup --name pre-shutdown-$(date +%Y%m%d)
+```
+
+### `./openclaw stop` 을 꼭 해야 하나요?
 - **아니요.** macOS 종료/재시작 시 Docker Desktop 이 컨테이너를 안전하게 정리합니다. `docker-compose.yml` 의 `restart: unless-stopped` 정책 때문에 부팅 후 자동 복구됨.
-- **그래도 권장하는 경우**: 며칠 안 쓸 예정 / RAM 여유 만들기 / 정리된 상태로 두고 싶을 때.
+- **그래도 권장하는 경우**: 며칠 안 쓸 예정 / RAM 여유 만들기 / Discord 봇을 꺼둔 채로 두고 싶을 때 / 정리된 상태로 두고 싶을 때.
+
+### 다음 부팅 시
+→ [시나리오 0 (cold boot)](#-시나리오-0--컴퓨터-완전히-껐다-켰을-때-cold-boot) 의 단계별 절차 + ✅ 1분 검증 체크리스트.
 
 ---
 
